@@ -5,6 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Services - Spirit Connect Ltd</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .services-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 2rem;
+      text-align: center;
+    }
+    .service {
+      flex: 1;
+      min-width: 280px;
+      margin: 20px 0;
+    }
+    .service img {
+      width: 100%;
+      max-width: 240px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .service h3 {
+      margin: 10px 0;
+    }
+    .service p {
+      margin: 0;
+    }
+    .additional-offerings {
+      text-align: left;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -21,19 +53,24 @@
 
   <section>
     <h2>Our Services & Expertise</h2>
-    <div class="service">
-      <h3>Microgrids</h3>
-      <p>Designing, modeling, and controlling DC and AC microgrids for resilient and efficient energy distribution.</p>
+    <div class="services-container">
+      <div class="service">
+        <img src="/images/research/microgrids.png" alt="Microgrids">
+        <h3>Microgrids</h3>
+        <p>Designing, modeling, and controlling DC and AC microgrids for resilient and efficient energy distribution.</p>
+      </div>
+      <div class="service">
+        <img src="/images/research/converter.png" alt="Converters">
+        <h3>Converters</h3>
+        <p>Developing optimized converter design and control strategies for high-performance applications.</p>
+      </div>
+      <div class="service">
+        <img src="/images/research/components.png" alt="Components">
+        <h3>Components</h3>
+        <p>Expertise in modern semiconductor devices and passive components to maximize efficiency and reliability.</p>
+      </div>
     </div>
-    <div class="service">
-      <h3>Converters</h3>
-      <p>Developing optimized converter design and control strategies for high-performance applications.</p>
-    </div>
-    <div class="service">
-      <h3>Components</h3>
-      <p>Expertise in modern semiconductor devices and passive components to maximize efficiency and reliability.</p>
-    </div>
-    <div class="service">
+    <div class="additional-offerings">
       <h3>Additional Offerings</h3>
       <ul>
         <li>Power electronics design and optimization</li>
@@ -41,14 +78,6 @@
         <li>Technical consultancy and training</li>
       </ul>
     </div>
-  </section>
-
-  <section class="contact-cta">
-    <h2>Get in Touch</h2>
-    <p>Interested in working together or learning more about our consultancy? Reach out to us!</p>
-    <p>Email: <a href="mailto:fulong.li@ieee.org">fulong.li@ieee.org</a></p>
-    <p>Connect: <a href="https://www.linkedin.com" target="_blank">LinkedIn</a></p>
-    <p>Let’s power your vision ⚡</p>
   </section>
 
   <footer>
