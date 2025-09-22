@@ -1,206 +1,35 @@
-/* style.css — inspired by Supply Design website */
-
-/* Reset / base */
-* {
-  box-sizing: border-box;
+body {
+  font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
 }
-
-html {
-  font-family: "Helvetica Neue", Arial, sans-serif;
-  line-height: 1.5;
-  color: #222;
-}
-
-body {
-  background-color: #fff;
-  color: #222;
-  font-size: 16px;
-}
-
-/* Container utility */
-.container {
-  width: 90%;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-}
-
-/* Navigation Bar */
-nav {
-  display: flex;
-  justify-content: center;
-  padding: 1rem 0;
-  background-color: #ffffff;
-}
-
-nav ul {
-  list-style: none;
-  display: flex;
-  gap: 2rem;
-}
-
-nav a {
-  text-decoration: none;
-  color: #222;
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.95rem;
-}
-
-nav a:hover,
-nav a:focus {
-  color: #0073ff;
-}
-
-/* Hero / Header Sections */
-.hero {
-  text-align: center;
-  padding: 4rem 0;
-  background-color: #f8f8f8;
-}
-
-.hero h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-.hero h2 {
-  font-size: 1.75rem;
-  font-weight: 500;
-  margin-bottom: 2rem;
-  color: #555;
-}
-
-/* Section Titles */
-.section-title {
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  color: #222;
-}
-
-/* Text / Paragraphs */
-p {
-  margin-bottom: 1.5rem;
-  color: #444;
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-/* Buttons */
-.button {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  background-color: #0073ff;
+header {
+  background: #1a73e8;
   color: white;
-  text-decoration: none;
-  font-weight: 600;
-  border-radius: 4px;
-  transition: background-color 0.3s ease;
-}
-
-.button:hover,
-.button:focus {
-  background-color: #005dc1;
-}
-
-/* Image styles */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* Grid layout for sections with images + text */
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  align-items: center;
-}
-
-@media (min-width: 768px) {
-  .grid.two-columns {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Contact info / footer */
-footer {
-  background-color: #222;
-  color: #ccc;
-  padding: 2rem 0;
+  padding: 1rem;
   text-align: center;
-  font-size: 0.9rem;
 }
-
-footer a {
-  color: #ccc;
+nav {
+  background: #f5f5f5;
+  padding: 0.5rem;
+  text-align: center;
+}
+nav a {
+  margin: 0 1rem;
   text-decoration: none;
+  color: #333;
 }
-
-footer a:hover,
-footer a:focus {
-  color: #fff;
+nav a:hover {
+  color: #1a73e8;
 }
-
-/* Utility text classes */
-.text-primary {
-  color: #0073ff;
+section {
+  padding: 2rem;
+  text-align: center;
 }
-
-.text-muted {
-  color: #777;
-}
-
-/* Links */
-a {
-  color: #0073ff;
-  text-decoration: none;
-}
-
-a:hover,
-a:focus {
-  text-decoration: underline;
-}
-
-/* Heading hierarchy */
-h1, .h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
-
-h2, .h2 {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-h3, .h3 {
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-}
-
-/* Spacing utilities */
-.mt-1 { margin-top: 1rem; }
-.mt-2 { margin-top: 2rem; }
-.mb-1 { margin-bottom: 1rem; }
-.mb-2 { margin-bottom: 2rem; }
-
-/* Ensure mobile responsiveness */
-@media (max-width: 767px) {
-  .hero h1 {
-    font-size: 2rem;
-  }
-  .hero h2 {
-    font-size: 1.5rem;
-  }
+footer {
+  background: #333;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 2rem;
 }
