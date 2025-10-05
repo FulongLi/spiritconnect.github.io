@@ -1,31 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact - Spirit Connect Ltd</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Contact – Spirit Connect Ltd</title>
+  <meta name="description" content="Contact Spirit Connect Ltd to discuss power electronics and clean-energy projects."/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    form{max-width:720px;margin-inline:auto}
+    label{display:block;margin:.5rem 0 .25rem;font-weight:600}
+    input, textarea{
+      width:100%;padding:.8rem 1rem;border-radius:12px;border:1px solid var(--border);
+      background:#fff; outline:none;
+    }
+    textarea{min-height:140px;resize:vertical}
+    .form-row{display:grid;gap:.75rem}
+    @media(min-width:720px){.form-row{grid-template-columns:1fr 1fr}}
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Contact Us</h1>
+
+  <!-- NAV -->
+  <header class="nav nav-dark">
+    <div class="container nav-inner">
+      <a class="brand" href="index.html"><span class="dot"></span> Spirit Connect</a>
+      <button class="hamburger" aria-label="Open menu" aria-controls="mainmenu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="mainmenu" class="menu">
+        <a href="index.html">Home</a>
+        <div class="dropdown">
+          <button class="drop-toggle" aria-expanded="false">Products ▾</button>
+          <div class="drop-menu">
+            <a href="transistor-database.html">Transistor Database</a>
+            <a href="magnetic-database.html">Magnetic Database</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="drop-toggle" aria-expanded="false">Applications ▾</button>
+          <div class="drop-menu">
+            <a href="applications-dab.html">DAB Converter</a>
+            <a href="applications-sensing.html">Sensing Device</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="drop-toggle" aria-expanded="false">Company ▾</button>
+          <div class="drop-menu">
+            <a href="about.html">About Us</a>
+            <a href="team.html">Team</a>
+            <a href="faq.html">FAQ</a>
+            <a href="careers.html">Careers</a>
+          </div>
+        </div>
+        <a href="news.html">News</a>
+        <a href="contact.html" class="cta" aria-current="page">Contact Us</a>
+      </nav>
+    </div>
   </header>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="about.html">About Us</a>
-    <a href="services.html">Services</a>
-    <a href="contact.html">Contact</a>
-  </nav>
+  <!-- HERO -->
+  <header class="hero">
+    <div class="bg"></div>
+    <div class="container">
+      <h1>Contact</h1>
+      <p class="lead">Tell us briefly about your project and timelines — we’ll get back quickly.</p>
+    </div>
+  </header>
 
-  <section>
-    <h2>Get in Touch</h2>
-    <p>Email: fulong.li@ieee.org</p>
-    <p>Location: Cardiff, UK</p>
+  <!-- Contact cards -->
+  <section class="section">
+    <div class="container grid">
+      <div class="card">
+        <h3>Email</h3>
+        <p><a href="mailto:info@spiritconnect.co.uk">info@spiritconnect.co.uk</a></p>
+      </div>
+      <div class="card">
+        <h3>Location</h3>
+        <p>Cardiff, United Kingdom</p>
+      </div>
+      <div class="card">
+        <h3>Social</h3>
+        <p><a href="#" rel="me">LinkedIn</a></p>
+      </div>
+    </div>
   </section>
 
-  <footer>
-    <p>&copy; 2025 Spirit Connect Ltd | All rights reserved</p>
+  <!-- Simple form (replace action with your Formspree endpoint) -->
+  <section class="section">
+    <div class="container">
+      <h2>Send a message</h2>
+      <p class="lead">No spam, no pressure — just an initial conversation.</p>
+      <form action="https://formspree.io/f/your-id-here" method="POST">
+        <div class="form-row">
+          <div>
+            <label for="name">Your name</label>
+            <input id="name" name="name" type="text" required/>
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required/>
+          </div>
+        </div>
+        <label for="subject">Subject</label>
+        <input id="subject" name="subject" type="text"/>
+        <label for="message">Message</label>
+        <textarea id="message" name="message" required></textarea>
+        <p class="small">Prefer email? Write to <a href="mailto:info@spiritconnect.co.uk">info@spiritconnect.co.uk</a>.</p>
+        <button class="btn btn-primary" type="submit">Send message</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container cols">
+      <div>
+        <div class="brand"><span class="dot"></span> Spirit Connect</div>
+        <p class="small">Cardiff, United Kingdom · info@spiritconnect.co.uk</p>
+      </div>
+      <div>
+        <strong>Company</strong>
+        <p class="small"><a href="about.html">About</a><br><a href="services.html">Services</a></p>
+      </div>
+      <div>
+        <strong>Legal</strong>
+        <p class="small"><a href="#">Privacy</a><br><a href="#">Terms</a></p>
+      </div>
+    </div>
   </footer>
+
+  <!-- JS -->
+  <script>
+    const burger = document.querySelector('.hamburger');
+    const menu   = document.getElementById('mainmenu');
+    if (burger && menu){ burger.addEventListener('click',()=>{const o=menu.classList.toggle('open');burger.setAttribute('aria-expanded',o?'true':'false');});}
+    document.querySelectorAll('.drop-toggle').forEach(b=>{b.addEventListener('click',e=>{const d=e.currentTarget.closest('.dropdown');d.classList.toggle('open');b.setAttribute('aria-expanded',d.classList.contains('open')?'true':'false');});b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});});
+  </script>
 </body>
 </html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Team – Spirit Connect</title>
+  <meta name="description" content="Team behind Spirit Connect's AI-assisted power-electronics design automation."/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<header class="nav nav-dark"><div class="container nav-inner">
+  <a class="brand" href="index.html"><span class="dot"></span> Spirit Connect</a>
+  <button class="hamburger" aria-label="Open menu" aria-controls="mainmenu" aria-expanded="false"><span></span><span></span><span></span></button>
+  <nav id="mainmenu" class="menu">
+    <a href="index.html">Home</a>
+    <div class="dropdown"><button class="drop-toggle">Products ▾</button><div class="drop-menu"><a href="transistor-database.html">Transistor Database</a><a href="magnetic-database.html">Magnetic Database</a></div></div>
+    <div class="dropdown"><button class="drop-toggle">Applications ▾</button><div class="drop-menu"><a href="applications-dab.html">DAB Converter</a><a href="applications-sensing.html">Sensing Device</a></div></div>
+    <div class="dropdown"><button class="drop-toggle" aria-expanded="true">Company ▾</button><div class="drop-menu" style="display:block"><a href="about.html">About Us</a><a href="team.html" aria-current="page">Team</a><a href="faq.html">FAQ</a><a href="careers.html">Careers</a></div></div>
+    <a href="news.html">News</a><a href="contact.html" class="cta">Contact Us</a>
+  </nav>
+</div></header>
+
+<header class="hero"><div class="bg"></div><div class="container">
+  <h1>Team</h1>
+  <p class="lead">Engineers and researchers combining physics, data, and pragmatic build-test cycles.</p>
+</div></header>
+
+<section class="section"><div class="container grid">
+  <div class="card"><h3>Fulong Li, PhD</h3><p>Founder · Power electronics, DC microgrids, WBG devices, converter optimization & validation.</p></div>
+  <div class="card"><h3>Advisors</h3><p>Domain experts across magnetics, control, and thermal/EMI engineering.</p></div>
+  <div class="card"><h3>Partners</h3><p>Open to collaboration with industry and labs. <a href="contact.html">Get in touch</a>.</p></div>
+</div></section>
+
+<footer class="footer"><div class="container cols"><div><div class="brand"><span class="dot"></span> Spirit Connect</div><p class="small">Cardiff, United Kingdom · info@spiritconnect.co.uk</p></div><div><strong>Company</strong><p class="small"><a href="about.html">About</a><br><a href="services.html">Services</a></p></div><div><strong>Legal</strong><p class="small"><a href="#">Privacy</a><br><a href="#">Terms</a></p></div></div></footer>
+
+<script>
+const burger=document.querySelector('.hamburger'),menu=document.getElementById('mainmenu');
+if(burger&&menu){burger.addEventListener('click',()=>{const o=menu.classList.toggle('open');burger.setAttribute('aria-expanded',o?'true':'false');});}
+document.querySelectorAll('.drop-toggle').forEach(b=>{b.addEventListener('click',e=>{const d=e.currentTarget.closest('.dropdown');d.classList.toggle('open');b.setAttribute('aria-expanded',d.classList.contains('open')?'true':'false');});b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});});
+</script>
+</body>
+</html>

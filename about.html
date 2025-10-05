@@ -1,31 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About Us - Spirit Connect Ltd</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>About – Spirit Connect</title>
+  <meta name="description" content="Spirit Connect builds AI-assisted power-electronics design automation to accelerate converter development."/>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <header>
+
+<header class="nav nav-dark">
+  <div class="container nav-inner">
+    <a class="brand" href="index.html"><span class="dot"></span> Spirit Connect</a>
+    <button class="hamburger" aria-label="Open menu" aria-controls="mainmenu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <nav id="mainmenu" class="menu">
+      <a href="index.html">Home</a>
+      <div class="dropdown">
+        <button class="drop-toggle">Products ▾</button>
+        <div class="drop-menu">
+          <a href="transistor-database.html">Transistor Database</a>
+          <a href="magnetic-database.html">Magnetic Database</a>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="drop-toggle">Applications ▾</button>
+        <div class="drop-menu">
+          <a href="applications-dab.html">DAB Converter</a>
+          <a href="applications-sensing.html">Sensing Device</a>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="true">Company ▾</button>
+        <div class="drop-menu" style="display:block">
+          <a href="about.html" aria-current="page">About Us</a>
+          <a href="team.html">Team</a>
+          <a href="faq.html">FAQ</a>
+          <a href="careers.html">Careers</a>
+        </div>
+      </div>
+      <a href="news.html">News</a>
+      <a href="contact.html" class="cta">Contact Us</a>
+    </nav>
+  </div>
+</header>
+
+<header class="hero">
+  <div class="bg"></div>
+  <div class="container">
     <h1>About Spirit Connect</h1>
-  </header>
+    <p class="lead">We build AI-assisted automation that compresses converter design cycles — from topology exploration to validation — so your team ships better hardware, faster.</p>
+  </div>
+</header>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="about.html">About Us</a>
-    <a href="services.html">Services</a>
-    <a href="contact.html">Contact</a>
-  </nav>
+<section class="section">
+  <div class="container">
+    <h2>Mission</h2>
+    <p class="lead">Turn weeks of manual iteration into hours of transparent, data-driven decisions for power-electronics engineers.</p>
+  </div>
+</section>
 
-  <section>
-    <h2>Who We Are</h2>
-    <p>Spirit Connect Ltd was founded in 2025, focusing on power electronics, energy management, and technical consultancy.</p>
-    <p>Our mission is to drive the future of clean energy and intelligent power systems.</p>
-  </section>
+<section class="section">
+  <div class="container grid">
+    <div class="card">
+      <h3>Engineering first</h3>
+      <p>Physics-guided models, rigorous constraints, and interpretable outputs — not black boxes.</p>
+    </div>
+    <div class="card">
+      <h3>Modular toolchain</h3>
+      <p>Use the whole pipeline or just the pieces you need: magnetics, device selection, efficiency maps, control regions.</p>
+    </div>
+    <div class="card">
+      <h3>Built for teams</h3>
+      <p>Repeatable workflows (SIL/HIL/test scripts) and clean handovers to manufacturing/QA.</p>
+    </div>
+  </div>
+</section>
 
-  <footer>
-    <p>&copy; 2025 Spirit Connect Ltd | All rights reserved</p>
-  </footer>
+<section class="section">
+  <div class="container">
+    <h2>Platform architecture</h2>
+    <div class="grid">
+      <div class="card"><h3>Data & models</h3><p>Datasheets, measured datasets, surrogate models, and priors for fast, trustworthy estimates.</p></div>
+      <div class="card"><h3>Search & optimization</h3><p>Constraint-aware search with Pareto trade-offs (η, density, cost, temperature, EMI headroom).</p></div>
+      <div class="card"><h3>Validation hooks</h3><p>Auto-generated test plans, benches, and capture scripts for reproducible results.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container cols">
+    <div><div class="brand"><span class="dot"></span> Spirit Connect</div><p class="small">Cardiff, United Kingdom · info@spiritconnect.co.uk</p></div>
+    <div><strong>Company</strong><p class="small"><a href="about.html">About</a><br><a href="services.html">Services</a></p></div>
+    <div><strong>Legal</strong><p class="small"><a href="#">Privacy</a><br><a href="#">Terms</a></p></div>
+  </div>
+</footer>
+
+<script>
+const burger=document.querySelector('.hamburger'),menu=document.getElementById('mainmenu');
+if(burger&&menu){burger.addEventListener('click',()=>{const o=menu.classList.toggle('open');burger.setAttribute('aria-expanded',o?'true':'false');});}
+document.querySelectorAll('.drop-toggle').forEach(b=>{b.addEventListener('click',e=>{const d=e.currentTarget.closest('.dropdown');d.classList.toggle('open');b.setAttribute('aria-expanded',d.classList.contains('open')?'true':'false');});b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});});
+</script>
 </body>
 </html>

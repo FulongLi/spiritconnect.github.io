@@ -1,32 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spirit Connect Ltd</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Spirit Connect – AI-Assisted Power Electronics Design Automation</title>
+  <meta name="description" content="Spirit Connect provides AI-assisted power electronics design automation for converters: topology exploration, magnetics sizing, loss & thermal modeling, control synthesis, and validation."/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* Small homepage accents */
+    .badge{display:inline-block;padding:.35rem .6rem;border-radius:999px;background:rgba(24,179,198,.12);color:#0e7f8e;font-weight:800;font-size:.78rem;letter-spacing:.2px;margin-bottom:.6rem}
+    .kpis{display:grid;gap:1rem;grid-template-columns:repeat(1,minmax(0,1fr));margin-top:1.25rem}
+    .kpis .card h3{font-size:1.6rem;margin-bottom:.25rem}
+    @media(min-width:720px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    .list{margin:.4rem 0 0 1rem}
+    .list li{margin:.25rem 0}
+  </style>
 </head>
 <body>
-  <header>
-    <h1>Spirit Connect Ltd</h1>
-    <p>Powering Innovation in Power Electronics</p>
-  </header>
 
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="about.html">About Us</a>
-    <a href="services.html">Services</a>
-    <a href="contact.html">Contact</a>
-  </nav>
+<!-- NAVBAR (dark, with dropdowns) -->
+<header class="nav nav-dark">
+  <div class="container nav-inner">
+    <a class="brand" href="index.html" aria-label="Spirit Connect home"><span class="dot"></span> Spirit Connect</a>
+    <button class="hamburger" aria-label="Open menu" aria-controls="mainmenu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="mainmenu" class="menu">
+      <a href="index.html" aria-current="page">Home</a>
 
-  <section>
-    <h2>Welcome to Spirit Connect</h2>
-    <p>We are an innovative company specializing in power electronics and energy solutions.</p>
-    <p>Discover our services and see how we can create value for you.</p>
-  </section>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Products ▾</button>
+        <div class="drop-menu">
+          <a href="transistor-database.html">Transistor Database</a>
+          <a href="magnetic-database.html">Magnetic Database</a>
+        </div>
+      </div>
 
-  <footer>
-    <p>&copy; 2025 Spirit Connect Ltd | All rights reserved</p>
-  </footer>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Applications ▾</button>
+        <div class="drop-menu">
+          <a href="applications-dab.html">DAB Converter</a>
+          <a href="applications-sensing.html">Sensing Device</a>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Company ▾</button>
+        <div class="drop-menu">
+          <a href="about.html">About Us</a>
+          <a href="team.html">Team</a>
+          <a href="faq.html">FAQ</a>
+          <a href="careers.html">Careers</a>
+        </div>
+      </div>
+
+      <a href="news.html">News</a>
+      <a href="contact.html" class="cta">Contact Us</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="bg"></div>
+  <div class="container">
+    <span class="badge">AI-Assisted Design Automation</span>
+    <h1>Faster, smarter converter design — from topology to control</h1>
+    <p class="lead">
+      We accelerate power-electronics development with AI: automated topology exploration,
+      magnetics sizing, loss & thermal modeling, and control synthesis — validated by rigorous
+      test workflows.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="contact.html">Request a demo</a>
+      <a class="btn btn-ghost" href="#capabilities">See capabilities</a>
+    </div>
+
+    <!-- Quick KPIs -->
+    <div class="kpis">
+      <div class="card"><h3>30–60% ↓</h3><p class="small">Time-to-first-prototype</p></div>
+      <div class="card"><h3>+1–3% η</h3><p class="small">Efficiency via multi-objective optimization</p></div>
+      <div class="card"><h3>2× fewer</h3><p class="small">Physical prototype spins</p></div>
+    </div>
+  </div>
+</header>
+
+<!-- WHAT IT DOES -->
+<section id="capabilities" class="section">
+  <div class="container">
+    <h2>What our automation does</h2>
+    <p class="lead">A modular toolchain that plugs into your design flow — or we run it for you as a service.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Topology exploration</h3>
+        <p>Searches LLC, DAB, multi-level DC-AC, interleaved buck/boost and more with constraint-aware screening.</p>
+      </div>
+      <div class="card">
+        <h3>Magnetics & devices</h3>
+        <p>Core selection, winding windows, copper loss; WBG device picking with switching-loss estimates.</p>
+      </div>
+      <div class="card">
+        <h3>Loss & thermal models</h3>
+        <p>Datasheet + surrogate models produce efficiency maps and thermal limits over the mission profile.</p>
+      </div>
+      <div class="card">
+        <h3>Control synthesis</h3>
+        <p>Phase-shift/TPWM strategies, current/voltage loops, soft-switching regions — tuned automatically.</p>
+      </div>
+      <div class="card">
+        <h3>Multi-objective optimization</h3>
+        <p>η, density, cost, temperature, EMI headroom — Pareto trade-offs with clear design rationales.</p>
+      </div>
+      <div class="card">
+        <h3>Validation planning</h3>
+        <p>Generates test matrices, HIL/SIL hooks, and data capture scripts for repeatable experiments.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="container">
+    <h2>How it works</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>1 · Inputs</h3>
+        <ul class="list">
+          <li>VIN/VOUT ranges, Pout, transients, thermal/size constraints</li>
+          <li>Compliance goals (EMI, isolation, safety)</li>
+          <li>Preferred devices/cores (optional)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>2 · AI engine</h3>
+        <ul class="list">
+          <li>Surrogate models + Bayesian search</li>
+          <li>Physics-guided constraints & rule checks</li>
+          <li>Auto-tuned control regions</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>3 · Results</h3>
+        <ul class="list">
+          <li>Pareto designs with BOM suggestions</li>
+          <li>Efficiency/temperature maps, ZVS/ZCS zones</li>
+          <li>Executable validation checklist</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- APPLICATIONS -->
+<section class="section">
+  <div class="container">
+    <h2>Where it applies</h2>
+    <div class="grid">
+      <div class="card"><h3>DAB & isolated DC-DC</h3><p>Bidirectional storage, fuel cell coupling, onboard charger stages.</p></div>
+      <div class="card"><h3>DC microgrids</h3><p>Protection & coordination for multi-source systems.</p></div>
+      <div class="card"><h3>Motor drives / Inverters</h3><p>Multi-level DC-AC with thermal/EMI-aware switching.</p></div>
+      <div class="card"><h3>Renewables & storage</h3><p>PV, battery, and hybrid systems under wide mission profiles.</p></div>
+      <div class="card"><h3>Aux & sensing</h3><p>Low-power rails, measurement chains, isolation interfaces.</p></div>
+      <div class="card"><h3>Research tooling</h3><p>HIL/SIL, automated benches, publication-grade datasets.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="section">
+  <div class="container">
+    <div class="card">
+      <h3>Ready to accelerate your next converter?</h3>
+      <p class="small">Share your electrical specs and constraints. We’ll return a transparent plan and timeline.</p>
+      <p class="small"><a class="btn btn-primary" href="contact.html">Request a demo</a> <a class="btn btn-ghost" href="services.html">See services</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container cols">
+    <div>
+      <div class="brand"><span class="dot"></span> Spirit Connect</div>
+      <p class="small">Cardiff, United Kingdom · info@spiritconnect.co.uk</p>
+    </div>
+    <div>
+      <strong>Company</strong>
+      <p class="small"><a href="about.html">About</a><br><a href="services.html">Services</a></p>
+    </div>
+    <div>
+      <strong>Legal</strong>
+      <p class="small"><a href="#">Privacy</a><br><a href="#">Terms</a></p>
+    </div>
+  </div>
+</footer>
+
+<!-- NAVBAR JS (mobile + dropdowns) -->
+<script>
+const burger = document.querySelector('.hamburger');
+const menu   = document.getElementById('mainmenu');
+if (burger && menu){
+  burger.addEventListener('click', () => {
+    const open = menu.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+}
+document.querySelectorAll('.drop-toggle').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const dd = e.currentTarget.closest('.dropdown');
+    dd.classList.toggle('open');
+    const expanded = dd.classList.contains('open');
+    e.currentTarget.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  });
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
+  });
+});
+</script>
 </body>
 </html>
