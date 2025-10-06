@@ -56,20 +56,16 @@ description: About Spirit Connect – Power Labs — AI-assisted power electroni
 
 <section class="section">
   <div class="container">
-    <h2>Values We Stand By</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>Engineering Rigor</h3>
-        <p>Every design decision backed by physics and validated against real operating conditions.</p>
+    <h2>Partners & Collaborations</h2>
+    <p>We collaborate with leading academic and industrial partners to push the boundaries of power electronics design and validation.</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:2rem;align-items:center;text-align:center;">
+      <div>
+        <img src="/images/general/CU_logo.png" alt="Cardiff University" style="max-width:160px;">
+        <p class="small">Cardiff University</p>
       </div>
-      <div class="card">
-        <h3>Transparency</h3>
-        <p>Clear trade-offs and rationale so teams can trust and extend our results.</p>
-      </div>
-      <div class="card">
-        <h3>Collaboration</h3>
-        <p>We integrate with your workflow — from early concept to final qualification — as an extension
-        of your engineering team.</p>
+      <div>
+        <img src="/images/general/SHI_logo.jpg" alt="Sumitomo Heavy Industries" style="max-width:160px;">
+        <p class="small">Sumitomo Heavy Industries</p>
       </div>
     </div>
   </div>
