@@ -65,3 +65,17 @@ a{color:var(--brand)} a:hover{color:var(--brand-dark);text-decoration:underline}
 .footer .cols{display:grid;gap:1.5rem;grid-template-columns:1fr}
 @media(min-width:800px){.footer .cols{grid-template-columns:2fr 1fr 1fr}}
 .small{font-size:.9rem;color:#5b667a}
+
+/* Remove underline from navbar links */
+.nav a,
+.nav .drop-toggle,
+.nav .cta {
+  text-decoration: none;
+}
+
+.nav a:hover,
+.nav .drop-toggle:hover,
+.nav .cta:hover {
+  text-decoration: none; /* keep hover clean too */
+}
+

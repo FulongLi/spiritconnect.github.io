@@ -1,19 +1,30 @@
 ---
 layout: default
 title: News
+permalink: /news/
+description: Latest updates and announcements from Spirit Connect – Power Labs.
 ---
 
-<header class="hero"><div class="bg"></div><div class="container">
-  <h1>News</h1>
-  <p class="lead">Updates, publications, and milestones.</p>
-</div></header>
+<header class="hero">
+  <div class="bg"></div>
+  <div class="container">
+    <h1>News & Updates</h1>
+    <p class="lead">
+      Key milestones from <strong>Spirit Connect – Power Labs</strong>.
+    </p>
+  </div>
+</header>
 
-<section class="section"><div class="container">
-  {% for post in site.posts %}
-    <div class="card">
-      <h3>{{ post.date | date: "%Y-%m-%d" }} · {{ post.title }}</h3>
-      <p class="small">{{ post.excerpt | strip_html }}</p>
-      <p class="small"><a href="{{ post.url | relative_url }}">Read more</a></p>
-    </div>
-  {% endfor %}
-</div></section>
+<section class="section">
+  <div class="container">
+
+### 2025
+
+- **September 28, 2025 — Official Website Launch**  
+  Our new website for Spirit Connect – Power Labs went live, sharing our AI-assisted power electronics design services and resources.
+
+- **June 9, 2025 — Company Founded**  
+  Spirit Connect – Power Labs was officially established to accelerate innovation in power electronics through AI-driven design automation.
+
+  </div>
+</section>
