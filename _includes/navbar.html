@@ -1,0 +1,44 @@
+<header class="nav nav-dark">
+  <div class="container nav-inner">
+    <a class="brand" href="{{ '/' | relative_url }}">
+      <span class="dot"></span> Spirit Connect – Power Labs
+    </a>
+    <button class="hamburger" aria-label="Open menu" aria-controls="mainmenu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="mainmenu" class="menu">
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Products ▾</button>
+        <div class="drop-menu">
+          <a href="{{ '/products/transistor-database/' | relative_url }}">Transistor Database</a>
+          <a href="{{ '/products/magnetic-database/' | relative_url }}">Magnetic Database</a>
+          <a href="{{ '/products/services/' | relative_url }}">Services</a>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Case Studies ▾</button>
+        <div class="drop-menu">
+          <a href="{{ '/case-studies/dab/' | relative_url }}">DAB Converter</a>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Accessories ▾</button>
+        <div class="drop-menu">
+          <a href="{{ '/accessories/sensing/' | relative_url }}">Sensing Device</a>
+        </div>
+      </div>
+      <div class="dropdown">
+        <button class="drop-toggle" aria-expanded="false">Company ▾</button>
+        <div class="drop-menu">
+          <a href="{{ '/about/' | relative_url }}">About Us</a>
+          <a href="{{ '/company/team/' | relative_url }}">Team</a>
+          <a href="{{ '/company/faq/' | relative_url }}">FAQ</a>
+          <a href="{{ '/company/careers/' | relative_url }}">Careers</a>
+        </div>
+      </div>
+      <a href="{{ '/news/' | relative_url }}">News</a>
+      <a href="{{ '/contact/' | relative_url }}" class="cta">Contact Us</a>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,8 @@
+title: "Spirit Connect – Power Labs"
+description: "AI-Assisted Power Electronics Converter Design Automation"
+url: https://spiritconnect.co.uk
+baseurl: ""
+timezone: Europe/London
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
