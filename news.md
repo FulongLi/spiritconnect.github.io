@@ -15,16 +15,10 @@ description: Latest updates and announcements from Spirit Connect – Power Labs
   </div>
 </header>
 
-<section class="section">
-  <div class="container">
-
-### 2025
+## 2025
 
 - **September 28, 2025 — Official Website Launch**  
   Our new website for Spirit Connect – Power Labs went live, sharing our AI-assisted power electronics design services and resources.
 
 - **June 9, 2025 — Company Founded**  
   Spirit Connect – Power Labs was officially established to accelerate innovation in power electronics through AI-driven design automation.
-
-  </div>
-</section>
