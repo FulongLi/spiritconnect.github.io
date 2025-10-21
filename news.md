@@ -18,7 +18,7 @@ description: Latest updates and announcements from Spirit Connect – Power Labs
 <section class="section">
   <div class="container">
 
-### 2025
+# 2025
 
 <div class="card">
   <span class="small">September 28, 2025</span>
