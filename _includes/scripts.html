@@ -17,4 +17,74 @@ document.querySelectorAll('.drop-toggle').forEach(btn => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); }
   });
 });
+
+// Image Gallery/Carousel functionality
+const galleryStates = {};
+
+function initGallery(galleryId) {
+  const gallery = document.getElementById(galleryId);
+  if (!gallery) return;
+  
+  galleryStates[galleryId] = {
+    currentIndex: 0,
+    totalSlides: gallery.querySelectorAll('.gallery-slide').length
+  };
+  updateGalleryDots(galleryId);
+}
+
+function changeSlide(galleryId, direction) {
+  if (!galleryStates[galleryId]) initGallery(galleryId);
+  
+  const state = galleryStates[galleryId];
+  state.currentIndex += direction;
+  
+  if (state.currentIndex < 0) {
+    state.currentIndex = state.totalSlides - 1;
+  } else if (state.currentIndex >= state.totalSlides) {
+    state.currentIndex = 0;
+  }
+  
+  updateGallery(galleryId);
+}
+
+function goToSlide(galleryId, index) {
+  if (!galleryStates[galleryId]) initGallery(galleryId);
+  
+  galleryStates[galleryId].currentIndex = index;
+  updateGallery(galleryId);
+}
+
+function updateGallery(galleryId) {
+  const gallery = document.getElementById(galleryId);
+  if (!gallery) return;
+  
+  const state = galleryStates[galleryId];
+  const translateX = -state.currentIndex * 100;
+  gallery.style.transform = `translateX(${translateX}%)`;
+  
+  updateGalleryDots(galleryId);
+}
+
+function updateGalleryDots(galleryId) {
+  const dotsContainer = document.getElementById(galleryId + 'Dots');
+  if (!dotsContainer) return;
+  
+  const state = galleryStates[galleryId];
+  const dots = dotsContainer.querySelectorAll('.gallery-dot');
+  dots.forEach((dot, index) => {
+    if (index === state.currentIndex) {
+      dot.classList.add('active');
+    } else {
+      dot.classList.remove('active');
+    }
+  });
+}
+
+// Initialize all galleries on page load
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.gallery-slides').forEach(el => {
+    const galleryId = el.id;
+    if (galleryId) initGallery(galleryId);
+  });
+});
 </script>

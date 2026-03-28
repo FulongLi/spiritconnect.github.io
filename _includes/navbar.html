@@ -1,8 +1,8 @@
-<header class="nav nav-dark">
+<header class="nav">
   <div class="container nav-inner">
     <a class="brand" href="{{ '/' | relative_url }}">
-      <img src="{{ '/images/general/logo_pure.png' | relative_url }}" alt="Spirit Connect – Power Labs" style="height:40px; margin-right:10px; vertical-align:middle;">
-      <span>Spirit Connect – Power Labs</span>
+      <img src="{{ '/images/general/logo_svg.svg' | relative_url }}" alt="Spirit Connect Power Labs" style="height:36px; margin-right:8px; vertical-align:middle;">
+      <span>Spirit Connect Power Labs</span>
     </a>
     <button class="hamburger" aria-label="Open menu" aria-controls="mainmenu" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -10,17 +10,19 @@
     <nav id="mainmenu" class="menu">
       <a href="{{ '/' | relative_url }}">Home</a>
       <div class="dropdown">
-        <button class="drop-toggle" aria-expanded="false">Products ▾</button>
+        <button class="drop-toggle" aria-expanded="false">Research ▾</button>
         <div class="drop-menu">
-          <a href="{{ '/products/transistor-database/' | relative_url }}">Transistor Database</a>
-          <a href="{{ '/products/magnetic-database/' | relative_url }}">Magnetic Database</a>
-          <a href="{{ '/products/services/' | relative_url }}">Services</a>
+          <a href="{{ '/research/microgrids/' | relative_url }}">Microgrids</a>
+          <a href="{{ '/research/converters/' | relative_url }}">Converters</a>
+          <a href="{{ '/research/devices/' | relative_url }}">Devices</a>
+          <a href="{{ '/research/magnetic-database/' | relative_url }}">Magnetics</a>
         </div>
       </div>
       <div class="dropdown">
         <button class="drop-toggle" aria-expanded="false">Case Studies ▾</button>
         <div class="drop-menu">
           <a href="{{ '/case-studies/dab/' | relative_url }}">DAB Converter</a>
+          <a href="{{ '/case-studies/sst/' | relative_url }}">Solid-State Transformer</a>
         </div>
       </div>
       <div class="dropdown">

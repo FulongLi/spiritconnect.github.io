@@ -1,8 +1,16 @@
-title: "Spirit Connect – Power Labs"
-description: "AI-Assisted Power Electronics Converter Design Automation"
-url: https://spiritconnect.co.uk
-baseurl: ""
+title: "Spirit Connect Power Labs"
+description: "Power Electronics AI Agent — from device to converter to grid"
+url: "https://fulongli.github.io"
+baseurl: "/spiritconnect.github.io"
 timezone: Europe/London
+
+exclude:
+  - README.md
+  - LICENSE.md
+  - Gemfile
+  - Gemfile.lock
+  - .idea
+
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap

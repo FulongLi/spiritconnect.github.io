@@ -12,7 +12,7 @@ By using this website, you agree to these terms.
 All content is provided “as is” without warranties of any kind. We may change or remove content at any time.
 
 ## Intellectual property
-Unless stated otherwise, content on this site is © Spirit Connect Ltd. Do not reproduce without permission.
+Unless stated otherwise, content on this site is © Spirit Connect Power Labs Ltd. Do not reproduce without permission.
 
 ## No advice
 Content is for general information and is not engineering advice. Engage us formally for consulting before relying on results.
