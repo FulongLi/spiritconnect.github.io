@@ -1,7 +1,7 @@
 title: "Spirit Connect Power Labs"
 description: "Power Electronics AI Agent — from device to converter to grid"
-url: "https://fulongli.github.io"
-baseurl: "/spiritconnect.github.io"
+url: "https://spiritconnect.co.uk"
+baseurl: ""
 timezone: Europe/London
 
 exclude:
@@ -10,6 +10,7 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - .idea
+  - .gitignore
 
 plugins:
   - jekyll-seo-tag

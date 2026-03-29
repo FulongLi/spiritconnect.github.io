@@ -10,7 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}"/>
   <link rel="icon" type="image/svg+xml" href="{{ '/images/general/logo_svg.svg' | relative_url }}">
-  <meta property="og:image" content="{{ '/images/general/logo_svg.svg' | relative_url }}">
+  <link rel="icon" type="image/png" sizes="64x64" href="{{ '/assets/favicon-64.png' | relative_url }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ '/assets/favicon-32.png' | relative_url }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ '/assets/favicon-16.png' | relative_url }}">
+  <meta property="og:image" content="{{ site.url }}{{ '/images/general/logo_svg.svg' | relative_url }}">
   {% seo %}
 </head>
 <body>
