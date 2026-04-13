@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Sensing Device
-permalink: /accessories/sensing/
+permalink: /case-studies/sensing/
 description: Precision sensing solutions for validation and monitoring in power electronics systems.
 ---
 
