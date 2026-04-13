@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Sensing Device
-permalink: /case-studies/sensing/
-description: Precision sensing solutions for validation and monitoring in power electronics systems.
+title: Rogowski Coil
+permalink: /solutions/rogowski-coil/
+description: PCB Rogowski coil for high-precision current measurement in power electronics validation and monitoring.
 ---
 
 <header class="hero">
@@ -11,8 +11,8 @@ description: Precision sensing solutions for validation and monitoring in power 
   </video>
   <div class="bg"></div>
   <div class="container">
-    <h1>Sensing Device</h1>
-    <p class="lead">Precision sensing solutions for validation and monitoring in power electronics.</p>
+    <h1>Rogowski Coil</h1>
+    <p class="lead">High-precision PCB Rogowski coil for accurate current measurement in power electronics.</p>
   </div>
 </header>
 

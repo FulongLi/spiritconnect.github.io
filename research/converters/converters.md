@@ -53,7 +53,7 @@ description: Optimized converter design and control strategies for high-performa
     </p>
     <div class="hero-actions" style="margin-top:2rem;">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/case-studies/dab/' | relative_url }}">View case study</a>
+      <a class="btn btn-ghost" href="{{ '/solutions/dab/' | relative_url }}">View case study</a>
     </div>
   </div>
 </section>

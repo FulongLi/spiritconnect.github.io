@@ -65,7 +65,7 @@ spiritconnect.github.io/
 │   ├── converters/          # Converters research
 │   ├── devices/             # Devices, characterizations, databases
 │   └── magnetics/           # Magnetics database
-├── case-studies/            # Case studies (DAB, SST)
+├── solutions/               # Solutions (DAB, SST, Rogowski coil)
 ├── accessories/             # Accessories (transducers/sensing)
 ├── legal/                   # Privacy, terms, cookies
 ├── contact.md               # Contact page

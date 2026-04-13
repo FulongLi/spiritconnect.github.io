@@ -15,7 +15,7 @@ description: The Power Electronics AI Agent — intelligent design automation fr
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Request a demo</a>
-      <a class="btn btn-ghost" href="{{ '/case-studies/dab/' | relative_url }}">View case study</a>
+      <a class="btn btn-ghost" href="{{ '/solutions/dab/' | relative_url }}">View case study</a>
     </div>
   </div>
 </header>
@@ -124,7 +124,7 @@ description: The Power Electronics AI Agent — intelligent design automation fr
     </p>
     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/case-studies/dab/' | relative_url }}">See how we work</a>
+      <a class="btn btn-ghost" href="{{ '/solutions/dab/' | relative_url }}">See how we work</a>
     </div>
   </div>
 </section>
