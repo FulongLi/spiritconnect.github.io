@@ -21,7 +21,7 @@ description: Device testing, modelling, and characterisation for power electroni
     <div class="case-study-content">
       <div class="case-study-visual">
         <div class="visual-placeholder">
-          <img src="{{ '/research/devices/testing/B1505A.png' | relative_url }}" alt="Electrical Characterisation" style="max-width: 60%; height: auto; border-radius: var(--radius);">
+          <img src="{{ '/research/devices/testing/PXE.png' | relative_url }}" alt="Electrical Characterisation" style="max-width: 60%; height: auto; border-radius: var(--radius);">
         </div>
       </div>
       <div class="case-study-text">
@@ -53,7 +53,7 @@ description: Device testing, modelling, and characterisation for power electroni
       </div>
       <div class="case-study-visual">
         <div class="visual-placeholder">
-          <img src="{{ '/research/devices/testing/j3.webp' | relative_url }}" alt="Thermal Characterisation" style="max-width: 60%; height: auto; border-radius: var(--radius);">
+          <img src="{{ '/research/devices/testing/PXT.png' | relative_url }}" alt="Thermal Characterisation" style="max-width: 60%; height: auto; border-radius: var(--radius);">
         </div>
       </div>
     </div>
