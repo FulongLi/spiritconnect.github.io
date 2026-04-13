@@ -353,9 +353,7 @@ img { max-width: 100%; height: auto; }
 .contact-field { margin-bottom: 1rem; }
 .contact-field:last-of-type { margin-bottom: 0; }
 .contact-page .contact-field input:not([type="hidden"]),
-.contact-page .contact-field textarea,
-.contact-page .phone-field-wrap select,
-.contact-page .phone-field-wrap input[type="tel"] {
+.contact-page .contact-field textarea {
   width: 100%;
   font: inherit;
   padding: 0.65rem 0.85rem;
@@ -364,6 +362,17 @@ img { max-width: 100%; height: auto; }
   background: var(--bg-white);
   color: var(--fg);
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+.contact-page .phone-field-wrap select,
+.contact-page .phone-field-wrap input[type="tel"] {
+  font: inherit;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-white);
+  color: var(--fg);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 .contact-page .contact-field textarea {
   min-height: 140px;
@@ -387,15 +396,22 @@ img { max-width: 100%; height: auto; }
 }
 .contact-page .phone-field-wrap {
   display: flex;
+  flex-direction: row;
   gap: 0.5rem;
   align-items: stretch;
+  width: 100%;
 }
 .contact-page .phone-field-wrap select {
   flex: 0 0 auto;
-  min-width: 7.25rem;
+  width: 7.25rem;
+  min-width: 6.5rem;
+  max-width: 9rem;
   cursor: pointer;
 }
-.contact-page .phone-field-wrap input[type="tel"] { flex: 1; min-width: 0; }
+.contact-page .phone-field-wrap input[type="tel"] {
+  flex: 1 1 0%;
+  min-width: 0;
+}
 .contact-submit.btn {
   width: 100%;
   margin-top: 1rem;
@@ -458,5 +474,13 @@ img { max-width: 100%; height: auto; }
   .case-study-actions { flex-direction: column; }
   .case-study-actions .btn { width: 100%; text-align: center; }
   .contact-page .phone-field-wrap { flex-direction: column; }
-  .contact-page .phone-field-wrap select { width: 100%; min-width: 0; }
+  .contact-page .phone-field-wrap select {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: none;
+  }
+  .contact-page .phone-field-wrap input[type="tel"] {
+    width: 100%;
+    flex: 1 1 auto;
+  }
 }

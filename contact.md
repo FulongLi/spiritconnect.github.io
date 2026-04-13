@@ -34,25 +34,9 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
         <p class="contact-regions-lead">Spirit Connect Power Labs</p>
         <div class="contact-region-list">
           <div class="card contact-region-card">
-            <h3>Europe (UK)</h3>
             <p><strong>Spirit Connect Power Labs</strong></p>
             <p>Cardiff, United Kingdom</p>
             <p><strong>Contact:</strong> Dr. Fulong Li</p>
-            <p>
-              <strong>Email:</strong>
-              <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
-            </p>
-            <p>
-              <strong>LinkedIn:</strong>
-              <a href="https://www.linkedin.com/in/fulong-li-6bb443127" target="_blank" rel="noopener noreferrer">Dr. Fulong Li</a>
-            </p>
-          </div>
-          <div class="card contact-region-card">
-            <h3>China &amp; Asia-Pacific</h3>
-            <p>
-              Partnerships, collaborations, and customer enquiries across Asia Pacific — use the same channel;
-              we coordinate globally from the UK with ecosystem partners.
-            </p>
             <p>
               <strong>Email:</strong>
               <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
