@@ -1,7 +1,7 @@
 ---
 layout: default
 title: About
-permalink: /about/
+permalink: /company/about/
 description: About Spirit Connect Power Labs — building the Power Electronics AI Agent for a closed-loop energy-AI ecosystem.
 ---
 

@@ -63,8 +63,10 @@ spiritconnect.github.io/
 │   ├── services.md          # AI Agent overview
 │   ├── microgrids/          # Microgrids
 │   ├── converters/          # Converters
-│   ├── devices/             # Devices, characterizations, databases
-│   └── magnetics/           # Magnetics database
+│   └── devices/             # Devices and characterizations
+├── database/                # Device & magnetics databases
+│   ├── transistors/         # Transistor database
+│   └── magnetics/           # Magnetic database
 ├── solutions/               # Solutions (DAB, SST, Rogowski coil)
 ├── accessories/             # Accessories (transducers/sensing)
 ├── legal/                   # Privacy, terms, cookies

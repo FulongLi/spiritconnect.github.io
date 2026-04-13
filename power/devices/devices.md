@@ -86,12 +86,12 @@ description: Device testing, modelling, and characterisation for power electroni
       <div class="card">
         <h3>Transistor Database</h3>
         <p>Comprehensive SiC/GaN/IGBT database with detailed specifications, switching characteristics, and thermal properties.</p>
-        <a href="{{ '/power/transistor-database/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
+        <a href="{{ '/database/transistors/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
       </div>
       <div class="card">
         <h3>Magnetic Database</h3>
         <p>Core materials, Steinmetz parameters, winding windows, and thermal data for automated magnetics sizing.</p>
-        <a href="{{ '/power/magnetic-database/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
+        <a href="{{ '/database/magnetics/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
       </div>
     </div>
   </div>

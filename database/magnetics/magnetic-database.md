@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Magnetic Database
-permalink: /power/magnetic-database/
+permalink: /database/magnetics/
 description: Comprehensive magnetic component database for power electronics design automation.
 ---
 
