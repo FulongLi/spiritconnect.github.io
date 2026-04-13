@@ -30,44 +30,43 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
     </p>
     <div class="contact-layout">
       <div class="contact-regions">
-        <h2>Spirit Connect Power Labs</h2>
-        <p class="lead">
-          We are building an intelligent design partner for power electronics — from semiconductor devices
-          and converters to microgrids — so energy infrastructure and AI can evolve together.
-        </p>
+        <h2>Regional contacts</h2>
+        <p class="contact-regions-lead">Spirit Connect Power Labs</p>
         <div class="contact-region-list">
           <div class="card contact-region-card">
-            <h3>United Kingdom</h3>
-            <p><strong>Spirit Connect Power Labs</strong> · Cardiff, United Kingdom</p>
+            <h3>Europe (UK)</h3>
+            <p><strong>Spirit Connect Power Labs</strong></p>
+            <p>Cardiff, United Kingdom</p>
+            <p><strong>Contact:</strong> Dr. Fulong Li</p>
             <p>
               <strong>Email:</strong>
               <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
             </p>
-            <p style="margin-top: 0.75rem;">
+            <p>
               <strong>LinkedIn:</strong>
               <a href="https://www.linkedin.com/in/fulong-li-6bb443127" target="_blank" rel="noopener noreferrer">Dr. Fulong Li</a>
             </p>
           </div>
-        </div>
-        <div class="contact-topics">
-          <p class="contact-topics-title">Typical enquiries</p>
-          <ul>
-            <li>Power Electronics AI Agent roadmap and capabilities</li>
-            <li>Device testing, characterisation, and modelling</li>
-            <li>Design automation and validation workflows</li>
-            <li>Academic or industry partnerships</li>
-            <li>Press and media</li>
-          </ul>
+          <div class="card contact-region-card">
+            <h3>China &amp; Asia-Pacific</h3>
+            <p>
+              Partnerships, collaborations, and customer enquiries across Asia Pacific — use the same channel;
+              we coordinate globally from the UK with ecosystem partners.
+            </p>
+            <p>
+              <strong>Email:</strong>
+              <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+            </p>
+          </div>
         </div>
       </div>
 
       <div class="card contact-window">
         <div class="contact-window-header">
-          <span class="section-badge">Get in touch</span>
-          <h2>Send a message</h2>
-          <p class="lead">
-            Briefly describe your organisation, timeline, and what you want to achieve — we will route your note
-            to the right person and respond as soon as we can.
+          <h2 class="contact-form-title">Do you have a question? Do you need support?</h2>
+          <p class="contact-form-sub">
+            Feel free to send a message for technical or commercial enquiries about the Power Electronics AI Agent,
+            our services, or collaborations — we are here to help.
           </p>
         </div>
 
@@ -97,8 +96,8 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
             <input id="cx-name" name="name" type="text" required placeholder="Name" autocomplete="name">
           </div>
           <div class="contact-field">
-            <label class="visually-hidden" for="cx-company">Organisation</label>
-            <input id="cx-company" name="company" type="text" placeholder="Organisation (optional)" autocomplete="organization">
+            <label class="visually-hidden" for="cx-company">Company</label>
+            <input id="cx-company" name="company" type="text" placeholder="Company" autocomplete="organization">
           </div>
           <div class="contact-field">
             <label class="visually-hidden" for="cx-email">Email</label>
@@ -129,8 +128,8 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
           {% endif %}
 
           <button type="submit" class="btn btn-primary contact-submit">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-            Send message
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+            <span class="contact-submit-label">Send message</span>
           </button>
         </form>
       </div>
