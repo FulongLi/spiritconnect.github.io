@@ -19,7 +19,7 @@ permalink: /company/team/
 
 <section class="section">
   <div class="container">
-    <div class="grid">
+    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));">
       <!-- Founder -->
       <div class="card" style="text-align: center; padding: 1.1rem 1rem;">
         <img 
