@@ -97,11 +97,11 @@ description: About Spirit Connect Power Labs — building the Power Electronics 
         <p class="small">Cardiff University</p>
       </div>
       <div>
-        <img src="{{ '/images/general/SHI_logo.jpg' | relative_url }}" alt="Sumitomo Heavy Industries" style="max-width:160px;">
+        <img src="{{ '/images/general/SHI_logo.png' | relative_url }}" alt="Sumitomo Heavy Industries" style="max-width:160px;">
         <p class="small">Sumitomo Heavy Industries</p>
       </div>
       <div>
-        <img src="{{ '/images/general/SHU_logo.jpg' | relative_url }}" alt="Shanghai University" style="max-width:160px;">
+        <img src="{{ '/images/general/SHU_logo.png' | relative_url }}" alt="Shanghai University" style="max-width:160px;">
         <p class="small">Shanghai University</p>
       </div>
       <div>
@@ -113,7 +113,7 @@ description: About Spirit Connect Power Labs — building the Power Electronics 
         <p class="small">Loughborough University</p>
       </div>
       <div>
-        <img src="{{ '/images/general/UG_logo.png' | relative_url }}" alt="University of Glasgow" style="max-width:160px;">
+        <img src="{{ '/images/general/UG_logo.webp' | relative_url }}" alt="University of Glasgow" style="max-width:160px;">
         <p class="small">University of Glasgow</p>
       </div>
     </div>
