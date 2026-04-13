@@ -23,7 +23,7 @@ permalink: /company/team/
       <!-- Founder -->
       <div class="card" style="text-align: center; padding: 1.1rem 1rem;">
         <img 
-          src="{{ '/images/team/fulong_li.jpg' | relative_url }}" 
+          src="{{ '/images/team/fulong.jpg' | relative_url }}" 
           alt="Dr. Fulong Li" 
           style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 0.75rem; display: block; border: 2px solid var(--border); box-shadow: 0 4px 16px rgba(0,200,255,0.08);">
         <h3 style="margin-bottom: 0.35rem; font-size: 1.05rem; line-height: 1.25;">Dr. Fulong Li</h3>

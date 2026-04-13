@@ -23,7 +23,7 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
 {% assign tk = site.turnstile_site_key | default: '' | strip %}
 {% assign contact_email = 'info@spiritconnect.co.uk' %}
 
-<section class="section contact-page">
+<section class="section section-alt contact-page">
   <div class="container">
     <p id="contact-thanks" class="contact-thanks" hidden role="status">
       Thank you — your message was sent. We will get back to you soon.
@@ -31,12 +31,12 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
     <div class="contact-layout">
       <div class="contact-regions">
         <h2>Spirit Connect Power Labs</h2>
-        <p class="lead" style="margin-bottom: 1.25rem;">
+        <p class="lead">
           We are building an intelligent design partner for power electronics — from semiconductor devices
           and converters to microgrids — so energy infrastructure and AI can evolve together.
         </p>
         <div class="contact-region-list">
-          <div class="contact-region-card">
+          <div class="card contact-region-card">
             <h3>United Kingdom</h3>
             <p><strong>Spirit Connect Power Labs</strong> · Cardiff, United Kingdom</p>
             <p>
@@ -49,18 +49,25 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
             </p>
           </div>
         </div>
-        <p class="small" style="margin-top: 1.25rem; color: var(--fg-dim); line-height: 1.6;">
-          Typical enquiries: the AI Agent roadmap and capabilities, device testing and characterisation,
-          modelling and design automation, academic or industry partnerships, and media.
-        </p>
+        <div class="contact-topics">
+          <p class="contact-topics-title">Typical enquiries</p>
+          <ul>
+            <li>Power Electronics AI Agent roadmap and capabilities</li>
+            <li>Device testing, characterisation, and modelling</li>
+            <li>Design automation and validation workflows</li>
+            <li>Academic or industry partnerships</li>
+            <li>Press and media</li>
+          </ul>
+        </div>
       </div>
 
-      <div class="contact-window">
+      <div class="card contact-window">
         <div class="contact-window-header">
-          <p class="contact-window-title">Send us a message</p>
-          <p class="contact-window-sub">
-            Share a short summary of your organisation, timeline, and what you are trying to solve —
-            we will route it to the right person and reply as soon as we can.
+          <span class="section-badge">Get in touch</span>
+          <h2>Send a message</h2>
+          <p class="lead">
+            Briefly describe your organisation, timeline, and what you want to achieve — we will route your note
+            to the right person and respond as soon as we can.
           </p>
         </div>
 
@@ -121,7 +128,7 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
           </div>
           {% endif %}
 
-          <button type="submit" class="contact-submit">
+          <button type="submit" class="btn btn-primary contact-submit">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
             Send message
           </button>
