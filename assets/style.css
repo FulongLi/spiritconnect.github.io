@@ -271,6 +271,32 @@ img { max-width: 100%; height: auto; }
 .visual-placeholder img { max-width: 100%; height: auto; border-radius: var(--radius); box-shadow: var(--shadow-lg); }
 
 /* ══════════════════════════════════════
+   DEVICES PAGE — case imagery blends in; light band alternation
+   ══════════════════════════════════════ */
+.devices-page-strip.devices-page-strip--a {
+  background: var(--bg);
+}
+.devices-page-strip.devices-page-strip--b {
+  background: linear-gradient(180deg, var(--bg-white) 0%, #e9ecf1 100%);
+}
+.devices-page-strip.section-alt.devices-page-strip--b {
+  background: linear-gradient(180deg, #f7f8fa 0%, #e8ebf0 100%);
+}
+.devices-page-strip .case-study-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.devices-page-case-img {
+  max-width: min(88%, 440px);
+  width: auto;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+/* ══════════════════════════════════════
    CONTACT
    ══════════════════════════════════════ */
 .contact-page.section-alt {

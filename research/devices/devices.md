@@ -16,13 +16,11 @@ description: Device testing, modelling, and characterisation for power electroni
   </div>
 </header>
 
-<section class="section section-case-study">
+<section class="section section-case-study devices-page-strip devices-page-strip--a">
   <div class="container">
     <div class="case-study-content">
       <div class="case-study-visual">
-        <div class="visual-placeholder">
-          <img src="{{ '/research/devices/testing/PXE.png' | relative_url }}" alt="Electrical Characterisation" style="max-width: 60%; height: auto; border-radius: var(--radius);">
-        </div>
+        <img class="devices-page-case-img" src="{{ '/research/devices/testing/PXE.png' | relative_url }}" alt="Electrical Characterisation">
       </div>
       <div class="case-study-text">
         <span class="section-badge">DEVICE TESTING</span>
@@ -38,7 +36,7 @@ description: Device testing, modelling, and characterisation for power electroni
   </div>
 </section>
 
-<section class="section section-case-study">
+<section class="section section-case-study section-alt devices-page-strip devices-page-strip--b">
   <div class="container">
     <div class="case-study-content">
       <div class="case-study-text">
@@ -52,15 +50,13 @@ description: Device testing, modelling, and characterisation for power electroni
         </div>
       </div>
       <div class="case-study-visual">
-        <div class="visual-placeholder">
-          <img src="{{ '/research/devices/testing/PXT.png' | relative_url }}" alt="Thermal Characterisation" style="max-width: 60%; height: auto; border-radius: var(--radius);">
-        </div>
+        <img class="devices-page-case-img" src="{{ '/research/devices/testing/PXT.png' | relative_url }}" alt="Thermal Characterisation">
       </div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<section class="section devices-page-strip devices-page-strip--a">
   <div class="container">
     <h2>Device Modelling</h2>
     <p class="lead">
@@ -82,7 +78,7 @@ description: Device testing, modelling, and characterisation for power electroni
   </div>
 </section>
 
-<section class="section">
+<section class="section section-alt devices-page-strip devices-page-strip--b">
   <div class="container">
     <h2>Device Databases</h2>
     <p class="lead">Access our comprehensive device databases for design automation:</p>
@@ -101,7 +97,7 @@ description: Device testing, modelling, and characterisation for power electroni
   </div>
 </section>
 
-<section class="section">
+<section class="section devices-page-strip devices-page-strip--a">
   <div class="container">
     <h2>Our Services</h2>
     <p>
