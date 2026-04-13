@@ -48,6 +48,54 @@ permalink: /company/team/
           </p>
         </div>
       </div>
+
+      <div class="card" style="text-align: center; padding: 1.1rem 1rem;">
+        <img
+          src="{{ '/images/team/placeholder.svg' | relative_url }}"
+          alt="Placeholder — team photo to be added"
+          width="96"
+          height="96"
+          style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 0.75rem; display: block; border: 2px solid var(--border); box-shadow: 0 4px 16px rgba(0,200,255,0.08);">
+        <h3 style="margin-bottom: 0.35rem; font-size: 1.05rem; line-height: 1.25;">Announced soon</h3>
+        <p style="margin-bottom: 0.65rem; color: var(--brand); font-weight: 600; font-size: 0.85rem;">
+          Power electronics &amp; characterisation
+        </p>
+        <p style="margin-bottom: 0.85rem; line-height: 1.55; font-size: 0.88rem;">
+          Full profile coming soon. This role covers device and converter testing, validation workflows,
+          and hardware-led work on the Power Electronics AI Agent.
+        </p>
+        <div style="margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--border);">
+          <p style="margin: 0.35rem 0; font-size: 0.82rem;">
+            <a href="{{ '/company/careers/' | relative_url }}">Careers</a>
+            <span style="color: var(--muted);"> · </span>
+            <a href="{{ '/contact/' | relative_url }}">Contact</a>
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="text-align: center; padding: 1.1rem 1rem;">
+        <img
+          src="{{ '/images/team/placeholder.svg' | relative_url }}"
+          alt="Placeholder — team photo to be added"
+          width="96"
+          height="96"
+          style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 0.75rem; display: block; border: 2px solid var(--border); box-shadow: 0 4px 16px rgba(0,200,255,0.08);">
+        <h3 style="margin-bottom: 0.35rem; font-size: 1.05rem; line-height: 1.25;">Announced soon</h3>
+        <p style="margin-bottom: 0.65rem; color: var(--brand); font-weight: 600; font-size: 0.85rem;">
+          AI, optimisation &amp; software
+        </p>
+        <p style="margin-bottom: 0.85rem; line-height: 1.55; font-size: 0.88rem;">
+          Full profile coming soon. This role covers modelling, optimisation, and software that powers
+          the agent’s reasoning across devices, converters, and systems.
+        </p>
+        <div style="margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--border);">
+          <p style="margin: 0.35rem 0; font-size: 0.82rem;">
+            <a href="{{ '/company/careers/' | relative_url }}">Careers</a>
+            <span style="color: var(--muted);"> · </span>
+            <a href="{{ '/contact/' | relative_url }}">Contact</a>
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
