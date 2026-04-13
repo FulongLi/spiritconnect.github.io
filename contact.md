@@ -30,7 +30,7 @@ description: Contact Spirit Connect Power Labs — the Power Electronics AI Agen
     </p>
     <div class="contact-layout">
       <div class="contact-regions">
-        <h2>Regional contacts</h2>
+        <h2>Contact US</h2>
         <p class="contact-regions-lead">Spirit Connect Power Labs</p>
         <div class="contact-region-list">
           <div class="card contact-region-card">
