@@ -40,22 +40,29 @@ description: Designing, modeling, and controlling DC and AC microgrids for resil
   </div>
 </section>
 
-<section class="section">
+<section class="section section-case-study section-alt devices-page-strip devices-page-strip--b">
   <div class="container">
-    <h2>Our Expertise</h2>
-    <p>
-      Our team brings deep expertise in microgrid design, modeling, and control. We work with renewable energy integration,
-      energy storage systems, and advanced control algorithms to create resilient and efficient microgrid solutions.
-    </p>
-    <p style="margin-top:1.25rem;">
-      For system-level power conversion at distribution scale, see our
-      <a href="{{ '/case-studies/sst/' | relative_url }}" style="font-weight:600;color:var(--brand);text-decoration:none;">solid-state transformer case study</a>
-      — modular SST cells, isolation stages, and coordinated control.
-    </p>
-    <div class="hero-actions" style="margin-top:2rem;">
-      <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/power/services/' | relative_url }}">View all services</a>
-      <a class="btn btn-ghost" href="{{ '/case-studies/sst/' | relative_url }}">SST case study</a>
+    <div class="case-study-content">
+      <div class="case-study-text">
+        <span class="section-badge">SYSTEMS &amp; DISTRIBUTION</span>
+        <h2>Solid-State Transformer (SST)</h2>
+        <p class="lead">
+          SSTs replace line-frequency transformers with controllable power electronics — enabling bidirectional flow,
+          voltage regulation, and tighter coupling between renewables, storage, and loads. That makes them a natural building
+          block when you think about modern microgrids and hybrid AC/DC distribution at medium voltage.
+        </p>
+        <p class="lead">
+          Our case study walks through a modular SST: multi-stage conversion, isolated DC-DC cells, and coordinated control
+          from device selection to system-level power flow.
+        </p>
+        <div class="case-study-actions">
+          <a href="{{ '/case-studies/sst/' | relative_url }}" class="btn btn-primary">SST case study</a>
+          <a href="{{ '/contact/' | relative_url }}" class="btn btn-ghost">Contact us</a>
+        </div>
+      </div>
+      <div class="case-study-visual">
+        <img class="devices-page-case-img" src="{{ '/images/background/sst.png' | relative_url }}" alt="Solid-state transformer concept">
+      </div>
     </div>
   </div>
 </section>

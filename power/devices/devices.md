@@ -56,57 +56,24 @@ description: Device testing, modelling, and characterisation for power electroni
   </div>
 </section>
 
-<section class="section devices-page-strip devices-page-strip--a">
+<section class="section section-case-study section-alt devices-page-strip devices-page-strip--b">
   <div class="container">
-    <h2>Device Modelling</h2>
-    <p class="lead">
-      Advanced device modelling capabilities including ANN (Artificial Neural Network) modelling, compatible with current market models
-      such as PLCES model, Spice model, MATLAB model, and more.
-    </p>
-    <div class="grid">
-      <div class="card">
-        <h3>ANN Modelling</h3>
-        <p>Artificial Neural Network-based models for accurate device behaviour prediction and simulation, offering high accuracy and computational efficiency.</p>
-        <a href="{{ '/power/characterizations/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">Learn More →</a>
+    <div class="case-study-content">
+      <div class="case-study-text">
+        <span class="section-badge">DESIGN DATA</span>
+        <h2>Transistor Database</h2>
+        <p class="lead">
+          Comprehensive SiC/GaN/IGBT coverage with specifications, switching characteristics, and thermal properties —
+          built for automated device selection and mission-profile-aware design.
+        </p>
+        <div class="case-study-actions">
+          <a href="{{ '/database/transistors/' | relative_url }}" class="btn btn-primary">View database</a>
+          <a href="{{ '/contact/' | relative_url }}" class="btn btn-ghost">Contact us</a>
+        </div>
       </div>
-      <div class="card">
-        <h3>Compatible Models</h3>
-        <p>Support for industry-standard models including PLCES (Piecewise Linear Circuit Element Simulator), Spice models, MATLAB models, and other established modelling frameworks.</p>
-        <a href="{{ '/power/characterizations/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">Learn More →</a>
+      <div class="case-study-visual">
+        <img class="devices-page-case-img" src="{{ '/power/converters/testing/Database/database.jpg' | relative_url }}" alt="Transistor database">
       </div>
-    </div>
-  </div>
-</section>
-
-<section class="section section-alt devices-page-strip devices-page-strip--b">
-  <div class="container">
-    <h2>Device Databases</h2>
-    <p class="lead">Access our comprehensive device databases for design automation:</p>
-    <div class="grid">
-      <div class="card">
-        <h3>Transistor Database</h3>
-        <p>Comprehensive SiC/GaN/IGBT database with detailed specifications, switching characteristics, and thermal properties.</p>
-        <a href="{{ '/database/transistors/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
-      </div>
-      <div class="card">
-        <h3>Magnetic Database</h3>
-        <p>Core materials, Steinmetz parameters, winding windows, and thermal data for automated magnetics sizing.</p>
-        <a href="{{ '/database/magnetics/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section devices-page-strip devices-page-strip--a">
-  <div class="container">
-    <h2>Our Services</h2>
-    <p>
-      We provide device testing, modelling, and characterisation services to support your power electronics design projects.
-      Our expertise includes wide-bandgap devices (SiC/GaN), traditional semiconductors, and passive components.
-    </p>
-    <div class="hero-actions" style="margin-top:2rem;">
-      <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/power/services/' | relative_url }}">View all services</a>
     </div>
   </div>
 </section>
