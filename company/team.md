@@ -19,32 +19,32 @@ permalink: /company/team/
 
 <section class="section">
   <div class="container">
-    <div class="grid" style="max-width: 600px; margin: 0 auto; grid-template-columns: 1fr;">
+    <div class="grid">
       <!-- Founder -->
-      <div class="card" style="text-align: center; padding: 2rem;">
+      <div class="card" style="text-align: center; padding: 1.1rem 1rem;">
         <img 
           src="{{ '/images/team/fulong_li.jpg' | relative_url }}" 
           alt="Dr. Fulong Li" 
-          style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin: 0 auto 1.5rem; display: block; border: 3px solid var(--border); box-shadow: 0 4px 20px rgba(0,200,255,0.1);">
-        <h3 style="margin-bottom: 0.5rem; font-size: 1.5rem;">Dr. Fulong Li</h3>
-        <p style="margin-bottom: 1.5rem; color: var(--brand); font-weight: 600; font-size: 1.1rem;">
+          style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin: 0 auto 0.75rem; display: block; border: 2px solid var(--border); box-shadow: 0 4px 16px rgba(0,200,255,0.08);">
+        <h3 style="margin-bottom: 0.35rem; font-size: 1.05rem; line-height: 1.25;">Dr. Fulong Li</h3>
+        <p style="margin-bottom: 0.65rem; color: var(--brand); font-weight: 600; font-size: 0.85rem;">
           Founder & CEO
         </p>
-        <p style="margin-bottom: 1.25rem; line-height: 1.8;">
+        <p style="margin-bottom: 0.85rem; line-height: 1.55; font-size: 0.88rem;">
           Dr. Fulong Li is a power electronics engineer and researcher specializing in
           <strong>DC microgrids, wide-bandgap devices (SiC/GaN), and converter optimization & validation</strong>.
           He founded <em>Spirit Connect Power Labs</em> to build the Power Electronics AI Agent —
           closing the loop between intelligent design automation and the energy infrastructure that powers AI.
         </p>
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-          <p style="margin: 0.5rem 0; color: var(--muted);">
+        <div style="margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px solid var(--border);">
+          <p style="margin: 0.35rem 0; color: var(--muted); font-size: 0.82rem;">
             <strong style="color: var(--fg);">📍</strong> Cardiff, United Kingdom
           </p>
-          <p style="margin: 0.5rem 0;">
+          <p style="margin: 0.35rem 0; font-size: 0.82rem;">
             <strong style="color: var(--fg);">🔗</strong> 
-            <a href="mailto:fulong.li@ieee.org" style="margin-right: 0.5rem;">fulong.li@ieee.org</a>
+            <a href="mailto:fulong.li@ieee.org" style="margin-right: 0.35rem;">fulong.li@ieee.org</a>
             <span style="color: var(--muted);">·</span>
-            <a href="https://www.linkedin.com/in/fulong-li-6bb443127" target="_blank" style="margin-left: 0.5rem;">LinkedIn</a>
+            <a href="https://www.linkedin.com/in/fulong-li-6bb443127" target="_blank" style="margin-left: 0.35rem;">LinkedIn</a>
           </p>
         </div>
       </div>
