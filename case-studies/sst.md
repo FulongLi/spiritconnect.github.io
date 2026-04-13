@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Solid-State Transformer Case Study
-permalink: /solutions/sst/
+permalink: /case-studies/sst/
 description: Case study on AI-assisted design of a solid-state transformer (SST) for next-generation power distribution.
 ---
 

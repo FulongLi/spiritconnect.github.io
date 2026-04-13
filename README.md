@@ -67,7 +67,7 @@ spiritconnect.github.io/
 ├── database/                # Device & magnetics databases
 │   ├── transistors/         # Transistor database
 │   └── magnetics/           # Magnetic database
-├── solutions/               # Solutions (DAB, SST, Rogowski coil)
+├── case-studies/            # Case studies (DAB, SST; Rogowski under magnetics)
 ├── accessories/             # Accessories (transducers/sensing)
 ├── legal/                   # Privacy, terms, cookies
 ├── contact.md               # Contact page

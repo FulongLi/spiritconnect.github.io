@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Rogowski Coil
-permalink: /solutions/rogowski-coil/
+permalink: /case-studies/magnetics/rogowski-coil/
 description: PCB Rogowski coil for high-precision current measurement in power electronics validation and monitoring.
 ---
 

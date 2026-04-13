@@ -36,3 +36,16 @@ description: Comprehensive magnetic component database for power electronics des
     </div>
   </div>
 </section>
+
+<section class="section section-alt">
+  <div class="container">
+    <h2>Magnetics measurement</h2>
+    <p class="lead">
+      Accurate current sensing supports magnetics validation, loss extraction, and closed-loop testing. Our PCB Rogowski coil case study covers a precision sensor for converter and inductor characterisation workflows.
+    </p>
+    <div class="hero-actions" style="margin-top:1.5rem;">
+      <a class="btn btn-primary" href="{{ '/case-studies/magnetics/rogowski-coil/' | relative_url }}">Rogowski coil case study</a>
+      <a class="btn btn-ghost" href="{{ '/contact/' | relative_url }}">Contact us</a>
+    </div>
+  </div>
+</section>

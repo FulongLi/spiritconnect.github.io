@@ -47,9 +47,15 @@ description: Designing, modeling, and controlling DC and AC microgrids for resil
       Our team brings deep expertise in microgrid design, modeling, and control. We work with renewable energy integration,
       energy storage systems, and advanced control algorithms to create resilient and efficient microgrid solutions.
     </p>
+    <p style="margin-top:1.25rem;">
+      For system-level power conversion at distribution scale, see our
+      <a href="{{ '/case-studies/sst/' | relative_url }}" style="font-weight:600;color:var(--brand);text-decoration:none;">solid-state transformer case study</a>
+      — modular SST cells, isolation stages, and coordinated control.
+    </p>
     <div class="hero-actions" style="margin-top:2rem;">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
       <a class="btn btn-ghost" href="{{ '/power/services/' | relative_url }}">View all services</a>
+      <a class="btn btn-ghost" href="{{ '/case-studies/sst/' | relative_url }}">SST case study</a>
     </div>
   </div>
 </section>
