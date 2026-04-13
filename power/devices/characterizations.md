@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Characterizations
-permalink: /research/characterizations/
+permalink: /power/characterizations/
 description: Device testing, characterization, and modeling services for power electronics design automation.
 ---
 
@@ -115,7 +115,7 @@ description: Device testing, characterization, and modeling services for power e
     </p>
     <div class="hero-actions" style="margin-top:2rem;">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/research/devices/' | relative_url }}">Back to Devices</a>
+      <a class="btn btn-ghost" href="{{ '/power/devices/' | relative_url }}">Back to Devices</a>
     </div>
   </div>
 </section>

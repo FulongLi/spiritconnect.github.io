@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Converters
-permalink: /research/converters/
+permalink: /power/converters/
 description: Optimized converter design and control strategies for high-performance power electronics applications.
 ---
 

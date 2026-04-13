@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Devices
-permalink: /research/devices/
+permalink: /power/devices/
 description: Device testing, modelling, and characterisation for power electronics design automation.
 ---
 
@@ -20,7 +20,7 @@ description: Device testing, modelling, and characterisation for power electroni
   <div class="container">
     <div class="case-study-content">
       <div class="case-study-visual">
-        <img class="devices-page-case-img" src="{{ '/research/devices/testing/PXE.png' | relative_url }}" alt="Electrical Characterisation">
+        <img class="devices-page-case-img" src="{{ '/power/devices/testing/PXE.png' | relative_url }}" alt="Electrical Characterisation">
       </div>
       <div class="case-study-text">
         <span class="section-badge">DEVICE TESTING</span>
@@ -29,7 +29,7 @@ description: Device testing, modelling, and characterisation for power electroni
           Comprehensive testing of semiconductor devices including switching characteristics, switching losses, and electrical performance validation under various operating conditions. Our electrical characterisation services enable accurate design automation and optimisation for power electronics systems.
         </p>
         <div class="case-study-actions">
-          <a href="{{ '/research/characterizations/' | relative_url }}" class="btn btn-primary">Learn More</a>
+          <a href="{{ '/power/characterizations/' | relative_url }}" class="btn btn-primary">Learn More</a>
         </div>
       </div>
     </div>
@@ -46,11 +46,11 @@ description: Device testing, modelling, and characterisation for power electroni
           Thermal performance testing and validation including thermal resistance measurements, junction temperature analysis, and reliability assessment. Our comprehensive thermal characterisation services enable accurate thermal modelling and optimisation for power electronics systems.
         </p>
         <div class="case-study-actions">
-          <a href="{{ '/research/characterizations/' | relative_url }}" class="btn btn-primary">Learn More</a>
+          <a href="{{ '/power/characterizations/' | relative_url }}" class="btn btn-primary">Learn More</a>
         </div>
       </div>
       <div class="case-study-visual">
-        <img class="devices-page-case-img" src="{{ '/research/devices/testing/PXT.png' | relative_url }}" alt="Thermal Characterisation">
+        <img class="devices-page-case-img" src="{{ '/power/devices/testing/PXT.png' | relative_url }}" alt="Thermal Characterisation">
       </div>
     </div>
   </div>
@@ -67,12 +67,12 @@ description: Device testing, modelling, and characterisation for power electroni
       <div class="card">
         <h3>ANN Modelling</h3>
         <p>Artificial Neural Network-based models for accurate device behaviour prediction and simulation, offering high accuracy and computational efficiency.</p>
-        <a href="{{ '/research/characterizations/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">Learn More →</a>
+        <a href="{{ '/power/characterizations/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">Learn More →</a>
       </div>
       <div class="card">
         <h3>Compatible Models</h3>
         <p>Support for industry-standard models including PLCES (Piecewise Linear Circuit Element Simulator), Spice models, MATLAB models, and other established modelling frameworks.</p>
-        <a href="{{ '/research/characterizations/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">Learn More →</a>
+        <a href="{{ '/power/characterizations/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">Learn More →</a>
       </div>
     </div>
   </div>
@@ -86,12 +86,12 @@ description: Device testing, modelling, and characterisation for power electroni
       <div class="card">
         <h3>Transistor Database</h3>
         <p>Comprehensive SiC/GaN/IGBT database with detailed specifications, switching characteristics, and thermal properties.</p>
-        <a href="{{ '/research/transistor-database/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
+        <a href="{{ '/power/transistor-database/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
       </div>
       <div class="card">
         <h3>Magnetic Database</h3>
         <p>Core materials, Steinmetz parameters, winding windows, and thermal data for automated magnetics sizing.</p>
-        <a href="{{ '/research/magnetic-database/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
+        <a href="{{ '/power/magnetic-database/' | relative_url }}" style="display:inline-block;margin-top:1rem;color:var(--brand);font-weight:600;text-decoration:none;">View Database →</a>
       </div>
     </div>
   </div>
@@ -106,7 +106,7 @@ description: Device testing, modelling, and characterisation for power electroni
     </p>
     <div class="hero-actions" style="margin-top:2rem;">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/research/services/' | relative_url }}">View all services</a>
+      <a class="btn btn-ghost" href="{{ '/power/services/' | relative_url }}">View all services</a>
     </div>
   </div>
 </section>

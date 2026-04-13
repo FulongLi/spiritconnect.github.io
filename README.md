@@ -59,10 +59,10 @@ spiritconnect.github.io/
 │   ├── team/                # Team photos
 │   └── vids/                # Hero videos
 ├── company/                 # Company pages (about, team, careers, FAQ)
-├── research/                # Research pages
+├── power/                   # Power section pages
 │   ├── services.md          # AI Agent overview
-│   ├── microgrids/          # Microgrids research
-│   ├── converters/          # Converters research
+│   ├── microgrids/          # Microgrids
+│   ├── converters/          # Converters
 │   ├── devices/             # Devices, characterizations, databases
 │   └── magnetics/           # Magnetics database
 ├── solutions/               # Solutions (DAB, SST, Rogowski coil)

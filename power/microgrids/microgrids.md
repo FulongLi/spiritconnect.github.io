@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Microgrids
-permalink: /research/microgrids/
+permalink: /power/microgrids/
 description: Designing, modeling, and controlling DC and AC microgrids for resilient and efficient energy distribution.
 ---
 
@@ -49,7 +49,7 @@ description: Designing, modeling, and controlling DC and AC microgrids for resil
     </p>
     <div class="hero-actions" style="margin-top:2rem;">
       <a class="btn btn-primary" href="{{ '/contact/' | relative_url }}">Contact us</a>
-      <a class="btn btn-ghost" href="{{ '/research/services/' | relative_url }}">View all services</a>
+      <a class="btn btn-ghost" href="{{ '/power/services/' | relative_url }}">View all services</a>
     </div>
   </div>
 </section>

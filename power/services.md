@@ -1,7 +1,7 @@
 ---
 layout: default
 title: The AI Agent
-permalink: /research/services/
+permalink: /power/services/
 description: The Power Electronics AI Agent — intelligent design automation from device to converter to system.
 ---
 

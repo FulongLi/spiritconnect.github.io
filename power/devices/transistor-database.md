@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Transistor Database
-permalink: /research/transistor-database/
+permalink: /power/transistor-database/
 description: Comprehensive SiC/GaN/IGBT database for power electronics design automation.
 ---
 
