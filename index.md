@@ -19,7 +19,7 @@ description: Building a Power Electronics AI Agent — from device to converter 
     </p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="{{ '/company/about/' | relative_url }}">Our mission</a>
-      <a class="btn btn-ghost" href="{{ '/power/services/' | relative_url }}">Explore the AI Agent</a>
+      <a class="btn btn-ghost" href="{{ '/company/services/' | relative_url }}">Explore the AI Agent</a>
     </div>
   </div>
 </header>

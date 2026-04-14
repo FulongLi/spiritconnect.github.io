@@ -58,9 +58,8 @@ spiritconnect.github.io/
 │   ├── research/            # Research page images
 │   ├── team/                # Team photos
 │   └── vids/                # Hero videos
-├── company/                 # Company pages (about, team, careers, FAQ)
+├── company/                 # Company pages (about, team, careers, FAQ, services / AI Agent)
 ├── power/                   # Power section pages
-│   ├── services.md          # AI Agent overview
 │   ├── microgrids/          # Microgrids
 │   ├── converters/          # Converters
 │   └── devices/             # Devices and characterizations
