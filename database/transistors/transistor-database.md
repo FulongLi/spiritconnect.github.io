@@ -6,6 +6,7 @@ description: Comprehensive SiC/GaN/IGBT database for power electronics design au
 ---
 
 <header class="hero">
+  <img class="hero-video" src="{{ '/power/devices/testing/database.jpg' | relative_url }}" alt="Transistor database">
   <div class="bg"></div>
   <div class="container">
     <h1>Transistor Database</h1>
