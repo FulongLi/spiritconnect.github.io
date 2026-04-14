@@ -6,9 +6,7 @@ description: Device testing, modelling, and characterisation for power electroni
 ---
 
 <header class="hero">
-  <video class="hero-video" autoplay muted loop playsinline>
-    <source src="{{ '/images/vids/semiconductor.mp4' | relative_url }}" type="video/mp4">
-  </video>
+  <img class="hero-video" src="{{ '/images/background/device_background.jpg' | relative_url }}" alt="Semiconductor devices">
   <div class="bg"></div>
   <div class="container">
     <h1>Devices</h1>
