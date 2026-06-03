@@ -22,7 +22,9 @@ export default function PlaygroundCanvas() {
   const [isCompact, setIsCompact] = useState(false);
   const activeBranch = BRAND_BRANCHES[activeModelIndex];
   const isSphereModel = activeBranch.url === "procedural:sphere";
-  const isLogoModel = activeBranch.url === "procedural:spirit-logo";
+  const isLogoModel =
+    activeBranch.url === "procedural:spirit-logo" ||
+    activeBranch.url === "procedural:power-labs-logo";
   const isTerrainModel = activeBranch.url === "procedural:terrain";
 
   const leva = useHologramControls(() => {

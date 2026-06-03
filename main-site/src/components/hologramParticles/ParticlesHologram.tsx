@@ -74,6 +74,7 @@ const geometryInflight = new Map<string, Promise<GeometryData>>();
 const PROCEDURAL_SPHERE_URL = "procedural:sphere";
 const PROCEDURAL_TERRAIN_URL = "procedural:terrain";
 const PROCEDURAL_LOGO_URL = "procedural:spirit-logo";
+const PROCEDURAL_POWER_LABS_LOGO_URL = "procedural:power-labs-logo";
 const PROCEDURAL_PYRAMID_URL = "procedural:pyramid";
 const PROCEDURAL_BOAT_URL = "procedural:boat";
 const PROCEDURAL_CRYSTAL_URL = "procedural:crystal";
@@ -119,10 +120,14 @@ async function sampleGLBGeometry(
     return data;
   }
 
-  if (url === PROCEDURAL_LOGO_URL) {
+  if (url === PROCEDURAL_LOGO_URL || url === PROCEDURAL_POWER_LABS_LOGO_URL) {
     if (geometryCache.has(key)) return geometryCache.get(key)!;
     if (geometryInflight.has(key)) return geometryInflight.get(key)!;
-    const promise = createLogoGeometry(particleCount).then((data) => {
+    const logoPath =
+      url === PROCEDURAL_POWER_LABS_LOGO_URL
+        ? "/assets/power-labs-logo.png"
+        : "/assets/spirit-connect-logo.png";
+    const promise = createLogoGeometry(particleCount, logoPath).then((data) => {
       geometryCache.set(key, data);
       geometryInflight.delete(key);
       return data;
@@ -458,8 +463,11 @@ function createCrystalGeometry(particleCount: number): GeometryData {
   return { positions, normals };
 }
 
-async function createLogoGeometry(particleCount: number): Promise<GeometryData> {
-  const image = await loadImage(assetPath("/assets/spirit-connect-logo.png"));
+async function createLogoGeometry(
+  particleCount: number,
+  imagePath = "/assets/spirit-connect-logo.png",
+): Promise<GeometryData> {
+  const image = await loadImage(assetPath(imagePath));
   const width = image.naturalWidth || image.width;
   const height = image.naturalHeight || image.height;
   const canvas = document.createElement("canvas");

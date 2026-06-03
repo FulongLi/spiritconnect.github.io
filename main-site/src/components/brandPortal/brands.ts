@@ -32,7 +32,7 @@ export const BRAND_BRANCHES: BrandBranch[] = [
   {
     id: "power-labs",
     label: "POWER",
-    url: "procedural:terrain",
+    url: "procedural:power-labs-logo",
     title: "Spirit Connect Power Labs",
     eyebrow: "Energy intelligence",
     summary: "AI-assisted power electronics research and design workflows.",
@@ -40,7 +40,7 @@ export const BRAND_BRANCHES: BrandBranch[] = [
       "The engineering branch for devices, converters, magnetics, and microgrids, connecting power electronics research with intelligent design systems.",
     status: "Active",
     href: "https://fulongli.github.io/SpriConPowerLabs/",
-    accent: "#ffcf7a",
+    accent: "#0f5f3d",
     keywords: ["power electronics", "converters", "microgrids"],
   },
   {
