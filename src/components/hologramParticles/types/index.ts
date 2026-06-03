@@ -34,7 +34,11 @@ export interface HologramPreset {
 
 // ── Geometry cache ────────────────────────────────────────────────────────────
 
-export type GeometryData = { positions: Float32Array; normals: Float32Array };
+export type GeometryData = {
+  positions: Float32Array;
+  normals: Float32Array;
+  colors?: Float32Array;
+};
 
 // ── Component props ───────────────────────────────────────────────────────────
 
@@ -74,6 +78,8 @@ export interface ParticlesHologramProps {
   modelY?: number;
   /** Model position offset Z */
   modelZ?: number;
+  /** Initial scale of the model showcase before user zoom interaction */
+  initialModelScale?: number;
   /**
    * How much local sphere volume shading blends in — 0: pure figure shading
    * (flat spheres) · 1: figure × sphere shading (full 3-D depth per sphere)

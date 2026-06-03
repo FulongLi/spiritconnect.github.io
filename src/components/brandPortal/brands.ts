@@ -11,13 +11,14 @@ export type BrandBranch = ModelOption & {
   status: BrandStatus;
   href: string;
   accent: string;
+  modelColor?: string;
   keywords: string[];
 };
 
 export const BRAND_BRANCHES: BrandBranch[] = [
   {
     id: "spirit-connect",
-    label: "SPIRIT",
+    label: "SPIRIT CONNECT",
     url: "procedural:spirit-logo",
     title: "Spirit Connect",
     eyebrow: "Core brand",
@@ -27,11 +28,12 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     status: "Active",
     href: "/branches/spirit-connect",
     accent: "#32b8f2",
+    modelColor: "#ffffff",
     keywords: ["technology", "creativity", "systems"],
   },
   {
     id: "power-labs",
-    label: "POWER",
+    label: "POWER LABS",
     url: "procedural:power-labs-logo",
     title: "Spirit Connect Power Labs",
     eyebrow: "Energy intelligence",
@@ -41,6 +43,7 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     status: "Active",
     href: "https://fulongli.github.io/SpriConPowerLabs/",
     accent: "#0f5f3d",
+    modelColor: "#ffffff",
     keywords: ["power electronics", "converters", "microgrids"],
   },
   {

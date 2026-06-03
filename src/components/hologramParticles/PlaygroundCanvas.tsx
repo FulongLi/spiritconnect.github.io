@@ -66,7 +66,7 @@ export default function PlaygroundCanvas() {
           replayTrigger={replayTrigger}
           {...leva}
           {...PRESETS[activePreset]}
-          color={activeBranch.accent}
+          color={activeBranch.modelColor ?? activeBranch.accent}
           breathAmp={isSphereModel ? 0.065 : 0}
           floatAmp={
             isSphereModel

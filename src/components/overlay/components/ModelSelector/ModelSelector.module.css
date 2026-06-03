@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   /* Wide enough to show 1 side item on each side */
-  width: 440px;
+  width: 640px;
   height: 48px;
   overflow: hidden;
   /* Fade edges */
@@ -70,8 +70,8 @@
   left: 50%;
   top: 50%;
 
-  /* Each item occupies 160px of the track; offset shifts by that amount */
-  transform: translate(calc(-50% + var(--offset, 0) * 160px), -50%);
+  /* Each item occupies 220px of the track; offset shifts by that amount */
+  transform: translate(calc(-50% + var(--offset, 0) * 220px), -50%);
   transition:
     transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.35s ease;
@@ -104,7 +104,7 @@
   font-family: monospace;
   font-size: 16px;
   font-weight: 400;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.671);
   user-select: none;
@@ -176,7 +176,7 @@
     top: 54svh;
     bottom: auto;
     gap: 8px;
-    width: min(100vw - 28px, 330px);
+    width: min(100vw - 28px, 360px);
     justify-content: center;
   }
 
@@ -186,18 +186,18 @@
   }
 
   .track {
-    width: 210px;
+    width: 250px;
     height: 42px;
   }
 
   .item {
-    transform: translate(calc(-50% + var(--offset, 0) * 94px), -50%);
+    transform: translate(calc(-50% + var(--offset, 0) * 118px), -50%);
     padding: 8px 10px;
   }
 
   .label {
-    font-size: 12px;
-    letter-spacing: 0.15em;
+    font-size: 11px;
+    letter-spacing: 0.08em;
   }
 
   .corner {
