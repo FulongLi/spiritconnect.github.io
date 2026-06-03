@@ -9,6 +9,8 @@ type BrandInfoPanelProps = {
 };
 
 export default function BrandInfoPanel({ branch, visible = true }: BrandInfoPanelProps) {
+  const isExternalLink = branch.href.startsWith("http");
+
   return (
     <aside
       className={`${styles.panel} ${visible ? styles.visible : styles.hidden}`}
@@ -38,7 +40,12 @@ export default function BrandInfoPanel({ branch, visible = true }: BrandInfoPane
         ))}
       </div>
 
-      <a className={styles.link} href={branch.href}>
+      <a
+        className={styles.link}
+        href={branch.href}
+        target={isExternalLink ? "_blank" : undefined}
+        rel={isExternalLink ? "noreferrer" : undefined}
+      >
         Open branch
         <svg width="15" height="15" viewBox="0 0 15 15" aria-hidden="true">
           <path
