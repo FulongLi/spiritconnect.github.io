@@ -21,7 +21,8 @@
 .eyebrow {
   font-family: var(--font-ibm-mono), monospace;
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   color: rgba(220, 240, 255, 0.9);
   margin-bottom: 6px;
 }
@@ -73,7 +74,7 @@
 
   .eyebrow {
     font-size: 8px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.16em;
     margin-bottom: 5px;
   }
 
