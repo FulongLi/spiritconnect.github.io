@@ -74,10 +74,12 @@
 
 @media (max-width: 720px) {
   .root {
-    top: 18px;
-    left: 18px;
-    right: 18px;
-    max-width: 270px;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    max-width: none;
+    z-index: 40;
   }
 
   .eyebrow {
@@ -92,7 +94,7 @@
   }
 
   .title {
-    font-size: 32px;
+    font-size: clamp(28px, 9vw, 36px);
     letter-spacing: 0.04em;
   }
 
@@ -108,7 +110,7 @@
   }
 
   .copy {
-    max-width: 230px;
+    max-width: 290px;
     font-size: 11px;
     line-height: 1.35;
     letter-spacing: 0.025em;

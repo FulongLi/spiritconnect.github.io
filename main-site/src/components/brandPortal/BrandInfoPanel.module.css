@@ -134,20 +134,36 @@
   .panel {
     top: auto;
     right: 14px;
-    bottom: 134px;
+    bottom: 52px;
     left: 14px;
     width: auto;
-    max-height: 38vh;
+    max-height: 29svh;
     overflow: auto;
-    padding: 16px;
+    padding: 14px;
   }
 
   .panel h2 {
-    font-size: 30px;
+    font-size: clamp(24px, 8vw, 30px);
   }
 
   .summary {
-    font-size: 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .scanline {
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    margin-bottom: 8px;
+    font-size: 8px;
+  }
+
+  .link {
+    margin-top: 12px;
+    font-size: 9px;
   }
 
   .detail {

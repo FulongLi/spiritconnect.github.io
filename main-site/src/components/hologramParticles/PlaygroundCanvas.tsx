@@ -126,9 +126,10 @@ export default function PlaygroundCanvas() {
         />
       </div>
 
+      <BrandInfoPanel branch={activeBranch} visible />
+
       {!rendererUnavailable && (
         <>
-          <BrandInfoPanel branch={activeBranch} visible />
           <OverlayButtons
             hideLeva={hideLeva}
             onToggleLeva={() => setHideLeva((v) => !v)}
@@ -137,13 +138,13 @@ export default function PlaygroundCanvas() {
               setActivePreset((p) => (p === "light" ? "dark" : "light"))
             }
           />
-          <ModelSelector
-            models={BRAND_BRANCHES}
-            activeIndex={activeModelIndex}
-            onChange={setActiveModelIndex}
-          />
         </>
       )}
+      <ModelSelector
+        models={BRAND_BRANCHES}
+        activeIndex={activeModelIndex}
+        onChange={setActiveModelIndex}
+      />
     </>
   );
 }
