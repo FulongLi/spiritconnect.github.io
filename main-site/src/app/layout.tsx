@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: "Spirit Connect",
   description:
     "A holographic brand portal connecting Spirit Connect AI, Gaming, Art, and Power Labs.",
+  icons: {
+    icon: "/assets/spirit-connect-logo.svg",
+    shortcut: "/assets/spirit-connect-logo.svg",
+    apple: "/assets/spirit-connect-logo.png",
+  },
 };
 
 export default function RootLayout({

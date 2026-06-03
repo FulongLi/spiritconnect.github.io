@@ -17,7 +17,7 @@ export default function PlaygroundCanvas() {
   const [activeModelIndex, setActiveModelIndex] = useState(0);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [replayTrigger, setReplayTrigger] = useState(0);
-  const [activePreset, setActivePreset] = useState<PresetId>("dark");
+  const [activePreset, setActivePreset] = useState<PresetId>("light");
   const [rendererUnavailable, setRendererUnavailable] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const activeBranch = BRAND_BRANCHES[activeModelIndex];
@@ -27,7 +27,7 @@ export default function PlaygroundCanvas() {
 
   const leva = useHologramControls(() => {
     setReplayTrigger((t) => t + 1);
-            setHeaderVisible(true);
+    setHeaderVisible(true);
   });
 
   useEffect(() => {

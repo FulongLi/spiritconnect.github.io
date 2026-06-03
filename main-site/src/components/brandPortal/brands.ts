@@ -30,6 +30,20 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     keywords: ["technology", "creativity", "systems"],
   },
   {
+    id: "power-labs",
+    label: "POWER",
+    url: "procedural:terrain",
+    title: "Spirit Connect Power Labs",
+    eyebrow: "Energy intelligence",
+    summary: "AI-assisted power electronics research and design workflows.",
+    detail:
+      "The engineering branch for devices, converters, magnetics, and microgrids, connecting power electronics research with intelligent design systems.",
+    status: "Active",
+    href: "https://fulongli.github.io/SpriConPowerLabs/",
+    accent: "#ffcf7a",
+    keywords: ["power electronics", "converters", "microgrids"],
+  },
+  {
     id: "ai",
     label: "AI",
     url: "procedural:sphere",
@@ -70,20 +84,6 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     href: "/branches/art",
     accent: "#ff8ad8",
     keywords: ["generative", "visual", "culture"],
-  },
-  {
-    id: "power-labs",
-    label: "POWER",
-    url: "procedural:terrain",
-    title: "Spirit Connect Power Labs",
-    eyebrow: "Energy intelligence",
-    summary: "AI-assisted power electronics research and design workflows.",
-    detail:
-      "The engineering branch for devices, converters, magnetics, and microgrids, connecting power electronics research with intelligent design systems.",
-    status: "Active",
-    href: "/branches/power-labs",
-    accent: "#ffcf7a",
-    keywords: ["power electronics", "converters", "microgrids"],
   },
 ];
 
