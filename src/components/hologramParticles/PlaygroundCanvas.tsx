@@ -12,6 +12,8 @@ import { BRAND_BRANCHES } from "@/components/brandPortal/brands";
 import { useHologramControls } from "./utils/useHologramControls";
 import { PRESETS, type PresetId } from "./utils/presets";
 
+const MODEL_SHOWCASE_COLOR = "#cfd5d8";
+
 export default function PlaygroundCanvas() {
   const [hideLeva, setHideLeva] = useState(true);
   const [activeModelIndex, setActiveModelIndex] = useState(0);
@@ -66,7 +68,7 @@ export default function PlaygroundCanvas() {
           replayTrigger={replayTrigger}
           {...leva}
           {...PRESETS[activePreset]}
-          color={activeBranch.modelColor ?? activeBranch.accent}
+          color={MODEL_SHOWCASE_COLOR}
           breathAmp={isSphereModel ? 0.065 : 0}
           floatAmp={
             isSphereModel

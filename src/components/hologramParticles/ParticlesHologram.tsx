@@ -83,12 +83,6 @@ function cacheKey(url: string, particleCount: number) {
   return `${url}:${particleCount}`;
 }
 
-function createDefaultColors(particleCount: number) {
-  const colors = new Float32Array(particleCount * 3);
-  colors.fill(1);
-  return colors;
-}
-
 async function sampleGLBGeometry(
   url: string,
   particleCount: number,
@@ -133,11 +127,7 @@ async function sampleGLBGeometry(
       url === PROCEDURAL_POWER_LABS_LOGO_URL
         ? "/assets/power-labs-logo.png"
         : "/assets/spirit-connect-logo.png";
-    const promise = createLogoGeometry(
-      particleCount,
-      logoPath,
-      url === PROCEDURAL_POWER_LABS_LOGO_URL,
-    ).then((data) => {
+    const promise = createLogoGeometry(particleCount, logoPath).then((data) => {
       geometryCache.set(key, data);
       geometryInflight.delete(key);
       return data;
@@ -476,7 +466,6 @@ function createCrystalGeometry(particleCount: number): GeometryData {
 async function createLogoGeometry(
   particleCount: number,
   imagePath = "/assets/spirit-connect-logo.png",
-  usePowerLabsCenterColor = false,
 ): Promise<GeometryData> {
   const image = await loadImage(assetPath(imagePath));
   const width = image.naturalWidth || image.width;
@@ -490,7 +479,7 @@ async function createLogoGeometry(
 
   ctx.drawImage(image, 0, 0, width, height);
   const { data } = ctx.getImageData(0, 0, width, height);
-  const pixels: Array<[number, number, number, number, number, number]> = [];
+  const pixels: Array<[number, number, number]> = [];
   const step = 2;
 
   for (let y = 0; y < height; y += step) {
@@ -501,20 +490,7 @@ async function createLogoGeometry(
       const b = data[index + 2];
       const a = data[index + 3];
       const blueLogoPixel = a > 32 && b > 130 && g > 110 && r < 90;
-      if (blueLogoPixel) {
-        const nx = x / width;
-        const isCenterConnection =
-          usePowerLabsCenterColor && nx > 0.405 && nx < 0.595;
-        const sourceColor = isCenterConnection ? [15, 95, 61] : [r, g, b];
-        pixels.push([
-          x,
-          y,
-          a / 255,
-          sourceColor[0] / 255,
-          sourceColor[1] / 255,
-          sourceColor[2] / 255,
-        ]);
-      }
+      if (blueLogoPixel) pixels.push([x, y, a / 255]);
     }
   }
 
@@ -522,7 +498,6 @@ async function createLogoGeometry(
 
   const positions = new Float32Array(particleCount * 3);
   const normals = new Float32Array(particleCount * 3);
-  const colors = new Float32Array(particleCount * 3);
   const widthWorld = 2.9;
   const heightWorld = widthWorld * (height / width);
 
@@ -530,7 +505,7 @@ async function createLogoGeometry(
     const pick = Math.floor(
       seededFract(Math.sin((i + 1) * 91.917) * 47453.5453) * pixels.length,
     );
-    const [px, py, alpha, red, green, blue] = pixels[pick];
+    const [px, py, alpha] = pixels[pick];
     const jitterX = seededFract(Math.sin((i + 3) * 12.9898) * 43758.5453) - 0.5;
     const jitterY = seededFract(Math.sin((i + 7) * 78.233) * 43758.5453) - 0.5;
     const jitterZ = seededFract(Math.sin((i + 11) * 39.425) * 43758.5453) - 0.5;
@@ -547,12 +522,9 @@ async function createLogoGeometry(
     normals[base] = 0;
     normals[base + 1] = 0;
     normals[base + 2] = 1;
-    colors[base] = red;
-    colors[base + 1] = green;
-    colors[base + 2] = blue;
   }
 
-  return { positions, normals, colors };
+  return { positions, normals };
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -746,10 +718,8 @@ export default function ParticlesHologram({
   const isEntranceRef = useRef(true);
   const posAttrRef = useRef<InstancedBufferAttribute | null>(null);
   const normAttrRef = useRef<InstancedBufferAttribute | null>(null);
-  const colorAttrRef = useRef<InstancedBufferAttribute | null>(null);
   const posAttrTargetRef = useRef<InstancedBufferAttribute | null>(null);
   const normAttrTargetRef = useRef<InstancedBufferAttribute | null>(null);
-  const colorAttrTargetRef = useRef<InstancedBufferAttribute | null>(null);
   const isFirstUrlRef = useRef(true);
 
   // ── Ref sync — runs every render, read by the animate loop ───────────────────
@@ -878,13 +848,11 @@ export default function ParticlesHologram({
       controls.autoRotate = false;
       controlsRef.current = controls;
 
-      const geometryData = await sampleGLBGeometry(
+      const { positions, normals } = await sampleGLBGeometry(
         url,
         particleCount,
       );
       if (disposed) return;
-      const { positions, normals } = geometryData;
-      const colors = geometryData.colors ?? createDefaultColors(particleCount);
 
       const seeds = new Float32Array(particleCount);
       for (let i = 0; i < particleCount; i++) seeds[i] = Math.random();
@@ -900,20 +868,12 @@ export default function ParticlesHologram({
         new InstancedBufferAttribute(new Float32Array(normals.length), 3),
       );
       sphereGeo.setAttribute(
-        "instanceColor",
-        new InstancedBufferAttribute(createDefaultColors(particleCount), 3),
-      );
-      sphereGeo.setAttribute(
         "instancePos",
         new InstancedBufferAttribute(new Float32Array(positions.length), 3),
       );
       sphereGeo.setAttribute(
         "instanceNormalTarget",
         new InstancedBufferAttribute(normals.slice(), 3),
-      );
-      sphereGeo.setAttribute(
-        "instanceColorTarget",
-        new InstancedBufferAttribute(colors.slice(), 3),
       );
       sphereGeo.setAttribute(
         "instancePosTarget",
@@ -933,17 +893,11 @@ export default function ParticlesHologram({
       normAttrRef.current = sphereGeo.getAttribute(
         "instanceNormal",
       ) as InstancedBufferAttribute;
-      colorAttrRef.current = sphereGeo.getAttribute(
-        "instanceColor",
-      ) as InstancedBufferAttribute;
       posAttrTargetRef.current = sphereGeo.getAttribute(
         "instancePosTarget",
       ) as InstancedBufferAttribute;
       normAttrTargetRef.current = sphereGeo.getAttribute(
         "instanceNormalTarget",
-      ) as InstancedBufferAttribute;
-      colorAttrTargetRef.current = sphereGeo.getAttribute(
-        "instanceColorTarget",
       ) as InstancedBufferAttribute;
 
       transitionStateRef.current = "morphing";
@@ -993,16 +947,13 @@ export default function ParticlesHologram({
       const seedAttr = attribute("instanceSeed", "float");
       const instNorm = attribute("instanceNormal", "vec3");
       const instPos = attribute("instancePos", "vec3");
-      const instColor = attribute("instanceColor", "vec3");
       const instNormTgt = attribute("instanceNormalTarget", "vec3");
       const instPosTgt = attribute("instancePosTarget", "vec3");
-      const instColorTgt = attribute("instanceColorTarget", "vec3");
 
       const blendPos = mix(instPos, instPosTgt, u.transitionProgress);
       const blendNorm = normalize(
         mix(instNorm, instNormTgt, u.transitionProgress),
       );
-      const blendColor = mix(instColor, instColorTgt, u.transitionProgress);
 
       const phase = seedAttr.mul(Math.PI * 2);
 
@@ -1102,7 +1053,7 @@ export default function ParticlesHologram({
         u.light1Intensity,
       ).add(lightContrib(u.light2Pos, u.light2Color, u.light2Intensity));
 
-      const shadedColor = u.color.mul(blendColor).mul(
+      const shadedColor = u.color.mul(
         clamp(litColor.add(u.ambient), float(0), float(1)),
       );
 
@@ -1578,14 +1529,10 @@ export default function ParticlesHologram({
             const tgtPos = posAttrTargetRef.current!.array as Float32Array;
             const srcNorm = normAttrRef.current!.array as Float32Array;
             const tgtNorm = normAttrTargetRef.current!.array as Float32Array;
-            const srcColor = colorAttrRef.current!.array as Float32Array;
-            const tgtColor = colorAttrTargetRef.current!.array as Float32Array;
             srcPos.set(tgtPos);
             srcNorm.set(tgtNorm);
-            srcColor.set(tgtColor);
             posAttrRef.current!.needsUpdate = true;
             normAttrRef.current!.needsUpdate = true;
-            colorAttrRef.current!.needsUpdate = true;
             u.transitionProgress.value = 0;
             transitionTimeRef.current = 0;
             transitionStateRef.current = "deform-in";
@@ -1782,49 +1729,40 @@ export default function ParticlesHologram({
     if (
       !uniformsRef.current ||
       !posAttrTargetRef.current ||
-      !normAttrTargetRef.current ||
-      !colorAttrTargetRef.current
+      !normAttrTargetRef.current
     )
       return;
 
     const wasIdle = transitionStateRef.current === "idle";
 
     sampleGLBGeometry(url, particleCount).then(
-      ({ positions: newPos, normals: newNorm, colors: newColors }) => {
+      ({ positions: newPos, normals: newNorm }) => {
         if (
           !posAttrTargetRef.current ||
           !normAttrTargetRef.current ||
-          !colorAttrTargetRef.current ||
           !uniformsRef.current
         )
           return;
 
-        const nextColors = newColors ?? createDefaultColors(particleCount);
         const prog = uniformsRef.current.transitionProgress.value as number;
         if (prog > 0) {
           const srcPos = posAttrRef.current!.array as Float32Array;
           const tgtPos = posAttrTargetRef.current.array as Float32Array;
           const srcNorm = normAttrRef.current!.array as Float32Array;
           const tgtNorm = normAttrTargetRef.current.array as Float32Array;
-          const srcColor = colorAttrRef.current!.array as Float32Array;
-          const tgtColor = colorAttrTargetRef.current.array as Float32Array;
           for (let i = 0; i < srcPos.length; i++) {
             srcPos[i] = srcPos[i] * (1 - prog) + tgtPos[i] * prog;
             srcNorm[i] = srcNorm[i] * (1 - prog) + tgtNorm[i] * prog;
-            srcColor[i] = srcColor[i] * (1 - prog) + tgtColor[i] * prog;
           }
           posAttrRef.current!.needsUpdate = true;
           normAttrRef.current!.needsUpdate = true;
-          colorAttrRef.current!.needsUpdate = true;
           uniformsRef.current.transitionProgress.value = 0;
         }
 
         (posAttrTargetRef.current.array as Float32Array).set(newPos);
         (normAttrTargetRef.current.array as Float32Array).set(newNorm);
-        (colorAttrTargetRef.current.array as Float32Array).set(nextColors);
         posAttrTargetRef.current.needsUpdate = true;
         normAttrTargetRef.current.needsUpdate = true;
-        colorAttrTargetRef.current.needsUpdate = true;
         transitionTimeRef.current = 0;
 
         if (wasIdle) {

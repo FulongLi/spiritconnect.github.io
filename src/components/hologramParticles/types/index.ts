@@ -37,7 +37,6 @@ export interface HologramPreset {
 export type GeometryData = {
   positions: Float32Array;
   normals: Float32Array;
-  colors?: Float32Array;
 };
 
 // ── Component props ───────────────────────────────────────────────────────────
