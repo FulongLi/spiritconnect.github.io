@@ -95,7 +95,7 @@ function WebGPUFallback({ checking }: { checking: boolean }) {
             marginBottom: 10,
           }}
         >
-          SPIRIT CONNECT · 灵接科技
+          SPIRIT CONNECT
         </div>
         <h2
           style={{
@@ -106,7 +106,7 @@ function WebGPUFallback({ checking }: { checking: boolean }) {
             margin: 0,
           }}
         >
-          {checking ? "INITIALIZING" : "WEBGPU REQUIRED"}
+          {checking ? "INITIALIZING" : "RENDERER UNAVAILABLE"}
         </h2>
         <p
           style={{
@@ -119,8 +119,8 @@ function WebGPUFallback({ checking }: { checking: boolean }) {
           }}
         >
           {checking
-            ? "Preparing the holographic particle renderer."
-            : "This device or browser cannot start the holographic particle renderer. Open the site in a current Chrome, Edge, Firefox, or Safari browser with WebGPU and hardware acceleration enabled."}
+            ? "Preparing the Spirit Connect showcase."
+            : "This device or browser cannot start the interactive showcase. Open the site in a current browser with hardware acceleration enabled."}
         </p>
       </section>
     </div>

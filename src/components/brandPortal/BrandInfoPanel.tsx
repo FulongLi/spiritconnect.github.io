@@ -3,6 +3,8 @@
 import styles from "./BrandInfoPanel.module.css";
 import type { BrandBranch } from "./brands";
 
+const PANEL_ACCENT = "#32b8f2";
+
 type BrandInfoPanelProps = {
   branch: BrandBranch;
   visible?: boolean;
@@ -14,7 +16,7 @@ export default function BrandInfoPanel({ branch, visible = true }: BrandInfoPane
   return (
     <aside
       className={`${styles.panel} ${visible ? styles.visible : styles.hidden}`}
-      style={{ "--branch-accent": branch.accent } as React.CSSProperties}
+      style={{ "--branch-accent": PANEL_ACCENT } as React.CSSProperties}
       aria-live="polite"
     >
       <div className={styles.scanline} />
