@@ -1,111 +1,88 @@
-![Jekyll](https://img.shields.io/badge/jekyll-4.0-blue)
-![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-enabled-brightgreen)
-![category - power electronics](https://img.shields.io/badge/category-power%20electronics-lightgrey)
-![status - active](https://img.shields.io/badge/status-active-success)
+# Spirit Connect Brand Portal
 
+Spirit Connect is a WebGPU holographic brand portal for exploring the connected branches of Spirit Connect.
 
-# Spirit Connect Power Labs
+The current experience includes:
 
-> **AI-Assisted Power Electronics Converter Design Automation**
-
-Welcome to the public website repository of **Spirit Connect Power Labs**.
-We accelerate power electronics development using artificial intelligence: from topology exploration to thermal analysis and control synthesis.
-
-**Live site:** [https://spiritconnect.co.uk](https://spiritconnect.co.uk)
-
----
-
-## What We Do
-
-Spirit Connect Power Labs builds **automation tools and workflows** that help engineers design high-performance power converters faster and with better trade-offs.
-
-### Core Services
-
-- **Microgrids** – Designing, modeling, and controlling DC and AC microgrids for resilient and efficient energy distribution
-- **Converters** – Optimized converter design and control strategies for high-performance applications (buck/boost, LLC, DAB, multi-level DC-AC)
-- **Devices** – Device testing, modeling, and characterization for power electronics design automation
-
-### AI-Assisted Design Capabilities
-
-- **AI-driven topology exploration** – LLC, DAB, multi-level, interleaved buck/boost, and more
-- **Magnetics and semiconductor selection** – WBG devices, core sizing, and winding optimization
-- **Loss & thermal modeling** – efficiency maps, safe operating areas, temperature predictions
-- **Control synthesis** – current/voltage loops, soft-switching zones, phase-shift and TPWM
-- **Multi-objective optimization** – efficiency vs. density vs. cost vs. EMI headroom
-- **Validation planning** – HIL/SIL hooks, automated test scripts, and repeatable experiments
-
----
-
-## Technology Stack
-
-- **Jekyll** – Static site generator
-- **GitHub Pages** – Hosting platform
-- **HTML/CSS/JavaScript** – Frontend
-
----
-
-## Project Structure
-
-```
-spiritconnect.github.io/
-├── _config.yml              # Jekyll configuration
-├── _includes/               # Reusable components (navbar, footer, scripts)
-├── _layouts/                # Page layouts
-├── assets/                  # CSS and favicon assets
-├── images/                  # Site media
-│   ├── general/             # Logos and branding
-│   ├── background/          # Background images
-│   ├── research/            # Research page images
-│   ├── team/                # Team photos
-│   └── vids/                # Hero videos
-├── company/                 # Company pages (about, team, careers, FAQ, services / AI Agent)
-├── power/                   # Power section pages
-│   ├── microgrids/          # Microgrids
-│   ├── converters/          # Converters
-│   └── devices/             # Devices and characterizations
-├── database/                # Device & magnetics databases
-│   ├── transistors/         # Transistor database
-│   └── magnetics/           # Magnetic database
-├── case-studies/            # Case studies (DAB, SST; Rogowski under magnetics)
-├── accessories/             # Accessories (transducers/sensing)
-├── legal/                   # Privacy, terms, cookies
-├── contact.md               # Contact page
-├── news.md                  # News page
-└── index.md                 # Homepage
-```
-
----
+- A full-screen hologram stage with particle model transitions
+- Brand branches for Spirit Connect, AI, Gaming, Art, and Power Labs
+- A right-side branch panel with summary, status, keywords, and branch links
+- Bottom model navigation with mouse and keyboard controls
+- Spirit Connect / 灵接科技 branding
+- Static export support for GitHub Pages
 
 ## Local Development
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/FulongLi/spiritconnect.github.io.git
-   cd spiritconnect.github.io
-   ```
+Install dependencies:
 
-2. Install dependencies:
-   ```bash
-   bundle install
-   ```
+```bash
+npm install
+```
 
-3. Run the Jekyll server:
-   ```bash
-   bundle exec jekyll serve
-   ```
+Run the local dev server:
 
-4. Open `http://localhost:4000/`
+```bash
+npm run dev
+```
 
----
+Open:
 
-## License
+```text
+http://localhost:3000
+```
 
-See [LICENSE.md](LICENSE.md) for details.
+If port 3000 is already in use, run another port:
 
----
+```bash
+npm run dev -- -p 3003
+```
 
-## Contact
+## Build
 
-- **Email:** [info@spiritconnect.co.uk](mailto:info@spiritconnect.co.uk)
-- **Location:** Cardiff, United Kingdom
-- **Website:** [https://spiritconnect.co.uk](https://spiritconnect.co.uk)
+Create a production static export:
+
+```bash
+npm run build
+```
+
+The static site is generated in:
+
+```text
+out/
+```
+
+## GitHub Pages Deployment
+
+This repository includes a GitHub Actions workflow at:
+
+```text
+.github/workflows/deploy-main-site.yml
+```
+
+To publish the site:
+
+1. Push the repository to GitHub.
+2. Open the repository on GitHub.
+3. Go to `Settings -> Pages`.
+4. Set `Source` to `GitHub Actions`.
+5. Push to `main` or run the workflow manually.
+
+Public site:
+
+[https://spiritconnect.co.uk](https://spiritconnect.co.uk)
+
+## Project Structure
+
+```text
+src/app/                          Next.js app entry and static branch pages
+src/components/brandPortal/        Brand branch data and branch information panel
+src/components/hologramParticles/  WebGPU particle renderer and model switching
+src/components/overlay/            Header, footer, controls, and model selector
+src/components/shared/             Fonts, theme, and asset path helpers
+public/glb/                        Local GLB model assets
+public/assets/                     Local visual textures
+```
+
+## Notes
+
+The repository root is now the Spirit Connect 3D brand portal. Previous Jekyll/Power Labs site files have been removed so the 3D experience is the only website entry point.
