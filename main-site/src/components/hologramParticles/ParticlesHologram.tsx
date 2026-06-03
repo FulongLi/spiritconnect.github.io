@@ -1,0 +1,1933 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import {
+  Scene,
+  PerspectiveCamera,
+  InstancedMesh,
+  IcosahedronGeometry,
+  CylinderGeometry,
+  TorusGeometry,
+  PlaneGeometry,
+  InstancedBufferAttribute,
+  Object3D,
+  Group,
+  Matrix3,
+  Vector2,
+  Vector3,
+  Box3,
+  Plane,
+  Raycaster,
+  Mesh,
+  Color,
+  DoubleSide,
+  CanvasTexture,
+  TextureLoader,
+  RepeatWrapping,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+} from "three";
+import {
+  WebGPURenderer,
+  MeshBasicNodeMaterial,
+  PostProcessing,
+} from "three/webgpu";
+import {
+  positionLocal,
+  normalLocal,
+  normalView,
+  attribute,
+  sin,
+  cos,
+  time,
+  uniform,
+  vec2,
+  vec3,
+  float,
+  fract,
+  positionWorld,
+  normalize,
+  dot,
+  clamp,
+  mix,
+  pow,
+  abs,
+  smoothstep as tslSmoothstep,
+  texture as tslTexture,
+  uv,
+  pass,
+  mx_noise_float,
+  mx_fractal_noise_vec3,
+} from "three/tsl";
+import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { chromaticAberration } from "three/addons/tsl/display/ChromaticAberrationNode.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshSurfaceSampler } from "three/addons/math/MeshSurfaceSampler.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import type { GeometryData, ParticlesHologramProps } from "./types";
+import { assetPath } from "@/components/shared/assetPath";
+
+// ── Module-level geometry cache ───────────────────────────────────────────────
+
+const geometryCache = new Map<string, GeometryData>();
+const geometryInflight = new Map<string, Promise<GeometryData>>();
+const PROCEDURAL_SPHERE_URL = "procedural:sphere";
+const PROCEDURAL_TERRAIN_URL = "procedural:terrain";
+const PROCEDURAL_LOGO_URL = "procedural:spirit-logo";
+const PROCEDURAL_PYRAMID_URL = "procedural:pyramid";
+const PROCEDURAL_BOAT_URL = "procedural:boat";
+const PROCEDURAL_CRYSTAL_URL = "procedural:crystal";
+
+function cacheKey(url: string, particleCount: number) {
+  return `${url}:${particleCount}`;
+}
+
+async function sampleGLBGeometry(
+  url: string,
+  particleCount: number,
+): Promise<GeometryData> {
+  if (url === PROCEDURAL_SPHERE_URL) {
+    return createBreathingSphereGeometry(particleCount);
+  }
+
+  const key = cacheKey(url, particleCount);
+  if (url === PROCEDURAL_PYRAMID_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    const data = createPyramidGeometry(particleCount);
+    geometryCache.set(key, data);
+    return data;
+  }
+
+  if (url === PROCEDURAL_BOAT_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    const data = createBoatGeometry(particleCount);
+    geometryCache.set(key, data);
+    return data;
+  }
+
+  if (url === PROCEDURAL_CRYSTAL_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    const data = createCrystalGeometry(particleCount);
+    geometryCache.set(key, data);
+    return data;
+  }
+
+  if (url === PROCEDURAL_TERRAIN_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    const data = createTerrainGeometry(particleCount);
+    geometryCache.set(key, data);
+    return data;
+  }
+
+  if (url === PROCEDURAL_LOGO_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    if (geometryInflight.has(key)) return geometryInflight.get(key)!;
+    const promise = createLogoGeometry(particleCount).then((data) => {
+      geometryCache.set(key, data);
+      geometryInflight.delete(key);
+      return data;
+    });
+    geometryInflight.set(key, promise);
+    return promise;
+  }
+
+  if (geometryCache.has(key)) return geometryCache.get(key)!;
+  if (geometryInflight.has(key)) return geometryInflight.get(key)!;
+
+  const promise = (async (): Promise<GeometryData> => {
+    const gltf = await new GLTFLoader().loadAsync(url);
+
+    // ── Normalise to a consistent bounding box ────────────────────────────────
+    const bbox = new Box3().setFromObject(gltf.scene);
+    const centre = new Vector3();
+    bbox.getCenter(centre);
+    gltf.scene.position.sub(centre);
+    gltf.scene.updateMatrixWorld(true);
+
+    const bbox2 = new Box3().setFromObject(gltf.scene);
+    const sv = new Vector3();
+    bbox2.getSize(sv);
+    const maxDim = Math.max(sv.x, sv.y, sv.z);
+    gltf.scene.scale.setScalar(maxDim > 0 ? 3 / maxDim : 1);
+    gltf.scene.updateMatrixWorld(true);
+
+    const bbox3 = new Box3().setFromObject(gltf.scene);
+    gltf.scene.position.y -= bbox3.min.y;
+    gltf.scene.updateMatrixWorld(true);
+
+    const meshes: Mesh[] = [];
+    gltf.scene.traverse((child: Object3D) => {
+      if ((child as Mesh).isMesh) meshes.push(child as Mesh);
+    });
+
+    const positions = new Float32Array(particleCount * 3);
+    const normals = new Float32Array(particleCount * 3);
+    const tempPos = new Vector3();
+    const tempNorm = new Vector3();
+    const normMatrix = new Matrix3();
+
+    let filled = 0;
+    const perMesh = Math.floor(particleCount / meshes.length);
+
+    for (let m = 0; m < meshes.length; m++) {
+      const mesh = meshes[m];
+      const count = m < meshes.length - 1 ? perMesh : particleCount - filled;
+      normMatrix.getNormalMatrix(mesh.matrixWorld);
+      const sampler = new MeshSurfaceSampler(mesh).build();
+      for (let i = 0; i < count; i++) {
+        sampler.sample(tempPos, tempNorm);
+        mesh.localToWorld(tempPos);
+        tempNorm.applyMatrix3(normMatrix).normalize();
+        const b = (filled + i) * 3;
+        positions[b] = tempPos.x;
+        positions[b + 1] = tempPos.y;
+        positions[b + 2] = tempPos.z;
+        normals[b] = tempNorm.x;
+        normals[b + 1] = tempNorm.y;
+        normals[b + 2] = tempNorm.z;
+      }
+      filled += count;
+    }
+
+    const data: GeometryData = { positions, normals };
+    geometryCache.set(key, data);
+    geometryInflight.delete(key);
+    return data;
+  })();
+
+  geometryInflight.set(key, promise);
+  return promise;
+}
+
+function createBreathingSphereGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+  for (let i = 0; i < particleCount; i++) {
+    const t = particleCount > 1 ? i / (particleCount - 1) : 0;
+    const y = 1 - t * 2;
+    const radiusAtY = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = i * goldenAngle;
+    const nx = Math.cos(theta) * radiusAtY;
+    const nz = Math.sin(theta) * radiusAtY;
+    const volumeSeed = seededFract(Math.sin((i + 1) * 78.233) * 43758.5453);
+    const fillRadius = Math.pow(volumeSeed, 1 / 3);
+    const shellRipple = 1 + Math.sin(theta * 3.0 + y * 5.5) * 0.004;
+    const radius = 0.9 * fillRadius * shellRipple;
+    const base = i * 3;
+
+    positions[base] = nx * radius;
+    positions[base + 1] = y * radius + 1.05;
+    positions[base + 2] = nz * radius;
+    normals[base] = nx;
+    normals[base + 1] = y;
+    normals[base + 2] = nz;
+  }
+
+  return { positions, normals };
+}
+
+function createTerrainGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+  const width = 3.8;
+  const depth = 2.45;
+  const eps = 0.012;
+
+  for (let i = 0; i < particleCount; i++) {
+    const u = seededFract(i * 0.754877666 + 0.137);
+    const v = seededFract(i * 0.569840296 + 0.421);
+    const jitterX = seededFract(Math.sin((i + 5) * 12.9898) * 43758.5453) - 0.5;
+    const jitterZ = seededFract(Math.sin((i + 9) * 78.233) * 43758.5453) - 0.5;
+    const x = (u - 0.5) * width + jitterX * 0.012;
+    const z = (v - 0.5) * depth + jitterZ * 0.012;
+    const y = terrainHeight(x, z) + 0.72;
+    const base = i * 3;
+
+    positions[base] = x;
+    positions[base + 1] = y;
+    positions[base + 2] = z;
+
+    const hL = terrainHeight(x - eps, z);
+    const hR = terrainHeight(x + eps, z);
+    const hD = terrainHeight(x, z - eps);
+    const hU = terrainHeight(x, z + eps);
+    const normal = new Vector3(hL - hR, eps * 2, hD - hU).normalize();
+    normals[base] = normal.x;
+    normals[base + 1] = normal.y;
+    normals[base + 2] = normal.z;
+  }
+
+  return { positions, normals };
+}
+
+function terrainHeight(x: number, z: number) {
+  const gaussian = (
+    cx: number,
+    cz: number,
+    sx: number,
+    sz: number,
+    amp: number,
+  ) => {
+    const dx = (x - cx) / sx;
+    const dz = (z - cz) / sz;
+    return Math.exp(-(dx * dx + dz * dz)) * amp;
+  };
+
+  const mountains =
+    gaussian(-0.95, -0.18, 0.48, 0.38, 0.78) +
+    gaussian(0.95, 0.38, 0.62, 0.42, 0.58) +
+    gaussian(0.12, -0.78, 0.5, 0.28, 0.34);
+  const basins =
+    gaussian(0.02, 0.08, 0.72, 0.44, -0.42) +
+    gaussian(1.32, -0.48, 0.38, 0.3, -0.26);
+  const ridges =
+    Math.sin(x * 3.1 + z * 1.7) * 0.07 +
+    Math.sin((x - z) * 5.2) * 0.035 +
+    Math.sin((x * 1.8 + z * 6.1)) * 0.025;
+  const edgeX = Math.abs(x) / 1.9;
+  const edgeZ = Math.abs(z) / 1.225;
+  const edgeDrop = Math.pow(Math.max(edgeX, edgeZ), 3.2) * 0.34;
+
+  return mountains + basins + ridges - edgeDrop;
+}
+
+function createPyramidGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+  const apex = new Vector3(0, 2.55, 0);
+  const corners = [
+    new Vector3(-1.35, 0.22, -1.35),
+    new Vector3(1.35, 0.22, -1.35),
+    new Vector3(1.35, 0.22, 1.35),
+    new Vector3(-1.35, 0.22, 1.35),
+  ];
+  const faceNormals = corners.map((corner, i) => {
+    const next = corners[(i + 1) % corners.length];
+    return new Vector3()
+      .subVectors(next, corner)
+      .cross(new Vector3().subVectors(apex, corner))
+      .normalize();
+  });
+
+  for (let i = 0; i < particleCount; i++) {
+    const face = i % 5;
+    const r1 = seededFract(Math.sin((i + 1) * 12.9898) * 43758.5453);
+    const r2 = seededFract(Math.sin((i + 3) * 78.233) * 43758.5453);
+    const base = i * 3;
+
+    if (face === 4) {
+      positions[base] = (r1 - 0.5) * 2.7;
+      positions[base + 1] = 0.2;
+      positions[base + 2] = (r2 - 0.5) * 2.7;
+      normals[base] = 0;
+      normals[base + 1] = -1;
+      normals[base + 2] = 0;
+      continue;
+    }
+
+    const sqrtR1 = Math.sqrt(r1);
+    const wa = 1 - sqrtR1;
+    const wb = sqrtR1 * (1 - r2);
+    const wc = sqrtR1 * r2;
+    const point = new Vector3()
+      .addScaledVector(apex, wa)
+      .addScaledVector(corners[face], wb)
+      .addScaledVector(corners[(face + 1) % corners.length], wc);
+    const normal = faceNormals[face];
+
+    positions[base] = point.x;
+    positions[base + 1] = point.y;
+    positions[base + 2] = point.z;
+    normals[base] = normal.x;
+    normals[base + 1] = normal.y;
+    normals[base + 2] = normal.z;
+  }
+
+  return { positions, normals };
+}
+
+function createBoatGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    const r1 = seededFract(Math.sin((i + 1) * 12.9898) * 43758.5453);
+    const r2 = seededFract(Math.sin((i + 5) * 78.233) * 43758.5453);
+    const r3 = seededFract(Math.sin((i + 9) * 39.425) * 43758.5453);
+    const base = i * 3;
+    const section = r3 < 0.68 ? "hull" : r3 < 0.82 ? "mast" : "sail";
+
+    if (section === "hull") {
+      const x = (r1 - 0.5) * 3.3;
+      const lengthTaper = 1 - Math.pow(Math.abs(x) / 1.65, 1.8);
+      const width = Math.max(0.04, 0.62 * lengthTaper);
+      const side = r2 < 0.5 ? -1 : 1;
+      const v = r2 < 0.5 ? r2 * 2 : (r2 - 0.5) * 2;
+      const z = side * width * (0.35 + v * 0.65);
+      const y =
+        1.13 -
+        Math.pow(v, 1.6) * 0.62 -
+        Math.pow(Math.abs(x) / 1.8, 2) * 0.1;
+      const normal = new Vector3(-x * 0.08, 0.7, z).normalize();
+
+      positions[base] = x;
+      positions[base + 1] = y;
+      positions[base + 2] = z;
+      normals[base] = normal.x;
+      normals[base + 1] = normal.y;
+      normals[base + 2] = normal.z;
+      continue;
+    }
+
+    if (section === "mast") {
+      const angle = r1 * Math.PI * 2;
+      const radius = 0.035;
+      positions[base] = Math.cos(angle) * radius;
+      positions[base + 1] = 0.62 + r2 * 1.65;
+      positions[base + 2] = Math.sin(angle) * radius;
+      normals[base] = Math.cos(angle);
+      normals[base + 1] = 0;
+      normals[base + 2] = Math.sin(angle);
+      continue;
+    }
+
+    const side = r3 < 0.91 ? -1 : 1;
+    const h = r1;
+    const edge = 1 - h;
+    const x = side * edge * 0.72 * r2;
+    const y = 0.72 + h * 1.35;
+    const z = 0.035 * side + Math.sin(h * Math.PI) * 0.08 * side;
+    const normal = new Vector3(0.25 * side, 0.08, side).normalize();
+
+    positions[base] = x;
+    positions[base + 1] = y;
+    positions[base + 2] = z;
+    normals[base] = normal.x;
+    normals[base + 1] = normal.y;
+    normals[base + 2] = normal.z;
+  }
+
+  return { positions, normals };
+}
+
+function createCrystalGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+  const sides = 6;
+
+  for (let i = 0; i < particleCount; i++) {
+    const side = i % sides;
+    const r1 = seededFract(Math.sin((i + 2) * 12.9898) * 43758.5453);
+    const r2 = seededFract(Math.sin((i + 6) * 78.233) * 43758.5453);
+    const upper = seededFract(Math.sin((i + 12) * 39.425) * 43758.5453) > 0.32;
+    const angleA = (side / sides) * Math.PI * 2;
+    const angleB = ((side + 1) / sides) * Math.PI * 2;
+    const apex = new Vector3(0, upper ? 2.55 : 0.05, 0);
+    const radius = upper ? 0.78 : 0.54;
+    const a = new Vector3(
+      Math.cos(angleA) * radius,
+      0.65,
+      Math.sin(angleA) * radius,
+    );
+    const b = new Vector3(
+      Math.cos(angleB) * radius,
+      0.65,
+      Math.sin(angleB) * radius,
+    );
+    const sqrtR1 = Math.sqrt(r1);
+    const point = new Vector3()
+      .addScaledVector(apex, 1 - sqrtR1)
+      .addScaledVector(a, sqrtR1 * (1 - r2))
+      .addScaledVector(b, sqrtR1 * r2);
+    const normal = new Vector3()
+      .subVectors(b, a)
+      .cross(new Vector3().subVectors(apex, a))
+      .normalize();
+    const base = i * 3;
+
+    positions[base] = point.x;
+    positions[base + 1] = point.y;
+    positions[base + 2] = point.z;
+    normals[base] = normal.x;
+    normals[base + 1] = normal.y;
+    normals[base + 2] = normal.z;
+  }
+
+  return { positions, normals };
+}
+
+async function createLogoGeometry(particleCount: number): Promise<GeometryData> {
+  const image = await loadImage(assetPath("/assets/spirit-connect-logo.png"));
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return createBreathingSphereGeometry(particleCount);
+
+  ctx.drawImage(image, 0, 0, width, height);
+  const { data } = ctx.getImageData(0, 0, width, height);
+  const pixels: Array<[number, number, number]> = [];
+  const step = 2;
+
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const index = (y * width + x) * 4;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const a = data[index + 3];
+      const blueLogoPixel = a > 32 && b > 130 && g > 110 && r < 90;
+      if (blueLogoPixel) pixels.push([x, y, a / 255]);
+    }
+  }
+
+  if (pixels.length === 0) return createBreathingSphereGeometry(particleCount);
+
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+  const widthWorld = 2.9;
+  const heightWorld = widthWorld * (height / width);
+
+  for (let i = 0; i < particleCount; i++) {
+    const pick = Math.floor(
+      seededFract(Math.sin((i + 1) * 91.917) * 47453.5453) * pixels.length,
+    );
+    const [px, py, alpha] = pixels[pick];
+    const jitterX = seededFract(Math.sin((i + 3) * 12.9898) * 43758.5453) - 0.5;
+    const jitterY = seededFract(Math.sin((i + 7) * 78.233) * 43758.5453) - 0.5;
+    const jitterZ = seededFract(Math.sin((i + 11) * 39.425) * 43758.5453) - 0.5;
+    const x = ((px + jitterX * step) / width - 0.5) * widthWorld;
+    const y = (0.5 - (py + jitterY * step) / height) * heightWorld + 1.05;
+    const z =
+      jitterZ * (0.1 + alpha * 0.08) +
+      Math.sin(x * 3.4 + y * 2.1) * 0.018;
+    const base = i * 3;
+
+    positions[base] = x;
+    positions[base + 1] = y;
+    positions[base + 2] = z;
+    normals[base] = 0;
+    normals[base + 1] = 0;
+    normals[base + 2] = 1;
+  }
+
+  return { positions, normals };
+}
+
+function loadImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Unable to load image: ${url}`));
+    image.src = url;
+  });
+}
+
+function seededFract(value: number) {
+  return value - Math.floor(value);
+}
+
+export default function ParticlesHologram({
+  url,
+  onLoaded,
+  onTransitionComplete,
+  onUnavailable,
+  particleCount = 50_000,
+  autoRotateSpeed = 0.8,
+  color = "#8aa0b8",
+  floatAmp = 0.01,
+  breathAmp = 0,
+  sphereSize = 0.01,
+  ambient = 0.31,
+  wrap = 0.87,
+  light1X = 0,
+  light1Y = 4,
+  light1Z = 0,
+  light1Color = "#ffffff",
+  light1Intensity = 1.0,
+  light2X = 0,
+  light2Y = -4,
+  light2Z = 0,
+  light2Color = "#4488ff",
+  light2Intensity = 0.5,
+  volumeStrength = 0.79,
+  modelX = 0,
+  modelY = 1.0,
+  modelZ = 0,
+  noiseAmp = 0.08,
+  noiseScale = 0.6,
+  noiseSpeed = 0.15,
+  noiseGain = 0.5,
+  maskScale = 0.4,
+  maskSpeed = 0.04,
+  maskContrast = 1.5,
+  mouseRadius = 1.5,
+  mouseStrength = 0.6,
+  springStiffness = 5.0,
+  springDamping = 3.0,
+  pushStrength = 12.0,
+  mouseScatter = 0.6,
+  mouseGlowColor = "#ffffff",
+  mouseGlowPassive = 0.0,
+  mouseGlowActive = 1.5,
+  mouseGlowPow = 2.0,
+  mouseGlowDecay = 1.5,
+  mouseLerp = 6.0,
+  bloomStrength = 0.4,
+  bloomRadius = 0.4,
+  bloomThreshold = 0.1,
+  chromaticStr = 0.0,
+  preloadUrls = [] as string[],
+  transitionDeformDur = 0.5,
+  transitionMorphDur = 1.2,
+  transitionReformDur = 0.7,
+  transitionMaskContrast = 0.2,
+  transitionGlowScale = 1.0,
+  cylVisible = true,
+  cylRadius = 1.8,
+  cylHeight = 3.5,
+  cylColor = "#88ccff",
+  cylNoiseScale = 2.0,
+  cylLineWidth = 0.08,
+  cylFresnelPow = 2.0,
+  cylBaseOpacity = 0.15,
+  cylLineOpacity = 0.6,
+  cylNoiseSpeed = 0.3,
+  cylPulseSpeed = 0.8,
+  cylPulseAmp = 0.4,
+  cylPulseEasing = 2.5,
+  cylWaveFreq = 2.0,
+  cylTexRepeat = 3,
+  cylY = 0,
+  gridVisible = true,
+  gridColor = "#c8d4de",
+  gridBaseOpacity = 0.12,
+  gridWaveAmp = 0.55,
+  gridNoiseScale = 0.18,
+  gridWaveSpeed = 0.07,
+  gridDensity = 1.1,
+  gridDotSize = 0.07,
+  ringVisible = true,
+  ringRadius = 1.95,
+  ringThickness = 0.03,
+  ringGap = 20,
+  ringColor = "#ffffff",
+  ringOpacity = 0.9,
+  ringBrightness = 3.0,
+  camIntensity = 12,
+  camStiffness = 3.0,
+  camDamping = 4.0,
+  bgColorCenter = "#d2dde8",
+  bgColorMid = "#a0b4c8",
+  bgColorEdge = "#7a96aa",
+  entranceMorphDur = 0.7,
+  entranceReformDur = 0.35,
+  replayTrigger = 0,
+}: ParticlesHologramProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const groupRef = useRef<Group | null>(null);
+  const autoRotateSpeedRef = useRef(autoRotateSpeed);
+  const colorRef = useRef(color);
+  const uniformsRef = useRef<Record<string, any> | null>(null);
+  const springKRef = useRef(springStiffness);
+  const springDampingRef = useRef(springDamping);
+  const pushStrengthRef = useRef(pushStrength);
+  const mouseRadiusRef = useRef(mouseRadius);
+  const mouseStrengthRef = useRef(mouseStrength);
+  const mouseScatterRef = useRef(mouseScatter);
+  const mouseGlowDecayRef = useRef(mouseGlowDecay);
+  const mouseLerpRef = useRef(mouseLerp);
+  const bloomNodeRef = useRef<any>(null);
+  const caUniformRef = useRef<any>(null);
+  const cylMeshRef = useRef<Mesh | null>(null);
+  const cylUniRef = useRef<Record<string, any> | null>(null);
+  const gridMeshRef = useRef<Mesh | null>(null);
+  const gridUniRef = useRef<Record<string, any> | null>(null);
+  const ringRotGroupRef = useRef<Group | null>(null);
+  const ringTopGroupRef = useRef<Group | null>(null);
+  const ringBotGroupRef = useRef<Group | null>(null);
+  const ring1Ref = useRef<Mesh | null>(null);
+  const ring2Ref = useRef<Mesh | null>(null);
+  const ring3Ref = useRef<Mesh | null>(null);
+  const ring4Ref = useRef<Mesh | null>(null);
+  const ringUniRef = useRef<Record<string, any> | null>(null);
+  const camIntensityRef = useRef(camIntensity);
+  const camStiffnessRef = useRef(camStiffness);
+  const camDampingRef = useRef(camDamping);
+  const bgCtxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const bgTexRef = useRef<CanvasTexture | null>(null);
+  const bgColorCenterRef = useRef(bgColorCenter);
+  const bgColorMidRef = useRef(bgColorMid);
+  const bgColorEdgeRef = useRef(bgColorEdge);
+
+  const redrawBg = () => {
+    const ctx = bgCtxRef.current;
+    const tex = bgTexRef.current;
+    if (!ctx || !tex) return;
+    const { width, height } = ctx.canvas;
+    const grad = ctx.createRadialGradient(
+      width * 0.48,
+      height * 0.45,
+      0,
+      width * 0.5,
+      height * 0.5,
+      width * 0.8,
+    );
+    grad.addColorStop(0, bgColorCenterRef.current);
+    grad.addColorStop(0.45, bgColorMidRef.current);
+    grad.addColorStop(1, bgColorEdgeRef.current);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+    tex.needsUpdate = true;
+  };
+
+  const onTransitionCompleteRef = useRef(onTransitionComplete);
+  useEffect(() => {
+    onTransitionCompleteRef.current = onTransitionComplete;
+  }, [onTransitionComplete]);
+
+  const maskContrastRef = useRef(maskContrast);
+  const transitionDeformDurRef = useRef(transitionDeformDur);
+  const transitionMorphDurRef = useRef(transitionMorphDur);
+  const transitionReformDurRef = useRef(transitionReformDur);
+  const transitionMaskContrastRef = useRef(transitionMaskContrast);
+  const transitionGlowScaleRef = useRef(transitionGlowScale);
+  const entranceMorphDurRef = useRef(entranceMorphDur);
+  const entranceReformDurRef = useRef(entranceReformDur);
+
+  // ── Transition refs ───────────────────────────────────────────────────────────
+  const transitionStateRef = useRef<
+    "idle" | "deform-out" | "morphing" | "deform-in"
+  >("idle");
+  const transitionTimeRef = useRef(0);
+  const isEntranceRef = useRef(true);
+  const posAttrRef = useRef<InstancedBufferAttribute | null>(null);
+  const normAttrRef = useRef<InstancedBufferAttribute | null>(null);
+  const posAttrTargetRef = useRef<InstancedBufferAttribute | null>(null);
+  const normAttrTargetRef = useRef<InstancedBufferAttribute | null>(null);
+  const isFirstUrlRef = useRef(true);
+
+  // ── Ref sync — runs every render, read by the animate loop ───────────────────
+  autoRotateSpeedRef.current     = autoRotateSpeed;
+  colorRef.current               = color;
+  springKRef.current             = springStiffness;
+  springDampingRef.current       = springDamping;
+  pushStrengthRef.current        = pushStrength;
+  mouseRadiusRef.current         = mouseRadius;
+  mouseStrengthRef.current       = mouseStrength;
+  mouseScatterRef.current        = mouseScatter;
+  mouseGlowDecayRef.current      = mouseGlowDecay;
+  mouseLerpRef.current           = mouseLerp;
+  camIntensityRef.current        = camIntensity;
+  camStiffnessRef.current        = camStiffness;
+  camDampingRef.current          = camDamping;
+  maskContrastRef.current        = maskContrast;
+  transitionDeformDurRef.current = transitionDeformDur;
+  transitionMorphDurRef.current  = transitionMorphDur;
+  transitionReformDurRef.current = transitionReformDur;
+  transitionMaskContrastRef.current = transitionMaskContrast;
+  transitionGlowScaleRef.current = transitionGlowScale;
+  entranceMorphDurRef.current    = entranceMorphDur;
+  entranceReformDurRef.current   = entranceReformDur;
+  bgColorCenterRef.current       = bgColorCenter;
+  bgColorMidRef.current          = bgColorMid;
+  bgColorEdgeRef.current         = bgColorEdge;
+
+  // ── Full re-init on url / particleCount change ────────────────────────────────
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let animId: number;
+    let renderer: WebGPURenderer;
+    let disposed = false;
+    let cleanupInner: (() => void) | undefined;
+
+    (async () => {
+      // ── Renderer ──────────────────────────────────────────────────────────────
+      renderer = new WebGPURenderer({ antialias: true, alpha: true });
+      await renderer.init();
+      if (disposed) return;
+
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      let postProcessing: PostProcessing | null = null;
+
+      // ── Scene / Camera ────────────────────────────────────────────────────────
+      const scene = new Scene();
+
+      {
+        const bgCanvas = document.createElement("canvas");
+        bgCanvas.width = bgCanvas.height = 512;
+        const bgCtx = bgCanvas.getContext("2d")!;
+        bgCtxRef.current = bgCtx;
+        const bgTex = new CanvasTexture(bgCanvas);
+        bgTexRef.current = bgTex;
+        scene.background = bgTex;
+        redrawBg();
+      }
+
+      // ── Dot grid background ───────────────────────────────────────────────────
+      {
+        const gridGeo = new PlaneGeometry(50, 32);
+        const gridMat = new MeshBasicNodeMaterial() as any;
+        gridMat.transparent = true;
+        gridMat.depthWrite = false;
+        gridMat.depthTest = true;
+
+        const uGridColor = uniform(new Color(gridColor));
+        const uGridBaseOpacity = uniform(gridBaseOpacity);
+        const uGridWaveAmp = uniform(gridWaveAmp);
+        const uGridNoiseScale = uniform(gridNoiseScale);
+        const uGridWaveSpeed = uniform(gridWaveSpeed);
+        const uGridDensity = uniform(gridDensity);
+        const uGridDotSize = uniform(gridDotSize);
+
+        const cellPos = positionWorld.xy.mul(uGridDensity);
+        const fracCell = fract(cellPos).sub(vec2(0.5, 0.5));
+        const dotDist = fracCell.length();
+        const dotShape = float(1).sub(
+          tslSmoothstep(float(0), uGridDotSize, dotDist),
+        );
+        const noiseCoord = vec3(
+          positionWorld.x.mul(uGridNoiseScale),
+          positionWorld.y.mul(uGridNoiseScale),
+          time.mul(uGridWaveSpeed),
+        );
+        const wave = mx_noise_float(noiseCoord).mul(float(0.5)).add(float(0.5));
+        const waveBrightness = uGridBaseOpacity.add(wave.mul(uGridWaveAmp));
+        gridMat.colorNode = uGridColor.mul(waveBrightness);
+        gridMat.opacityNode = dotShape;
+
+        const gridMesh = new Mesh(gridGeo, gridMat);
+        gridMesh.position.z = -5;
+        gridMesh.renderOrder = -1;
+        scene.add(gridMesh);
+
+        gridMeshRef.current = gridMesh;
+        gridUniRef.current = {
+          uGridColor,
+          uGridBaseOpacity,
+          uGridWaveAmp,
+          uGridNoiseScale,
+          uGridWaveSpeed,
+          uGridDensity,
+          uGridDotSize,
+          gridMat,
+        };
+      }
+
+      const camera = new PerspectiveCamera(
+        50,
+        container.clientWidth / container.clientHeight,
+        0.1,
+        200,
+      );
+      camera.position.set(0, 0, 6);
+
+      // ── Orbit Controls ────────────────────────────────────────────────────────
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enabled = false;
+      controls.autoRotate = false;
+      controlsRef.current = controls;
+
+      const { positions, normals } = await sampleGLBGeometry(
+        url,
+        particleCount,
+      );
+      if (disposed) return;
+
+      const seeds = new Float32Array(particleCount);
+      for (let i = 0; i < particleCount; i++) seeds[i] = Math.random();
+
+      // ── Sphere geometry ───────────────────────────────────────────────────────
+      const sphereGeo = new IcosahedronGeometry(1, 0);
+      sphereGeo.setAttribute(
+        "instanceSeed",
+        new InstancedBufferAttribute(seeds, 1),
+      );
+      sphereGeo.setAttribute(
+        "instanceNormal",
+        new InstancedBufferAttribute(new Float32Array(normals.length), 3),
+      );
+      sphereGeo.setAttribute(
+        "instancePos",
+        new InstancedBufferAttribute(new Float32Array(positions.length), 3),
+      );
+      sphereGeo.setAttribute(
+        "instanceNormalTarget",
+        new InstancedBufferAttribute(normals.slice(), 3),
+      );
+      sphereGeo.setAttribute(
+        "instancePosTarget",
+        new InstancedBufferAttribute(positions.slice(), 3),
+      );
+
+      const instancedMesh = new InstancedMesh(
+        sphereGeo,
+        null as any,
+        particleCount,
+      );
+      instancedMesh.instanceMatrix.needsUpdate = true;
+
+      posAttrRef.current = sphereGeo.getAttribute(
+        "instancePos",
+      ) as InstancedBufferAttribute;
+      normAttrRef.current = sphereGeo.getAttribute(
+        "instanceNormal",
+      ) as InstancedBufferAttribute;
+      posAttrTargetRef.current = sphereGeo.getAttribute(
+        "instancePosTarget",
+      ) as InstancedBufferAttribute;
+      normAttrTargetRef.current = sphereGeo.getAttribute(
+        "instanceNormalTarget",
+      ) as InstancedBufferAttribute;
+
+      transitionStateRef.current = "morphing";
+      transitionTimeRef.current = 0;
+
+      // ── TSL uniforms ──────────────────────────────────────────────────────────
+      const u = {
+        color: uniform(new Color(color)),
+        floatAmp: uniform(floatAmp),
+        breathAmp: uniform(breathAmp),
+        sphereSize: uniform(sphereSize),
+        ambient: uniform(ambient),
+        wrap: uniform(wrap),
+        light1Pos: uniform(new Vector3(light1X, light1Y, light1Z)),
+        light1Color: uniform(new Color(light1Color)),
+        light1Intensity: uniform(light1Intensity),
+        light2Pos: uniform(new Vector3(light2X, light2Y, light2Z)),
+        light2Color: uniform(new Color(light2Color)),
+        light2Intensity: uniform(light2Intensity),
+        volumeStrength: uniform(volumeStrength),
+        noiseAmp: uniform(noiseAmp),
+        noiseScale: uniform(noiseScale),
+        noiseSpeed: uniform(noiseSpeed),
+        noiseGain: uniform(noiseGain),
+        maskScale: uniform(maskScale),
+        maskSpeed: uniform(maskSpeed),
+        maskContrast: uniform(transitionMaskContrast),
+        mousePos: uniform(new Vector3()),
+        mouseVel: uniform(new Vector3()),
+        mouseRadius: uniform(mouseRadius),
+        mouseStrength: uniform(mouseStrength),
+        mouseScatter: uniform(mouseScatter),
+        mouseGlowColor: uniform(new Color(mouseGlowColor)),
+        mouseGlowPassive: uniform(mouseGlowPassive),
+        mouseGlowActive: uniform(mouseGlowActive),
+        mouseGlowPow: uniform(mouseGlowPow),
+        mouseGlowEnergy: uniform(0),
+        transitionProgress: uniform(0),
+        transitionGlowScale: uniform(transitionGlowScale),
+        entranceGlow: uniform(1),
+      };
+      uniformsRef.current = u;
+
+      // ── TSL material ──────────────────────────────────────────────────────────
+      const material = new MeshBasicNodeMaterial() as any;
+
+      const seedAttr = attribute("instanceSeed", "float");
+      const instNorm = attribute("instanceNormal", "vec3");
+      const instPos = attribute("instancePos", "vec3");
+      const instNormTgt = attribute("instanceNormalTarget", "vec3");
+      const instPosTgt = attribute("instancePosTarget", "vec3");
+
+      const blendPos = mix(instPos, instPosTgt, u.transitionProgress);
+      const blendNorm = normalize(
+        mix(instNorm, instNormTgt, u.transitionProgress),
+      );
+
+      const phase = seedAttr.mul(Math.PI * 2);
+
+      // ── Animation ─────────────────────────────────────────────────────────────
+      const floatDisp = vec3(
+        cos(time.mul(1.3).add(phase)).mul(u.floatAmp).mul(0.6),
+        sin(time.mul(1.6).add(phase)).mul(u.floatAmp),
+        sin(time.mul(1.1).add(phase.add(1.0)))
+          .mul(u.floatAmp)
+          .mul(0.6),
+      );
+
+      const maskCoord = blendPos
+        .mul(u.maskScale)
+        .add(
+          vec3(
+            time.mul(u.maskSpeed),
+            time.mul(u.maskSpeed).mul(0.7),
+            time.mul(u.maskSpeed).mul(1.3),
+          ),
+        );
+
+      const rawMask = mx_noise_float(maskCoord);
+      const mask = pow(
+        clamp(rawMask.mul(0.5).add(0.5), float(0), float(1)),
+        u.maskContrast,
+      );
+
+      const noiseCoord = blendPos
+        .mul(u.noiseScale)
+        .add(
+          vec3(
+            time.mul(u.noiseSpeed),
+            float(0),
+            time.mul(u.noiseSpeed).mul(0.7),
+          ),
+        );
+
+      const noiseDisp = mx_fractal_noise_vec3(noiseCoord, 2, 2.0, u.noiseGain)
+        .mul(u.noiseAmp)
+        .mul(mask);
+
+      // ── Mouse displacement ────────────────────────────────────────────────────
+      const toMouse = u.mousePos.sub(blendPos);
+      const dist = toMouse.length();
+      const falloff = clamp(
+        float(1.0).sub(dist.div(u.mouseRadius)),
+        float(0),
+        float(1),
+      );
+      const impulseLen = u.mouseVel.length();
+      const velDir = normalize(u.mouseVel.add(vec3(0.0001, 0.0001, 0.0001)));
+      const rawRand = vec3(
+        sin(seedAttr.mul(127.1)),
+        cos(seedAttr.mul(311.7)),
+        sin(seedAttr.mul(74.3).add(1.0)),
+      );
+      const randUnit = normalize(rawRand);
+      const onAxis = velDir.mul(dot(randUnit, velDir));
+      const perpToVel = normalize(randUnit.sub(onAxis).add(vec3(0, 0.0001, 0)));
+      const mouseDisp = velDir
+        .add(perpToVel.mul(u.mouseScatter))
+        .mul(impulseLen)
+        .mul(u.mouseStrength)
+        .mul(falloff.mul(falloff));
+
+      material.positionNode = positionLocal
+        .mul(u.sphereSize)
+        .add(blendPos)
+        .add(blendNorm.mul(sin(time.mul(1.15)).mul(u.breathAmp)))
+        .add(floatDisp)
+        .add(noiseDisp)
+        .add(mouseDisp);
+
+      // ── Shading ───────────────────────────────────────────────────────────────
+      const lightContrib = (lightPos: any, lightCol: any, lightInt: any) => {
+        const dir = normalize(lightPos.sub(blendPos));
+        const figW = clamp(
+          dot(blendNorm, dir).add(u.wrap).div(float(1.0).add(u.wrap)),
+          float(0),
+          float(1),
+        );
+        const sphW = clamp(
+          dot(normalize(normalLocal), dir)
+            .add(u.wrap)
+            .div(float(1.0).add(u.wrap)),
+          float(0),
+          float(1),
+        );
+        const diffuse = mix(figW, figW.mul(sphW), u.volumeStrength);
+        return lightCol.mul(diffuse).mul(lightInt);
+      };
+
+      const litColor = lightContrib(
+        u.light1Pos,
+        u.light1Color,
+        u.light1Intensity,
+      ).add(lightContrib(u.light2Pos, u.light2Color, u.light2Intensity));
+
+      const shadedColor = u.color.mul(
+        clamp(litColor.add(u.ambient), float(0), float(1)),
+      );
+
+      // ── Mouse glow ────────────────────────────────────────────────────────────
+      const glowFalloff = pow(
+        clamp(falloff, float(0), float(1)),
+        u.mouseGlowPow,
+      );
+      const passiveGlow = glowFalloff.mul(u.mouseGlowPassive);
+      const activeGlow = glowFalloff
+        .mul(u.mouseGlowEnergy)
+        .mul(u.mouseGlowActive);
+      const mouseGlowFactor = clamp(
+        passiveGlow.add(activeGlow),
+        float(0),
+        float(1),
+      );
+
+      // ── Transition glow ───────────────────────────────────────────────────────
+      const morphActivity = u.transitionProgress
+        .mul(float(1).sub(u.transitionProgress))
+        .mul(float(4));
+      const transDispMag = instPosTgt.sub(instPos).length();
+      const transNorm = clamp(
+        transDispMag.mul(float(0.35)),
+        float(0),
+        float(1),
+      );
+      const transGlow = transNorm.mul(morphActivity).mul(u.transitionGlowScale);
+
+      const glowFactor = clamp(
+        mouseGlowFactor.add(transGlow),
+        float(0),
+        float(1),
+      ).mul(u.entranceGlow);
+      material.colorNode = mix(shadedColor, u.mouseGlowColor, glowFactor);
+
+      instancedMesh.material = material;
+
+      const posGroup = new Group();
+      posGroup.position.set(modelX, modelY, modelZ);
+      const rotGroup = new Group();
+      rotGroup.add(instancedMesh);
+      posGroup.add(rotGroup);
+
+      // ── Transparent cylinder ──────────────────────────────────────────────────
+      const cylGeo = new CylinderGeometry(
+        cylRadius,
+        cylRadius,
+        cylHeight,
+        64,
+        1,
+        true,
+      );
+      const cylMat = new MeshBasicNodeMaterial() as any;
+      cylMat.transparent = true;
+      cylMat.side = DoubleSide;
+      cylMat.depthWrite = false;
+
+      const uCylColor = uniform(new Color(cylColor));
+      const uCylNoiseScale = uniform(cylNoiseScale);
+      const uCylLineWidth = uniform(cylLineWidth);
+      const uCylFresnelPow = uniform(cylFresnelPow);
+      const uCylBaseOpacity = uniform(cylBaseOpacity);
+      const uCylLineOpacity = uniform(cylLineOpacity);
+      const uCylNoiseSpeed = uniform(cylNoiseSpeed);
+      const uCylPulseSpeed = uniform(cylPulseSpeed);
+      const uCylPulseAmp = uniform(cylPulseAmp);
+      const uCylPulseEasing = uniform(cylPulseEasing);
+      const uCylWaveFreq = uniform(cylWaveFreq);
+      const uCylTexRepeat = uniform(cylTexRepeat);
+
+      const triTex = await new TextureLoader().loadAsync(
+        assetPath("/assets/triangle-texture.png"),
+      );
+      if (disposed) return;
+      triTex.wrapS = triTex.wrapT = RepeatWrapping;
+      triTex.magFilter = LinearFilter;
+      triTex.minFilter = LinearMipmapLinearFilter;
+      triTex.generateMipmaps = true;
+      triTex.anisotropy = 16;
+      triTex.needsUpdate = true;
+
+      const NdotV = abs(normalView.z);
+      const fresnelRim = pow(
+        clamp(float(1).sub(NdotV), float(0), float(1)),
+        uCylFresnelPow,
+      );
+
+      const cylTimeOff1 = vec3(
+        time.mul(uCylNoiseSpeed),
+        float(0),
+        time.mul(uCylNoiseSpeed).mul(float(0.7)),
+      );
+      const cylTimeOff2 = vec3(
+        float(0),
+        time.mul(uCylNoiseSpeed).mul(float(0.5)),
+        time.mul(uCylNoiseSpeed).mul(float(1.3)),
+      );
+
+      const cylP1 = positionLocal.mul(uCylNoiseScale).add(cylTimeOff1);
+      const cylP2 = positionLocal
+        .mul(uCylNoiseScale.mul(float(1.87)))
+        .add(vec3(17.3, 5.7, 23.1))
+        .add(cylTimeOff2);
+      const cylLine1 = float(1).sub(
+        tslSmoothstep(float(0), uCylLineWidth, abs(mx_noise_float(cylP1))),
+      );
+      const cylLine2 = float(1).sub(
+        tslSmoothstep(float(0), uCylLineWidth, abs(mx_noise_float(cylP2))),
+      );
+      const cylLinePat = clamp(cylLine1.add(cylLine2), float(0), float(1));
+
+      const cylPhase = time
+        .mul(uCylPulseSpeed)
+        .sub(positionLocal.y.mul(uCylWaveFreq));
+      const cylSineRaw = sin(cylPhase).mul(float(0.5)).add(float(0.5));
+      const cylPulse = pow(cylSineRaw, uCylPulseEasing);
+      const cylPulsedLineOp = uCylLineOpacity.mul(
+        float(1).sub(uCylPulseAmp).add(uCylPulseAmp.mul(cylPulse)),
+      );
+
+      const cylTexUV = uv().mul(uCylTexRepeat);
+      const texBright = tslTexture(triTex, cylTexUV).r;
+
+      const detailOp = texBright
+        .mul(cylLinePat)
+        .mul(fresnelRim)
+        .mul(cylPulsedLineOp);
+      const cylFinalOp = clamp(
+        fresnelRim.mul(uCylBaseOpacity).add(detailOp),
+        float(0),
+        float(1),
+      );
+
+      cylMat.colorNode = uCylColor;
+      cylMat.opacityNode = cylFinalOp;
+
+      const cylMesh = new Mesh(cylGeo, cylMat);
+      cylMesh.position.set(0, cylHeight / 2 + cylY, 0);
+      cylMesh.visible = cylVisible;
+      posGroup.add(cylMesh);
+      cylMeshRef.current = cylMesh;
+      cylUniRef.current = {
+        uCylColor,
+        uCylNoiseScale,
+        uCylLineWidth,
+        uCylFresnelPow,
+        uCylBaseOpacity,
+        uCylLineOpacity,
+        uCylNoiseSpeed,
+        uCylPulseSpeed,
+        uCylPulseAmp,
+        uCylPulseEasing,
+        uCylWaveFreq,
+        uCylTexRepeat,
+      };
+
+      // ── Halo rings ────────────────────────────────────────────────────────────
+      {
+        const gapRad = ringGap * (Math.PI / 180);
+        const arcSpan = Math.PI - gapRad;
+
+        const makeRingGeo = () =>
+          new TorusGeometry(ringRadius, ringThickness, 8, 80, arcSpan);
+
+        const ringMat = new MeshBasicNodeMaterial() as any;
+        ringMat.transparent = true;
+        ringMat.depthWrite = false;
+        ringMat.side = DoubleSide;
+
+        const uRingColor = uniform(new Color(ringColor));
+        const uRingOpacity = uniform(ringOpacity);
+        const uRingBrightness = uniform(ringBrightness);
+        ringMat.colorNode = uRingColor.mul(uRingBrightness);
+        ringMat.opacityNode = uRingOpacity;
+
+        const makeArcPair = (): [Mesh, Mesh, Group, Group] => {
+          const m1 = new Mesh(makeRingGeo(), ringMat);
+          m1.rotation.x = -Math.PI / 2;
+          const m2 = new Mesh(makeRingGeo(), ringMat);
+          m2.rotation.x = -Math.PI / 2;
+          const wA = new Group();
+          wA.rotation.y = gapRad / 2;
+          wA.add(m1);
+          const wB = new Group();
+          wB.rotation.y = Math.PI + gapRad / 2;
+          wB.add(m2);
+          return [m1, m2, wA, wB];
+        };
+
+        const [r1, r2, w1, w2] = makeArcPair();
+        const topGroup = new Group();
+        topGroup.position.y = cylHeight + cylY;
+        topGroup.add(w1, w2);
+
+        const [r3, r4, w3, w4] = makeArcPair();
+        const botGroup = new Group();
+        botGroup.position.y = cylY;
+        botGroup.add(w3, w4);
+
+        const ringRotGroup = new Group();
+        ringRotGroup.add(topGroup, botGroup);
+        ringRotGroup.visible = ringVisible;
+        posGroup.add(ringRotGroup);
+
+        ringRotGroupRef.current = ringRotGroup;
+        ringTopGroupRef.current = topGroup;
+        ringBotGroupRef.current = botGroup;
+        ring1Ref.current = r1;
+        ring2Ref.current = r2;
+        ring3Ref.current = r3;
+        ring4Ref.current = r4;
+        ringUniRef.current = {
+          uRingColor,
+          uRingOpacity,
+          uRingBrightness,
+          ringMat,
+          w1,
+          w2,
+          w3,
+          w4,
+        };
+      }
+
+      scene.add(posGroup);
+      groupRef.current = posGroup;
+      onLoaded?.();
+
+      // ── Post-processing ───────────────────────────────────────────────────────
+      {
+        const pp = new PostProcessing(renderer);
+        const scenePass = pass(scene, camera);
+        const sceneColor = (scenePass as any).getTextureNode("output");
+
+        const bloomPass = bloom(
+          sceneColor,
+          bloomStrength,
+          bloomRadius,
+          bloomThreshold,
+        );
+        bloomNodeRef.current = bloomPass;
+
+        const caStrengthU = uniform(chromaticStr);
+        caUniformRef.current = caStrengthU;
+
+        const combined = sceneColor.add(bloomPass);
+        const caPass = chromaticAberration(
+          combined,
+          caStrengthU,
+          new Vector2(0.5, 0.5),
+        );
+
+        pp.outputNode = caPass;
+        postProcessing = pp;
+      }
+
+      const onResize = () => {
+        if (disposed || !container) return;
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      };
+      window.addEventListener("resize", onResize);
+
+      // ── Pointer interaction ───────────────────────────────────────────────────
+      const raycaster = new Raycaster();
+      const mouseNDC = new Vector2();
+      const mousePlane = new Plane();
+      const mouseHit = new Vector3();
+      const modelCenter = new Vector3();
+      const cameraDir = new Vector3();
+      const targetMousePos = new Vector3();
+      const smoothMousePos = new Vector3();
+      const prevMousePos = new Vector3();
+      const frameVel = new Vector3();
+      const smoothVel = new Vector3();
+      const impVel = new Vector3();
+      const impulse = new Vector3();
+      let glowEnergy = 0;
+      let lastFrameTime = performance.now();
+      let mouseMoving = false;
+      let activePointerId: number | null = null;
+      let modelScale = 1;
+      let targetModelScale = 1;
+      let pinchStartDistance = 0;
+      let pinchStartScale = 1;
+      const pointerPositions = new Map<number, { x: number; y: number; type: string }>();
+      let touchInfluence = 0;
+      let targetTouchInfluence = 0;
+      const CAM_RADIUS = camera.position.z;
+      let camX = 0, camY = 0, camRoll = 0;
+      let camVelX = 0, camVelY = 0, camVelRoll = 0;
+      let moveTimer = 0;
+      const MOVE_TIMEOUT = 0.06;
+      let mouseEverMoved = false;
+      const smoothstep = (p: number) => p * p * (3 - 2 * p);
+      const clampScale = (scale: number) => Math.min(Math.max(scale, 0.55), 1.9);
+      const touchPointers = () =>
+        [...pointerPositions.values()].filter((pointer) => pointer.type === "touch");
+      const touchDistance = () => {
+        const touches = touchPointers();
+        if (touches.length < 2) return 0;
+        return Math.hypot(touches[0].x - touches[1].x, touches[0].y - touches[1].y);
+      };
+
+      const updatePointerPosition = (clientX: number, clientY: number) => {
+        const rect = container.getBoundingClientRect();
+        mouseNDC.set(
+          ((clientX - rect.left) / rect.width) * 2 - 1,
+          -((clientY - rect.top) / rect.height) * 2 + 1,
+        );
+        raycaster.setFromCamera(mouseNDC, camera);
+        if (raycaster.ray.intersectPlane(mousePlane, mouseHit)) {
+          const localPos = mouseHit
+            .clone()
+            .sub(posGroup.position)
+            .divideScalar(Math.max(modelScale, 0.001))
+            .applyQuaternion(rotGroup.quaternion.clone().invert());
+          targetMousePos.copy(localPos);
+          if (!mouseEverMoved) {
+            smoothMousePos.copy(localPos);
+            prevMousePos.copy(localPos);
+            mouseEverMoved = true;
+          }
+        }
+        mouseMoving = true;
+        moveTimer = 0;
+      };
+
+      const onWheel = (e: WheelEvent) => {
+        if (e.cancelable) e.preventDefault();
+        const factor = Math.exp(-e.deltaY * 0.0012);
+        targetModelScale = clampScale(targetModelScale * factor);
+      };
+
+      const onPointerDown = (e: PointerEvent) => {
+        if (e.cancelable) e.preventDefault();
+        pointerPositions.set(e.pointerId, {
+          x: e.clientX,
+          y: e.clientY,
+          type: e.pointerType,
+        });
+        activePointerId = e.pointerId;
+        container.setPointerCapture?.(e.pointerId);
+        const touches = touchPointers();
+        if (touches.length >= 2) {
+          mouseMoving = false;
+          targetTouchInfluence = 0;
+          pinchStartDistance = touchDistance();
+          pinchStartScale = targetModelScale;
+          return;
+        }
+        targetTouchInfluence = e.pointerType === "touch" ? 1 : 0;
+        updatePointerPosition(e.clientX, e.clientY);
+      };
+
+      const onPointerMove = (e: PointerEvent) => {
+        if (
+          activePointerId !== null &&
+          e.pointerId !== activePointerId &&
+          !pointerPositions.has(e.pointerId)
+        )
+          return;
+        if (e.cancelable) e.preventDefault();
+        pointerPositions.set(e.pointerId, {
+          x: e.clientX,
+          y: e.clientY,
+          type: e.pointerType,
+        });
+        const touches = touchPointers();
+        if (touches.length >= 2) {
+          const distance = touchDistance();
+          if (pinchStartDistance > 0 && distance > 0) {
+            targetModelScale = clampScale(
+              pinchStartScale * (distance / pinchStartDistance),
+            );
+          }
+          mouseMoving = false;
+          targetTouchInfluence = 0;
+          return;
+        }
+        targetTouchInfluence =
+          e.pointerType === "touch" ? 1 : targetTouchInfluence;
+        updatePointerPosition(e.clientX, e.clientY);
+      };
+
+      const endPointer = (e: PointerEvent) => {
+        if (
+          activePointerId !== null &&
+          e.pointerId !== activePointerId &&
+          !pointerPositions.has(e.pointerId)
+        )
+          return;
+        pointerPositions.delete(e.pointerId);
+        mouseMoving = false;
+        targetTouchInfluence = 0;
+        if (container.hasPointerCapture?.(e.pointerId)) {
+          container.releasePointerCapture(e.pointerId);
+        }
+        const remainingTouches = touchPointers();
+        if (remainingTouches.length >= 2) {
+          pinchStartDistance = touchDistance();
+          pinchStartScale = targetModelScale;
+        } else if (pointerPositions.size > 0) {
+          activePointerId = [...pointerPositions.keys()][0];
+        } else {
+          activePointerId = null;
+          pinchStartDistance = 0;
+        }
+      };
+
+      const cancelPointer = (e: PointerEvent) => {
+        endPointer(e);
+      };
+
+      container.addEventListener("wheel", onWheel, { passive: false });
+      container.addEventListener("pointerdown", onPointerDown, { passive: false });
+      container.addEventListener("pointermove", onPointerMove, { passive: false });
+      container.addEventListener("pointerup", endPointer);
+      container.addEventListener("pointercancel", cancelPointer);
+      container.addEventListener("pointerleave", endPointer);
+
+      const animate = () => {
+        if (disposed) return;
+        animId = requestAnimationFrame(animate);
+
+        const now = performance.now();
+        const delta = Math.min((now - lastFrameTime) / 1000, 0.1);
+        lastFrameTime = now;
+
+        moveTimer += delta;
+        if (moveTimer > MOVE_TIMEOUT) mouseMoving = false;
+        modelScale +=
+          (targetModelScale - modelScale) *
+          (1 - Math.exp(-10 * delta));
+        posGroup.scale.setScalar(modelScale);
+        touchInfluence +=
+          (targetTouchInfluence - touchInfluence) *
+          (1 -
+            Math.exp(
+              -(targetTouchInfluence > touchInfluence ? 8 : 5.5) * delta,
+            ));
+
+        // ── Transition state machine ──────────────────────────────────────────
+        const tState = transitionStateRef.current;
+
+        if (tState === "deform-out") {
+          transitionTimeRef.current += delta;
+          const p = Math.min(
+            transitionTimeRef.current / transitionDeformDurRef.current,
+            1,
+          );
+          const tmc = transitionMaskContrastRef.current;
+          u.maskContrast.value =
+            maskContrastRef.current +
+            (tmc - maskContrastRef.current) * smoothstep(p);
+          if (p >= 1) {
+            u.maskContrast.value = tmc;
+            transitionTimeRef.current = 0;
+            transitionStateRef.current = "morphing";
+          }
+        } else if (tState === "morphing") {
+          transitionTimeRef.current += delta;
+          const morphDur = isEntranceRef.current
+            ? entranceMorphDurRef.current
+            : transitionMorphDurRef.current;
+          const p = Math.min(transitionTimeRef.current / morphDur, 1);
+          u.transitionProgress.value = smoothstep(p);
+          if (p >= 1) {
+            const srcPos = posAttrRef.current!.array as Float32Array;
+            const tgtPos = posAttrTargetRef.current!.array as Float32Array;
+            const srcNorm = normAttrRef.current!.array as Float32Array;
+            const tgtNorm = normAttrTargetRef.current!.array as Float32Array;
+            srcPos.set(tgtPos);
+            srcNorm.set(tgtNorm);
+            posAttrRef.current!.needsUpdate = true;
+            normAttrRef.current!.needsUpdate = true;
+            u.transitionProgress.value = 0;
+            transitionTimeRef.current = 0;
+            transitionStateRef.current = "deform-in";
+          }
+        } else if (tState === "deform-in") {
+          transitionTimeRef.current += delta;
+          const reformDur = isEntranceRef.current
+            ? entranceReformDurRef.current
+            : transitionReformDurRef.current;
+          const p = Math.min(transitionTimeRef.current / reformDur, 1);
+          const tmc = transitionMaskContrastRef.current;
+          u.maskContrast.value =
+            tmc + (maskContrastRef.current - tmc) * smoothstep(p);
+          if (isEntranceRef.current) {
+            u.entranceGlow.value = 1 - smoothstep(p);
+          }
+          if (p >= 1) {
+            u.maskContrast.value = maskContrastRef.current;
+            transitionStateRef.current = "idle";
+            u.color.value.set(colorRef.current);
+            if (isEntranceRef.current) {
+              isEntranceRef.current = false;
+            }
+            onTransitionCompleteRef.current?.();
+          }
+        }
+
+        if (
+          !isEntranceRef.current &&
+          mouseEverMoved &&
+          u.entranceGlow.value < 1
+        ) {
+          u.entranceGlow.value = Math.min(
+            u.entranceGlow.value + delta / 1.0,
+            1,
+          );
+        }
+
+        const rotDelta =
+          ((2 * Math.PI) / 60) * autoRotateSpeedRef.current * delta;
+        rotGroup.rotation.y += rotDelta;
+        if (ringRotGroupRef.current)
+          ringRotGroupRef.current.rotation.y += rotDelta;
+
+        posGroup.getWorldPosition(modelCenter);
+        camera.getWorldDirection(cameraDir);
+        mousePlane.setFromNormalAndCoplanarPoint(cameraDir, modelCenter);
+
+        // ── Smooth mouse position ─────────────────────────────────────────────
+        if (mouseEverMoved) {
+          const alpha = 1 - Math.exp(-mouseLerpRef.current * delta);
+          smoothMousePos.lerp(targetMousePos, alpha);
+          u.mousePos.value.copy(smoothMousePos);
+        }
+
+        if (mouseMoving) {
+          frameVel
+            .subVectors(smoothMousePos, prevMousePos)
+            .divideScalar(Math.max(delta, 0.001))
+            .clampLength(0, 8.0);
+          smoothVel.lerp(frameVel, 0.15);
+        } else {
+          smoothVel.multiplyScalar(0.85);
+        }
+
+        // ── Spring-damper ─────────────────────────────────────────────────────
+        const k = springKRef.current;
+        const c = springDampingRef.current;
+
+        impVel.x += (-k * impulse.x - c * impVel.x) * delta;
+        impVel.y += (-k * impulse.y - c * impVel.y) * delta;
+        impVel.z += (-k * impulse.z - c * impVel.z) * delta;
+
+        if (mouseMoving) {
+          const push = pushStrengthRef.current;
+          const touchPush = 1 + touchInfluence * 0.32;
+          impVel.x += smoothVel.x * push * touchPush * delta;
+          impVel.y += smoothVel.y * push * touchPush * delta;
+          impVel.z += smoothVel.z * push * touchPush * delta;
+        }
+
+        impulse.x += impVel.x * delta;
+        impulse.y += impVel.y * delta;
+        impulse.z += impVel.z * delta;
+        impulse.clampLength(0, 3.5 + touchInfluence * 0.55);
+
+        u.mouseRadius.value =
+          mouseRadiusRef.current * (1 + touchInfluence * 0.18);
+        u.mouseStrength.value =
+          mouseStrengthRef.current * (1 + touchInfluence * 0.08);
+        u.mouseScatter.value =
+          mouseScatterRef.current + touchInfluence * 0.16;
+        u.mouseVel.value.copy(impulse);
+        prevMousePos.copy(smoothMousePos);
+
+        // ── Glow energy ───────────────────────────────────────────────────────
+        const currentImpulse = impulse.length();
+        if (currentImpulse > glowEnergy) glowEnergy = currentImpulse;
+        glowEnergy *= Math.exp(-mouseGlowDecayRef.current * delta);
+        u.mouseGlowEnergy.value = glowEnergy;
+
+        // ── Camera parallax ───────────────────────────────────────────────────
+        {
+          const intensity = camIntensityRef.current;
+          const k = camStiffnessRef.current;
+          const c = camDampingRef.current;
+          const nx = mouseEverMoved ? mouseNDC.x : 0;
+          const ny = mouseEverMoved ? mouseNDC.y : 0;
+          const targetX = nx * intensity * 0.05;
+          const targetY = ny * intensity * 0.05;
+          const targetRoll = -nx * intensity * 0.008;
+          camVelX += ((targetX - camX) * k - camVelX * c) * delta;
+          camVelY += ((targetY - camY) * k - camVelY * c) * delta;
+          camVelRoll += ((targetRoll - camRoll) * k - camVelRoll * c) * delta;
+          camX += camVelX * delta;
+          camY += camVelY * delta;
+          camRoll += camVelRoll * delta;
+          camera.position.set(camX, camY, CAM_RADIUS);
+          camera.rotation.set(0, 0, camRoll);
+        }
+
+        controls.autoRotate = false;
+        controls.update();
+        if (postProcessing) {
+          postProcessing.renderAsync();
+        } else {
+          renderer.renderAsync(scene, camera);
+        }
+      };
+      animate();
+
+      cleanupInner = () => {
+        window.removeEventListener("resize", onResize);
+        container.removeEventListener("wheel", onWheel);
+        container.removeEventListener("pointerdown", onPointerDown);
+        container.removeEventListener("pointermove", onPointerMove);
+        container.removeEventListener("pointerup", endPointer);
+        container.removeEventListener("pointercancel", cancelPointer);
+        container.removeEventListener("pointerleave", endPointer);
+        sphereGeo.dispose();
+        material.dispose();
+        cylGeo.dispose();
+        cylMat.dispose();
+        triTex.dispose();
+        controls.dispose();
+        if (ringUniRef.current) ringUniRef.current.ringMat.dispose();
+        ring1Ref.current?.geometry.dispose();
+        ring2Ref.current?.geometry.dispose();
+        ring3Ref.current?.geometry.dispose();
+        ring4Ref.current?.geometry.dispose();
+        cylMeshRef.current = null;
+        cylUniRef.current = null;
+        ringRotGroupRef.current = null;
+        ringTopGroupRef.current = null;
+        ringBotGroupRef.current = null;
+        ring1Ref.current = null;
+        ring2Ref.current = null;
+        ring3Ref.current = null;
+        ring4Ref.current = null;
+        ringUniRef.current = null;
+        if (gridUniRef.current) gridUniRef.current.gridMat.dispose();
+        gridMeshRef.current?.geometry.dispose();
+        gridMeshRef.current = null;
+        gridUniRef.current = null;
+        bgCtxRef.current = null;
+        bgTexRef.current = null;
+      };
+    })().catch((error) => {
+      console.error("Unable to initialize WebGPU renderer", error);
+      if (!disposed) onUnavailable?.();
+    });
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(animId);
+      cleanupInner?.();
+      controlsRef.current = null;
+      groupRef.current = null;
+      uniformsRef.current = null;
+      if (renderer) {
+        renderer.dispose();
+        renderer.domElement?.remove();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [particleCount]);
+
+  // ── Animate model transition on url change ────────────────────────────────────
+  useEffect(() => {
+    if (isFirstUrlRef.current) {
+      isFirstUrlRef.current = false;
+      return;
+    }
+    if (
+      !uniformsRef.current ||
+      !posAttrTargetRef.current ||
+      !normAttrTargetRef.current
+    )
+      return;
+
+    const wasIdle = transitionStateRef.current === "idle";
+
+    sampleGLBGeometry(url, particleCount).then(
+      ({ positions: newPos, normals: newNorm }) => {
+        if (
+          !posAttrTargetRef.current ||
+          !normAttrTargetRef.current ||
+          !uniformsRef.current
+        )
+          return;
+
+        const prog = uniformsRef.current.transitionProgress.value as number;
+        if (prog > 0) {
+          const srcPos = posAttrRef.current!.array as Float32Array;
+          const tgtPos = posAttrTargetRef.current.array as Float32Array;
+          const srcNorm = normAttrRef.current!.array as Float32Array;
+          const tgtNorm = normAttrTargetRef.current.array as Float32Array;
+          for (let i = 0; i < srcPos.length; i++) {
+            srcPos[i] = srcPos[i] * (1 - prog) + tgtPos[i] * prog;
+            srcNorm[i] = srcNorm[i] * (1 - prog) + tgtNorm[i] * prog;
+          }
+          posAttrRef.current!.needsUpdate = true;
+          normAttrRef.current!.needsUpdate = true;
+          uniformsRef.current.transitionProgress.value = 0;
+        }
+
+        (posAttrTargetRef.current.array as Float32Array).set(newPos);
+        (normAttrTargetRef.current.array as Float32Array).set(newNorm);
+        posAttrTargetRef.current.needsUpdate = true;
+        normAttrTargetRef.current.needsUpdate = true;
+        transitionTimeRef.current = 0;
+
+        if (wasIdle) {
+          transitionStateRef.current = "deform-out";
+        } else {
+          uniformsRef.current.maskContrast.value =
+            transitionMaskContrastRef.current;
+          transitionStateRef.current = "morphing";
+        }
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
+
+  // ── Background preload ────────────────────────────────────────────────────────
+  useEffect(() => {
+    for (const u of preloadUrls) {
+      sampleGLBGeometry(u, particleCount).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [particleCount]);
+
+  // ── Uniform sync — runs after every render ────────────────────────────────────
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = false;
+      controlsRef.current.enabled = false;
+    }
+
+    const u = uniformsRef.current;
+    if (u) {
+      if (transitionStateRef.current === "idle") u.color.value.set(color);
+      u.floatAmp.value = floatAmp;
+      u.breathAmp.value = breathAmp;
+      u.sphereSize.value = sphereSize;
+      u.ambient.value = ambient;
+      u.wrap.value = wrap;
+      u.volumeStrength.value = volumeStrength;
+      u.noiseAmp.value = noiseAmp;
+      u.noiseScale.value = noiseScale;
+      u.noiseSpeed.value = noiseSpeed;
+      u.noiseGain.value = noiseGain;
+      u.maskScale.value = maskScale;
+      u.maskSpeed.value = maskSpeed;
+      if (transitionStateRef.current === "idle") u.maskContrast.value = maskContrast;
+      u.mouseRadius.value = mouseRadius;
+      u.mouseStrength.value = mouseStrength;
+      u.mouseScatter.value = mouseScatter;
+      u.mouseGlowColor.value.set(mouseGlowColor);
+      u.mouseGlowPassive.value = mouseGlowPassive;
+      u.mouseGlowActive.value = mouseGlowActive;
+      u.mouseGlowPow.value = mouseGlowPow;
+      u.transitionGlowScale.value = transitionGlowScale;
+      u.light1Pos.value.set(light1X, light1Y, light1Z);
+      u.light1Color.value.set(light1Color);
+      u.light1Intensity.value = light1Intensity;
+      u.light2Pos.value.set(light2X, light2Y, light2Z);
+      u.light2Color.value.set(light2Color);
+      u.light2Intensity.value = light2Intensity;
+    }
+
+    if (bloomNodeRef.current) {
+      bloomNodeRef.current.strength.value = bloomStrength;
+      bloomNodeRef.current.radius.value = bloomRadius;
+      bloomNodeRef.current.threshold.value = bloomThreshold;
+    }
+    if (caUniformRef.current) caUniformRef.current.value = chromaticStr;
+    if (groupRef.current) groupRef.current.position.set(modelX, modelY, modelZ);
+
+    const cy = cylUniRef.current;
+    if (cy) {
+      cy.uCylColor.value.set(cylColor);
+      cy.uCylNoiseScale.value = cylNoiseScale;
+      cy.uCylLineWidth.value = cylLineWidth;
+      cy.uCylFresnelPow.value = cylFresnelPow;
+      cy.uCylBaseOpacity.value = cylBaseOpacity;
+      cy.uCylLineOpacity.value = cylLineOpacity;
+      cy.uCylNoiseSpeed.value = cylNoiseSpeed;
+      cy.uCylPulseSpeed.value = cylPulseSpeed;
+      cy.uCylPulseAmp.value = cylPulseAmp;
+      cy.uCylPulseEasing.value = cylPulseEasing;
+      cy.uCylWaveFreq.value = cylWaveFreq;
+      cy.uCylTexRepeat.value = cylTexRepeat;
+    }
+    if (cylMeshRef.current) cylMeshRef.current.visible = cylVisible;
+
+    const gr = gridUniRef.current;
+    if (gr) {
+      gr.uGridColor.value.set(gridColor);
+      gr.uGridBaseOpacity.value = gridBaseOpacity;
+      gr.uGridWaveAmp.value = gridWaveAmp;
+      gr.uGridNoiseScale.value = gridNoiseScale;
+      gr.uGridWaveSpeed.value = gridWaveSpeed;
+      gr.uGridDensity.value = gridDensity;
+      gr.uGridDotSize.value = gridDotSize;
+    }
+    if (gridMeshRef.current) gridMeshRef.current.visible = gridVisible;
+
+    const ri = ringUniRef.current;
+    if (ri) {
+      ri.uRingColor.value.set(ringColor);
+      ri.uRingOpacity.value = ringOpacity;
+      ri.uRingBrightness.value = ringBrightness;
+    }
+    if (ringRotGroupRef.current) ringRotGroupRef.current.visible = ringVisible;
+
+    redrawBg();
+  });
+
+  // ── Replay entrance animation ─────────────────────────────────────────────────
+  const isFirstReplayRef = useRef(true);
+  useEffect(() => {
+    if (isFirstReplayRef.current) {
+      isFirstReplayRef.current = false;
+      return;
+    }
+    if (
+      !uniformsRef.current ||
+      !posAttrRef.current ||
+      !normAttrRef.current ||
+      !posAttrTargetRef.current
+    )
+      return;
+    (posAttrRef.current.array as Float32Array).fill(0);
+    (normAttrRef.current.array as Float32Array).fill(0);
+    posAttrRef.current.needsUpdate = true;
+    normAttrRef.current.needsUpdate = true;
+    uniformsRef.current.transitionProgress.value = 0;
+    uniformsRef.current.maskContrast.value = transitionMaskContrastRef.current;
+    uniformsRef.current.entranceGlow.value = 1;
+    isEntranceRef.current = true;
+    transitionStateRef.current = "morphing";
+    transitionTimeRef.current = 0;
+  }, [replayTrigger]);
+
+  // ── Cylinder geometry rebuild ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!cylMeshRef.current) return;
+    const old = cylMeshRef.current.geometry;
+    cylMeshRef.current.geometry = new CylinderGeometry(cylRadius, cylRadius, cylHeight, 64, 1, true);
+    cylMeshRef.current.position.y = cylHeight / 2 + cylY;
+    old.dispose();
+    if (ringTopGroupRef.current) ringTopGroupRef.current.position.y = cylHeight + cylY;
+    if (ringBotGroupRef.current) ringBotGroupRef.current.position.y = cylY;
+  }, [cylRadius, cylHeight, cylY]);
+
+  // ── Ring geometry rebuild ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const meshes = [ring1Ref.current, ring2Ref.current, ring3Ref.current, ring4Ref.current];
+    const uni = ringUniRef.current;
+    if (meshes.some((m) => !m) || !uni) return;
+    const gapRad = ringGap * (Math.PI / 180);
+    const arcSpan = Math.PI - gapRad;
+    meshes.forEach((mesh) => {
+      const old = mesh!.geometry;
+      mesh!.geometry = new TorusGeometry(ringRadius, ringThickness, 8, 80, arcSpan);
+      old.dispose();
+    });
+    const yA = gapRad / 2;
+    const yB = Math.PI + gapRad / 2;
+    uni.w1.rotation.y = yA;
+    uni.w2.rotation.y = yB;
+    uni.w3.rotation.y = yA;
+    uni.w4.rotation.y = yB;
+  }, [ringRadius, ringThickness, ringGap]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        width: "100%",
+        height: "100%",
+        touchAction: "none",
+        overscrollBehavior: "none",
+      }}
+    />
+  );
+}
