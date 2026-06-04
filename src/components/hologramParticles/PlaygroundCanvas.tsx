@@ -13,6 +13,8 @@ import { useHologramControls } from "./utils/useHologramControls";
 import { PRESETS, type PresetId } from "./utils/presets";
 
 const MODEL_SHOWCASE_COLOR = "#cfd5d8";
+const MODEL_Y_DESKTOP = -0.9;
+const MODEL_Y_COMPACT = -0.78;
 
 export default function PlaygroundCanvas() {
   const [hideLeva, setHideLeva] = useState(true);
@@ -107,19 +109,7 @@ export default function PlaygroundCanvas() {
                   : leva.noiseScale
           }
           particleCount={isCompact ? Math.min(leva.particleCount, 36000) : leva.particleCount}
-          modelY={
-            isTerrainModel
-              ? isCompact
-                ? -0.92
-                : -1.05
-              : isLogoModel
-                ? isCompact
-                  ? -0.78
-                  : -0.9
-                : isCompact
-                  ? -0.72
-                  : leva.modelY
-          }
+          modelY={isCompact ? MODEL_Y_COMPACT : MODEL_Y_DESKTOP}
           mouseRadius={isCompact ? Math.max(leva.mouseRadius, 2.35) : leva.mouseRadius}
           mouseStrength={isCompact ? Math.max(leva.mouseStrength, 4.4) : leva.mouseStrength}
           pushStrength={isCompact ? Math.max(leva.pushStrength, 2.8) : leva.pushStrength}

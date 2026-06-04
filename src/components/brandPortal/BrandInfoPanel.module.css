@@ -4,14 +4,12 @@
   right: 28px;
   z-index: 30;
   width: min(318px, calc(100vw - 56px));
-  padding: 22px;
-  border: 1px solid color-mix(in srgb, var(--branch-accent), transparent 54%);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--branch-accent), transparent 92%), transparent 38%),
-    rgba(8, 12, 17, 0.58);
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: rgba(242, 250, 255, 0.92);
-  backdrop-filter: blur(18px) saturate(1.2);
-  box-shadow: 0 22px 72px rgba(0, 0, 0, 0.28);
+  backdrop-filter: none;
+  box-shadow: none;
   pointer-events: auto;
   transition: opacity 0.55s ease, transform 0.55s ease;
 }
@@ -76,9 +74,9 @@
 }
 
 .metaGrid div {
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  padding: 11px 12px;
-  background: rgba(255, 255, 255, 0.035);
+  border: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .metaGrid span,
@@ -109,8 +107,8 @@
 }
 
 .keywords span {
-  border: 1px solid color-mix(in srgb, var(--branch-accent), transparent 62%);
-  padding: 6px 8px;
+  border: 0;
+  padding: 0;
   color: rgba(238, 248, 255, 0.72);
   font-family: var(--font-ibm-mono), monospace;
   font-size: 9px;
@@ -139,7 +137,7 @@
     width: auto;
     max-height: 29svh;
     overflow: auto;
-    padding: 14px;
+    padding: 0;
   }
 
   .panel h2 {
