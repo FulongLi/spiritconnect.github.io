@@ -12,7 +12,7 @@ import { BRAND_BRANCHES } from "@/components/brandPortal/brands";
 import { useHologramControls } from "./utils/useHologramControls";
 import { PRESETS, type PresetId } from "./utils/presets";
 
-const MODEL_SHOWCASE_COLOR = "#cfd5d8";
+const MODEL_SHOWCASE_COLOR = "#2ebcfe";
 const MODEL_Y_DESKTOP = -0.9;
 const MODEL_Y_COMPACT = -0.78;
 
@@ -21,7 +21,7 @@ export default function PlaygroundCanvas() {
   const [activeModelIndex, setActiveModelIndex] = useState(0);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [replayTrigger, setReplayTrigger] = useState(0);
-  const [activePreset, setActivePreset] = useState<PresetId>("light");
+  const [activePreset, setActivePreset] = useState<PresetId>("dark");
   const [rendererUnavailable, setRendererUnavailable] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const activeBranch = BRAND_BRANCHES[activeModelIndex];
