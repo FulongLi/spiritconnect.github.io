@@ -5,7 +5,7 @@ Spirit Connect is a WebGPU holographic brand portal for exploring the connected 
 The current experience includes:
 
 - A full-screen hologram stage with particle model transitions
-- Brand branches for Spirit Connect, AI, Gaming, Art, and AIPE Labs
+- Brand branches for AIPE Labs, Spirit Connect, AI Labs, Fantasy, and Art
 - A right-side branch panel with summary, status, keywords, and branch links
 - Bottom model navigation with mouse and keyboard controls
 - Spirit Connect / 灵接科技 branding

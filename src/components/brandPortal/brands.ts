@@ -1,4 +1,3 @@
-import { assetPath } from "@/components/shared/assetPath";
 import type { ModelOption } from "@/components/overlay/components/ModelSelector/ModelSelector";
 
 export type BrandStatus = "Active" | "In formation" | "Concept stage" | "Emerging";
@@ -16,20 +15,6 @@ export type BrandBranch = ModelOption & {
 
 export const BRAND_BRANCHES: BrandBranch[] = [
   {
-    id: "spirit-connect",
-    label: "SPIRIT CONNECT",
-    url: "procedural:spirit-logo",
-    title: "Spirit Connect",
-    eyebrow: "Core brand",
-    summary: "A connected technology and creativity ecosystem.",
-    detail:
-      "The central portal for Spirit Connect: a place where AI, games, art, and engineering branches can be explored as one living system.",
-    status: "Active",
-    href: "/branches/spirit-connect",
-    accent: "#32b8f2",
-    keywords: ["technology", "creativity", "systems"],
-  },
-  {
     id: "power-labs",
     label: "AIPE LABS",
     url: "procedural:power-labs-logo",
@@ -44,10 +29,24 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     keywords: ["power electronics", "converters", "microgrids"],
   },
   {
+    id: "spirit-connect",
+    label: "SPIRIT CONNECT",
+    url: "procedural:spirit-logo",
+    title: "Spirit Connect",
+    eyebrow: "Core brand",
+    summary: "A connected technology and creativity ecosystem.",
+    detail:
+      "The central portal for Spirit Connect: a place where AI, games, art, and engineering branches can be explored as one living system.",
+    status: "Active",
+    href: "/branches/spirit-connect",
+    accent: "#32b8f2",
+    keywords: ["technology", "creativity", "systems"],
+  },
+  {
     id: "ai",
-    label: "AI",
+    label: "AI LABS",
     url: "procedural:sphere",
-    title: "Spirit Connect AI",
+    title: "Spirit Connect AI Labs",
     eyebrow: "Intelligence systems",
     summary: "AI agents, research workflows, and creative automation.",
     detail:
@@ -59,22 +58,22 @@ export const BRAND_BRANCHES: BrandBranch[] = [
   },
   {
     id: "gaming",
-    label: "GAMING",
-    url: assetPath("/glb/bb8.glb"),
-    title: "Spirit Connect Gaming",
+    label: "FANTASY",
+    url: "procedural:gamepad",
+    title: "Spirit Connect Fantasy",
     eyebrow: "Interactive worlds",
-    summary: "Playable systems, game prototypes, and interactive stories.",
+    summary: "Playable worlds, future imagination, and interactive stories.",
     detail:
-      "A branch for games and real-time experiences where mechanics, worldbuilding, simulation, and creative technology meet.",
+      "A branch for games and real-time experiences where mechanics, worldbuilding, fantasy storytelling, and creative technology meet.",
     status: "Concept stage",
-    href: "/branches/gaming",
+    href: "https://fulongli.github.io/Spirit-Connect-Fantasy/",
     accent: "#a7f06a",
-    keywords: ["play", "worlds", "simulation"],
+    keywords: ["fantasy", "games", "worlds"],
   },
   {
     id: "art",
     label: "ART",
-    url: "procedural:crystal",
+    url: "procedural:brush",
     title: "Spirit Connect Art",
     eyebrow: "Creative expression",
     summary: "Digital art, generative visuals, and cultural experiments.",

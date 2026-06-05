@@ -78,6 +78,8 @@ const PROCEDURAL_POWER_LABS_LOGO_URL = "procedural:power-labs-logo";
 const PROCEDURAL_PYRAMID_URL = "procedural:pyramid";
 const PROCEDURAL_BOAT_URL = "procedural:boat";
 const PROCEDURAL_CRYSTAL_URL = "procedural:crystal";
+const PROCEDURAL_GAMEPAD_URL = "procedural:gamepad";
+const PROCEDURAL_BRUSH_URL = "procedural:brush";
 
 function cacheKey(url: string, particleCount: number) {
   return `${url}:${particleCount}`;
@@ -109,6 +111,20 @@ async function sampleGLBGeometry(
   if (url === PROCEDURAL_CRYSTAL_URL) {
     if (geometryCache.has(key)) return geometryCache.get(key)!;
     const data = createCrystalGeometry(particleCount);
+    geometryCache.set(key, data);
+    return data;
+  }
+
+  if (url === PROCEDURAL_GAMEPAD_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    const data = createGamepadGeometry(particleCount);
+    geometryCache.set(key, data);
+    return data;
+  }
+
+  if (url === PROCEDURAL_BRUSH_URL) {
+    if (geometryCache.has(key)) return geometryCache.get(key)!;
+    const data = createBrushGeometry(particleCount);
     geometryCache.set(key, data);
     return data;
   }
@@ -458,6 +474,191 @@ function createCrystalGeometry(particleCount: number): GeometryData {
     normals[base] = normal.x;
     normals[base + 1] = normal.y;
     normals[base + 2] = normal.z;
+  }
+
+  return { positions, normals };
+}
+
+function createGamepadGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+
+  for (let i = 0; i < particleCount; i++) {
+    const r1 = seededFract(Math.sin((i + 4) * 12.9898) * 43758.5453);
+    const r2 = seededFract(Math.sin((i + 8) * 78.233) * 43758.5453);
+    const r3 = seededFract(Math.sin((i + 13) * 39.425) * 43758.5453);
+    const r4 = seededFract(Math.sin((i + 21) * 19.191) * 43758.5453);
+    const base = i * 3;
+
+    if (r3 < 0.48) {
+      const theta = r1 * Math.PI * 2;
+      const v = r2 * 2 - 1;
+      const radial = Math.sqrt(Math.max(0, 1 - v * v));
+      const rx = 1.42;
+      const ry = 0.34;
+      const rz = 0.33;
+      const x = Math.cos(theta) * radial * rx;
+      const y = 1.18 + v * ry;
+      const z = Math.sin(theta) * radial * rz;
+      const normal = new Vector3(x / rx, (y - 1.18) / ry, z / rz).normalize();
+
+      positions[base] = x;
+      positions[base + 1] = y;
+      positions[base + 2] = z;
+      normals[base] = normal.x;
+      normals[base + 1] = normal.y;
+      normals[base + 2] = normal.z;
+      continue;
+    }
+
+    if (r3 < 0.72) {
+      const side = r3 < 0.6 ? -1 : 1;
+      const theta = r1 * Math.PI * 2;
+      const v = r2 * 2 - 1;
+      const radial = Math.sqrt(Math.max(0, 1 - v * v));
+      const rx = 0.48;
+      const ry = 0.48;
+      const rz = 0.34;
+      const cx = side * 0.96;
+      const cy = 0.9;
+      const x = cx + Math.cos(theta) * radial * rx;
+      const y = cy + v * ry;
+      const z = Math.sin(theta) * radial * rz;
+      const normal = new Vector3((x - cx) / rx, (y - cy) / ry, z / rz).normalize();
+
+      positions[base] = x;
+      positions[base + 1] = y;
+      positions[base + 2] = z;
+      normals[base] = normal.x;
+      normals[base + 1] = normal.y;
+      normals[base + 2] = normal.z;
+      continue;
+    }
+
+    if (r3 < 0.84) {
+      const buttonIndex = Math.floor(r4 * 4);
+      const centers = [
+        new Vector2(0.68, 1.22),
+        new Vector2(0.94, 1.22),
+        new Vector2(0.81, 1.39),
+        new Vector2(0.81, 1.05),
+      ];
+      const center = centers[buttonIndex] ?? centers[0];
+      const angle = r1 * Math.PI * 2;
+      const radius = Math.sqrt(r2) * 0.08;
+
+      positions[base] = center.x + Math.cos(angle) * radius;
+      positions[base + 1] = center.y + Math.sin(angle) * radius;
+      positions[base + 2] = 0.42;
+      normals[base] = 0;
+      normals[base + 1] = 0;
+      normals[base + 2] = 1;
+      continue;
+    }
+
+    if (r3 < 0.93) {
+      const horizontal = r4 < 0.5;
+      const x = -0.82 + (horizontal ? (r1 - 0.5) * 0.48 : (r1 - 0.5) * 0.14);
+      const y = 1.22 + (horizontal ? (r2 - 0.5) * 0.14 : (r2 - 0.5) * 0.48);
+
+      positions[base] = x;
+      positions[base + 1] = y;
+      positions[base + 2] = 0.43;
+      normals[base] = 0;
+      normals[base + 1] = 0;
+      normals[base + 2] = 1;
+      continue;
+    }
+
+    const stickCenterX = r4 < 0.5 ? -0.42 : 0.34;
+    const angle = r1 * Math.PI * 2;
+    const ring = 0.11 + r2 * 0.045;
+    positions[base] = stickCenterX + Math.cos(angle) * ring;
+    positions[base + 1] = 0.92 + Math.sin(angle) * ring;
+    positions[base + 2] = 0.45;
+    normals[base] = 0;
+    normals[base + 1] = 0;
+    normals[base + 2] = 1;
+  }
+
+  return { positions, normals };
+}
+
+function createBrushGeometry(particleCount: number): GeometryData {
+  const positions = new Float32Array(particleCount * 3);
+  const normals = new Float32Array(particleCount * 3);
+  const handleStart = new Vector3(-1.08, 0.4, -0.08);
+  const handleEnd = new Vector3(0.76, 1.88, 0.08);
+  const ferruleEnd = new Vector3(1.08, 2.12, 0.11);
+  const tip = new Vector3(1.38, 2.36, 0.14);
+
+  const writeCylinderPoint = (
+    base: number,
+    start: Vector3,
+    end: Vector3,
+    radius: number,
+    t: number,
+    angle: number,
+  ) => {
+    const axis = new Vector3().subVectors(end, start).normalize();
+    const sideA = new Vector3(-axis.y, axis.x, 0).normalize();
+    if (sideA.lengthSq() === 0) sideA.set(1, 0, 0);
+    const sideB = new Vector3().crossVectors(axis, sideA).normalize();
+    const radial = sideA
+      .clone()
+      .multiplyScalar(Math.cos(angle))
+      .addScaledVector(sideB, Math.sin(angle));
+    const point = start
+      .clone()
+      .lerp(end, t)
+      .addScaledVector(radial, radius);
+
+    positions[base] = point.x;
+    positions[base + 1] = point.y;
+    positions[base + 2] = point.z;
+    normals[base] = radial.x;
+    normals[base + 1] = radial.y;
+    normals[base + 2] = radial.z;
+  };
+
+  for (let i = 0; i < particleCount; i++) {
+    const r1 = seededFract(Math.sin((i + 6) * 12.9898) * 43758.5453);
+    const r2 = seededFract(Math.sin((i + 10) * 78.233) * 43758.5453);
+    const r3 = seededFract(Math.sin((i + 15) * 39.425) * 43758.5453);
+    const base = i * 3;
+    const angle = r2 * Math.PI * 2;
+
+    if (r3 < 0.68) {
+      writeCylinderPoint(base, handleStart, handleEnd, 0.085, r1, angle);
+      continue;
+    }
+
+    if (r3 < 0.84) {
+      writeCylinderPoint(base, handleEnd, ferruleEnd, 0.18, r1, angle);
+      continue;
+    }
+
+    const t = r1;
+    const axis = new Vector3().subVectors(tip, ferruleEnd).normalize();
+    const sideA = new Vector3(-axis.y, axis.x, 0).normalize();
+    if (sideA.lengthSq() === 0) sideA.set(1, 0, 0);
+    const sideB = new Vector3().crossVectors(axis, sideA).normalize();
+    const radius = (1 - t) * 0.22 + 0.025;
+    const radial = sideA
+      .clone()
+      .multiplyScalar(Math.cos(angle))
+      .addScaledVector(sideB, Math.sin(angle));
+    const point = ferruleEnd
+      .clone()
+      .lerp(tip, t)
+      .addScaledVector(radial, radius * Math.sqrt(r2));
+
+    positions[base] = point.x;
+    positions[base + 1] = point.y;
+    positions[base + 2] = point.z;
+    normals[base] = radial.x;
+    normals[base + 1] = radial.y;
+    normals[base + 2] = radial.z;
   }
 
   return { positions, normals };
