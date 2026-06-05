@@ -1,15 +1,43 @@
 # Spirit Connect Brand Portal
 
-Spirit Connect is a WebGPU holographic brand portal for exploring the connected branches of Spirit Connect.
+Spirit Connect Brand Portal is the main 3D showcase for the Spirit Connect ecosystem. It presents the parent brand and its current branches through an interactive WebGPU hologram stage, a branch information panel, and a compact news ticker.
 
-The current experience includes:
+Public site:
 
-- A full-screen hologram stage with particle model transitions
-- Brand branches for Spirit Connect, AIPE Labs, AI Labs, and Fantasy
-- A right-side branch panel with summary, status, keywords, and branch links
-- Bottom model navigation with mouse and keyboard controls
-- Spirit Connect / 灵接科技 branding
+[https://spiritconnect.co.uk](https://spiritconnect.co.uk)
+
+## Current Branches
+
+The homepage currently presents four branches in this order:
+
+1. **Spirit Connect** - the parent brand and main portal.
+2. **Spirit Connect AIPE Labs** - AI-powered power electronics engineering and design automation.
+   [https://fulongli.github.io/Spirit-Connect-AIPE-Labs/](https://fulongli.github.io/Spirit-Connect-AIPE-Labs/)
+3. **Spirit Connect AI Labs** - AI agents, research workflows, and creative automation.
+4. **Spirit Connect Fantasy** - future imagination, storytelling, digital art, and interactive worlds.
+   [https://fulongli.github.io/Spirit-Connect-Fantasy/](https://fulongli.github.io/Spirit-Connect-Fantasy/)
+
+## Experience
+
+- Full-screen WebGPU / Three.js hologram stage
+- Particle-based model transitions for each branch
+- Spirit Connect and AIPE Labs logo-based particle models
+- Procedural sphere model for AI Labs
+- Procedural brush model for Fantasy
+- Right-side branch panel with summary, status, keywords, and branch links
+- Left-side brand statement and latest news ticker
+- Dark futuristic visual style with a light/dark preset toggle
 - Static export support for GitHub Pages
+
+## Tech Stack
+
+- Next.js 16
+- React 19
+- TypeScript
+- Three.js / WebGPU
+- Leva controls
+- Tailwind CSS
+- GitHub Pages
 
 ## Local Development
 
@@ -31,13 +59,19 @@ Open:
 http://localhost:3000
 ```
 
-If port 3000 is already in use, run another port:
+If port 3000 is already in use:
 
 ```bash
 npm run dev -- -p 3003
 ```
 
 ## Build
+
+Run lint:
+
+```bash
+npm run lint
+```
 
 Create a production static export:
 
@@ -51,38 +85,68 @@ The static site is generated in:
 out/
 ```
 
-## GitHub Pages Deployment
+## Deployment
 
-This repository includes a GitHub Actions workflow at:
+This repository includes a GitHub Pages workflow:
 
 ```text
 .github/workflows/deploy-main-site.yml
 ```
 
-To publish the site:
+The workflow:
 
-1. Push the repository to GitHub.
-2. Open the repository on GitHub.
-3. Go to `Settings -> Pages`.
-4. Set `Source` to `GitHub Actions`.
-5. Push to `main` or run the workflow manually.
+1. Installs dependencies with `npm ci`.
+2. Builds the static site with `npm run build`.
+3. Uploads `out/` to GitHub Pages.
 
-Public site:
+To publish:
 
-[https://spiritconnect.co.uk](https://spiritconnect.co.uk)
+1. Push to `main` or `master`, or run the workflow manually.
+2. In GitHub repository settings, set Pages source to `GitHub Actions`.
+3. Keep the custom domain configured as `spiritconnect.co.uk`.
 
 ## Project Structure
 
 ```text
 src/app/                          Next.js app entry and static branch pages
-src/components/brandPortal/        Brand branch data and branch information panel
-src/components/hologramParticles/  WebGPU particle renderer and model switching
+src/components/brandPortal/        Branch data, branch panel, and latest news
+src/components/hologramParticles/  WebGPU particle renderer and procedural models
 src/components/overlay/            Header, footer, controls, and model selector
 src/components/shared/             Fonts, theme, and asset path helpers
+public/assets/                     Logos and visual textures
 public/glb/                        Local GLB model assets
-public/assets/                     Local visual textures
+public/CNAME                       Custom domain for GitHub Pages
+out/                               Generated static export
+```
+
+## Updating Branches
+
+Branch content is configured in:
+
+```text
+src/components/brandPortal/brands.ts
+```
+
+To add or update a branch, edit the `BRAND_BRANCHES` array. Each branch defines:
+
+- `label`
+- `url`
+- `title`
+- `eyebrow`
+- `summary`
+- `detail`
+- `status`
+- `href`
+- `keywords`
+
+Procedural particle models are implemented in:
+
+```text
+src/components/hologramParticles/ParticlesHologram.tsx
 ```
 
 ## Notes
 
-The repository root is now the Spirit Connect 3D brand portal. Previous Jekyll/AIPE Labs site files have been removed so the 3D experience is the only website entry point.
+- The main site is the Spirit Connect brand portal, not a standalone AIPE Labs site.
+- AIPE Labs remains one branch inside the wider Spirit Connect ecosystem.
+- The exported root files such as `index.html`, `_next/`, and `branches/` are generated deployment artifacts. Update them from `out/` after a build if serving the repository root directly.
