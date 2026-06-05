@@ -38,7 +38,7 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     detail:
       "The AIPE Labs branch for devices, converters, magnetics, and microgrids, connecting power electronics research with intelligent design systems.",
     status: "Active",
-    href: "https://fulongli.github.io/SpriConPowerLabs/",
+    href: "https://fulongli.github.io/Spirit-Connect-AIPE-Labs/",
     accent: "#0f5f3d",
     keywords: ["power electronics", "converters", "microgrids"],
   },
