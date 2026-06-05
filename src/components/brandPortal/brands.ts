@@ -15,6 +15,20 @@ export type BrandBranch = ModelOption & {
 
 export const BRAND_BRANCHES: BrandBranch[] = [
   {
+    id: "spirit-connect",
+    label: "SPIRIT CONNECT",
+    url: "procedural:spirit-logo",
+    title: "Spirit Connect",
+    eyebrow: "Core brand",
+    summary: "A connected technology and creativity ecosystem.",
+    detail:
+      "The central portal for Spirit Connect: a place where AI, games, fantasy, and engineering branches can be explored as one living system.",
+    status: "Active",
+    href: "/branches/spirit-connect",
+    accent: "#32b8f2",
+    keywords: ["technology", "creativity", "systems"],
+  },
+  {
     id: "power-labs",
     label: "AIPE LABS",
     url: "procedural:power-labs-logo",
@@ -27,20 +41,6 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     href: "https://fulongli.github.io/SpriConPowerLabs/",
     accent: "#0f5f3d",
     keywords: ["power electronics", "converters", "microgrids"],
-  },
-  {
-    id: "spirit-connect",
-    label: "SPIRIT CONNECT",
-    url: "procedural:spirit-logo",
-    title: "Spirit Connect",
-    eyebrow: "Core brand",
-    summary: "A connected technology and creativity ecosystem.",
-    detail:
-      "The central portal for Spirit Connect: a place where AI, games, art, and engineering branches can be explored as one living system.",
-    status: "Active",
-    href: "/branches/spirit-connect",
-    accent: "#32b8f2",
-    keywords: ["technology", "creativity", "systems"],
   },
   {
     id: "ai",
@@ -59,7 +59,7 @@ export const BRAND_BRANCHES: BrandBranch[] = [
   {
     id: "gaming",
     label: "FANTASY",
-    url: "procedural:gamepad",
+    url: "procedural:brush",
     title: "Spirit Connect Fantasy",
     eyebrow: "Interactive worlds",
     summary: "Playable worlds, future imagination, and interactive stories.",
@@ -69,20 +69,6 @@ export const BRAND_BRANCHES: BrandBranch[] = [
     href: "https://fulongli.github.io/Spirit-Connect-Fantasy/",
     accent: "#a7f06a",
     keywords: ["fantasy", "games", "worlds"],
-  },
-  {
-    id: "art",
-    label: "ART",
-    url: "procedural:brush",
-    title: "Spirit Connect Art",
-    eyebrow: "Creative expression",
-    summary: "Digital art, generative visuals, and cultural experiments.",
-    detail:
-      "A branch for expressive work shaped by human taste and computational craft: visual systems, editions, installations, and experiments.",
-    status: "Emerging",
-    href: "/branches/art",
-    accent: "#ff8ad8",
-    keywords: ["generative", "visual", "culture"],
   },
 ];
 
