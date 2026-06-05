@@ -5,7 +5,7 @@
   z-index: 24;
   width: min(320px, calc(100vw - 56px));
   color: rgba(220, 240, 255, 0.9);
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .eyebrow {
@@ -26,7 +26,7 @@
 }
 
 .viewport {
-  height: 104px;
+  height: 142px;
   overflow: hidden;
   mask-image: linear-gradient(
     to bottom,
@@ -42,6 +42,11 @@
   flex-direction: column;
   gap: 14px;
   animation: newsScroll 18s linear infinite;
+}
+
+.root:hover .track,
+.root:focus-within .track {
+  animation-play-state: paused;
 }
 
 .item {
@@ -99,7 +104,7 @@
   }
 
   .viewport {
-    height: 72px;
+    height: 92px;
   }
 
   .track {
