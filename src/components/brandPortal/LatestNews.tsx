@@ -4,20 +4,36 @@ import styles from "./LatestNews.module.css";
 
 const NEWS_ITEMS = [
   {
-    date: "JUN 2026",
-    text: "Spirit Connect brand portal now opens in dark mode by default.",
+    date: "MAY 19, 2026",
+    text: "AI-assisted converter design workflow updated, covering device selection, loss estimation, thermal assessment, and validation.",
   },
   {
-    date: "JUN 2026",
-    text: "Branch showcase aligned across Spirit Connect, Power Labs, AI, Gaming, and Art.",
+    date: "APR 30, 2026",
+    text: "Partnership established with PanXin Technology to develop a power device library for AI-driven power electronics design automation.",
   },
   {
-    date: "JUN 2026",
-    text: "All models now share the Spirit Connect light-blue holographic material.",
+    date: "MAR 5, 2026",
+    text: "Power Electronics AI Agent vision announced: an intelligent design partner across device, converter, and system levels.",
   },
   {
-    date: "JUN 2026",
-    text: "Power Labs branch links directly to the research portal.",
+    date: "JAN 5, 2026",
+    text: "Brand update and website relaunch: Spirit Connect Power Labs adopted the Spirit Connect AIPE Labs name.",
+  },
+  {
+    date: "DEC 19, 2025",
+    text: "Spirit Connect Fantasy website launched for future imagination, digital art, storytelling, novels, and creative visual experiences.",
+  },
+  {
+    date: "OCT 28, 2025",
+    text: "Official website launched, sharing AI-assisted power electronics design capabilities, research resources, and technical insights.",
+  },
+  {
+    date: "OCT 1, 2025",
+    text: "Spirit Connect Power Labs founded to accelerate power electronics innovation through AI-driven design automation.",
+  },
+  {
+    date: "JUN 9, 2025",
+    text: "Spirit Connect founded and registered as the parent organization supporting future technology and innovation initiatives.",
   },
 ];
 
