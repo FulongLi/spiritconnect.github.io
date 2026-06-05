@@ -5,7 +5,7 @@ Spirit Connect is a WebGPU holographic brand portal for exploring the connected 
 The current experience includes:
 
 - A full-screen hologram stage with particle model transitions
-- Brand branches for Spirit Connect, AI, Gaming, Art, and Power Labs
+- Brand branches for Spirit Connect, AI, Gaming, Art, and AIPE Labs
 - A right-side branch panel with summary, status, keywords, and branch links
 - Bottom model navigation with mouse and keyboard controls
 - Spirit Connect / 灵接科技 branding
@@ -85,4 +85,4 @@ public/assets/                     Local visual textures
 
 ## Notes
 
-The repository root is now the Spirit Connect 3D brand portal. Previous Jekyll/Power Labs site files have been removed so the 3D experience is the only website entry point.
+The repository root is now the Spirit Connect 3D brand portal. Previous Jekyll/AIPE Labs site files have been removed so the 3D experience is the only website entry point.

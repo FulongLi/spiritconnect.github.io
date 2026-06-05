@@ -31,13 +31,13 @@ export const BRAND_BRANCHES: BrandBranch[] = [
   },
   {
     id: "power-labs",
-    label: "POWER LABS",
+    label: "AIPE LABS",
     url: "procedural:power-labs-logo",
-    title: "Spirit Connect Power Labs",
+    title: "Spirit Connect AIPE Labs",
     eyebrow: "Energy intelligence",
     summary: "AI-assisted power electronics research and design workflows.",
     detail:
-      "The engineering branch for devices, converters, magnetics, and microgrids, connecting power electronics research with intelligent design systems.",
+      "The AIPE Labs branch for devices, converters, magnetics, and microgrids, connecting power electronics research with intelligent design systems.",
     status: "Active",
     href: "https://fulongli.github.io/SpriConPowerLabs/",
     accent: "#0f5f3d",

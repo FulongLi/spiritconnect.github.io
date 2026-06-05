@@ -17,7 +17,7 @@ const NEWS_ITEMS = [
   },
   {
     date: "JAN 5, 2026",
-    text: "Brand update and website relaunch: Spirit Connect Power Labs adopted the Spirit Connect AIPE Labs name.",
+    text: "Brand update and website relaunch: Spirit Connect AIPE Labs adopted its expanded AI-powered engineering identity.",
   },
   {
     date: "DEC 19, 2025",
@@ -29,7 +29,7 @@ const NEWS_ITEMS = [
   },
   {
     date: "OCT 1, 2025",
-    text: "Spirit Connect Power Labs founded to accelerate power electronics innovation through AI-driven design automation.",
+    text: "Spirit Connect AIPE Labs founded to accelerate power electronics innovation through AI-driven design automation.",
   },
   {
     date: "JUN 9, 2025",
