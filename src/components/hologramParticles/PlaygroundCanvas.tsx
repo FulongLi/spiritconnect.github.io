@@ -8,6 +8,7 @@ import OverlayButtons from "@/components/overlay/components/OverlayButtons/Overl
 import ModelSelector from "@/components/overlay/components/ModelSelector/ModelSelector";
 import OverlayHeader from "@/components/overlay/components/OverlayHeader/OverlayHeader";
 import BrandInfoPanel from "@/components/brandPortal/BrandInfoPanel";
+import LatestNews from "@/components/brandPortal/LatestNews";
 import { BRAND_BRANCHES } from "@/components/brandPortal/brands";
 import { useHologramControls } from "./utils/useHologramControls";
 import { PRESETS, type PresetId } from "./utils/presets";
@@ -119,6 +120,7 @@ export default function PlaygroundCanvas() {
       </div>
 
       <BrandInfoPanel branch={activeBranch} visible />
+      <LatestNews />
 
       {!rendererUnavailable && (
         <>
