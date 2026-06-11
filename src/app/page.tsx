@@ -1,5 +1,5 @@
-import PlaygroundCanvas from "@/components/hologramParticles/PlaygroundCanvas";
+import JourneyExperience from "@/components/energyTown/JourneyExperience";
 
 export default function Home() {
-  return <PlaygroundCanvas />;
+  return <JourneyExperience />;
 }
