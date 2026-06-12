@@ -719,35 +719,40 @@ export function buildTown(quality: "high" | "low"): Town {
     platform.position.set(sstCenter.x, gy + 0.35, sstCenter.z);
     platform.receiveShadow = shadows;
     group.add(platform);
-    // conversion stack: three drums separated by glowing amber rings
-    for (let i = 0; i < 3; i++) {
-      const drum = new THREE.Mesh(
-        track(new THREE.CylinderGeometry(2.1, 2.2, 1.55, 16)),
-        shellMat
-      );
-      drum.position.set(sstCenter.x - 3, gy + 1.6 + i * 2.05, sstCenter.z - 1);
-      drum.castShadow = shadows;
-      group.add(drum);
-      const joint = new THREE.Mesh(
-        track(new THREE.TorusGeometry(2.0, 0.16, 8, 36)),
+    // rectangular converter body with glowing amber conversion bands
+    const sstBody = new THREE.Mesh(track(new THREE.BoxGeometry(4.6, 5.4, 3.6)), shellMat);
+    sstBody.position.set(sstCenter.x - 3, gy + 3.1, sstCenter.z - 1);
+    sstBody.castShadow = shadows;
+    group.add(sstBody);
+    for (const bandY of [2.3, 4.1]) {
+      const band = new THREE.Mesh(
+        track(new THREE.BoxGeometry(4.78, 0.22, 3.78)),
         sstRingMat
       );
-      joint.rotation.x = Math.PI / 2;
-      joint.position.set(sstCenter.x - 3, gy + 2.45 + i * 2.05, sstCenter.z - 1);
-      group.add(joint);
+      band.position.set(sstCenter.x - 3, gy + bandY, sstCenter.z - 1);
+      group.add(band);
     }
-    // cooling fins on the stack
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.2, 4.6, 2.2)), shellDarkMat);
+    // radiator fins on the back face
+    for (let k = 0; k < 5; k++) {
+      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 4.2, 1.3)), shellDarkMat);
       fin.position.set(
-        sstCenter.x - 3 + Math.cos(a) * 2.9,
-        gy + 3.6,
-        sstCenter.z - 1 + Math.sin(a) * 2.9
+        sstCenter.x - 3 - 1.8 + k * 0.9,
+        gy + 3.1,
+        sstCenter.z - 1 - 2.4
       );
-      fin.rotation.y = -a;
       fin.castShadow = shadows;
       group.add(fin);
+    }
+    // insulator bushings on the roof
+    for (const bx of [-1.3, 0, 1.3]) {
+      const post = new THREE.Mesh(
+        track(new THREE.CylinderGeometry(0.13, 0.16, 0.85, 8)),
+        shellDarkMat
+      );
+      post.position.set(sstCenter.x - 3 + bx, gy + 6.2, sstCenter.z - 1);
+      const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.18, 8, 6)), sstRingMat);
+      tip.position.set(sstCenter.x - 3 + bx, gy + 6.72, sstCenter.z - 1);
+      group.add(post, tip);
     }
     // control cabinets with blue status strips
     for (const [cx, cz] of [
@@ -761,6 +766,47 @@ export function buildTown(quality: "high" | "low"): Town {
       const led = new THREE.Mesh(track(new THREE.BoxGeometry(1.7, 0.14, 0.06)), bessLightMat);
       led.position.set(sstCenter.x + cx, gy + 3.2, sstCenter.z + cz + 0.94);
       group.add(led);
+    }
+  }
+
+  /* ---------------- data center ---------------- */
+  const dcCenter = { x: 40, z: -24 };
+  {
+    const rot = 0.3;
+    const gy = terrainHeight(dcCenter.x, dcCenter.z);
+    const hall = new THREE.Mesh(track(new THREE.BoxGeometry(11, 4, 6.5)), shellMat);
+    hall.position.set(dcCenter.x, gy + 2, dcCenter.z);
+    hall.rotation.y = rot;
+    hall.castShadow = shadows;
+    group.add(hall);
+    // roof radiator fins (servers run hot, even on the Moon)
+    for (let k = 0; k < 5; k++) {
+      const fx = -4 + k * 2;
+      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.18, 1.1, 5.9)), shellDarkMat);
+      fin.position.set(
+        dcCenter.x + Math.cos(rot) * fx,
+        gy + 4.55,
+        dcCenter.z - Math.sin(rot) * fx
+      );
+      fin.rotation.y = rot;
+      fin.castShadow = shadows;
+      group.add(fin);
+    }
+    // server status light rows on both long walls
+    for (const side of [-1, 1]) {
+      for (const ly of [1.1, 2.0, 2.9]) {
+        const strip = new THREE.Mesh(
+          track(new THREE.BoxGeometry(9.6, 0.14, 0.06)),
+          bessLightMat
+        );
+        strip.position.set(
+          dcCenter.x + Math.sin(rot) * 3.31 * side,
+          gy + ly,
+          dcCenter.z + Math.cos(rot) * 3.31 * side
+        );
+        strip.rotation.y = rot;
+        group.add(strip);
+      }
     }
   }
 
@@ -784,6 +830,12 @@ export function buildTown(quality: "high" | "low"): Town {
       [36, -10],
       [20, -5],
       [10, -2],
+    ],
+    // SST station -> data center (compute is a load too)
+    [
+      [52, -15],
+      [46, -20],
+      [41, -23],
     ],
     // reactor -> habitat
     [

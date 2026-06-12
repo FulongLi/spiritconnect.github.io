@@ -17,12 +17,20 @@ const MODEL_SHOWCASE_COLOR = "#2ebcfe";
 const MODEL_Y_DESKTOP = -0.9;
 const MODEL_Y_COMPACT = -0.78;
 
-export default function PlaygroundCanvas() {
+export default function PlaygroundCanvas({
+  initialPreset,
+}: {
+  initialPreset?: PresetId;
+} = {}) {
   const [hideLeva, setHideLeva] = useState(true);
   const [activeModelIndex, setActiveModelIndex] = useState(0);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [replayTrigger, setReplayTrigger] = useState(0);
-  const [activePreset, setActivePreset] = useState<PresetId>("dark");
+  const [activePreset, setActivePreset] = useState<PresetId>(initialPreset ?? "dark");
+
+  useEffect(() => {
+    if (initialPreset) setActivePreset(initialPreset);
+  }, [initialPreset]);
   const [rendererUnavailable, setRendererUnavailable] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
   const activeBranch = BRAND_BRANCHES[activeModelIndex];

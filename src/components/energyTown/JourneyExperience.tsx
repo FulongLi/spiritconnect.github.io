@@ -20,8 +20,8 @@ const PlaygroundCanvas = dynamic(
 const SECTIONS = 10; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
-const BLACKOUT_START = 0.7; // dome hull fills the frame…
-const BLACKOUT_END = 0.745; // …dark as we cross inside…
+const BLACKOUT_START = 0.71; // dome hull fills the frame…
+const BLACKOUT_END = 0.76; // …dark as we cross inside…
 const PORTAL_FADE_START = 0.86; // …then the dome interior lights up: the portal
 const PORTAL_FADE_END = 0.95;
 
@@ -44,41 +44,49 @@ const CHAPTERS: Chapter[] = [
     align: "center",
   },
   {
-    start: 0.13,
-    end: 0.27,
+    start: 0.115,
+    end: 0.225,
     kicker: "01 / PV ARRAY",
     title: "CAPTURE THE SUN",
     body: "Fourteen days of unfiltered sunlight. Photovoltaic fields harvest every photon that falls on the regolith.",
     align: "left",
   },
   {
-    start: 0.3,
-    end: 0.41,
+    start: 0.25,
+    end: 0.345,
     kicker: "02 / ENERGY STORAGE",
     title: "HOLD THE LIGHT",
     body: "Battery banks store the lunar day, ready to carry the outpost through the two-week night.",
     align: "right",
   },
   {
-    start: 0.44,
-    end: 0.56,
+    start: 0.375,
+    end: 0.47,
     kicker: "03 / SOLID-STATE TRANSFORMER",
     title: "SHAPE THE POWER",
     body: "An AI-designed solid-state transformer converts, regulates, and routes every watt — power electronics, the craft of Spirit Connect AIPE Labs.",
     align: "left",
   },
   {
-    start: 0.545,
-    end: 0.625,
-    kicker: "04 / THE CORE",
-    title: "POWER THAT NEVER SLEEPS",
-    body: "Beside the habitat, the reactor hums through the two-week night — the backbone behind the batteries.",
+    start: 0.5,
+    end: 0.59,
+    kicker: "04 / DATA CENTER",
+    title: "WHERE ENERGY BECOMES INTELLIGENCE",
+    body: "Clean power feeds the servers; the servers run the AI that designs the grid. The loop closes here.",
     align: "right",
   },
   {
-    start: 0.645,
-    end: 0.7,
-    kicker: "05 / ARRIVAL",
+    start: 0.605,
+    end: 0.655,
+    kicker: "05 / THE CORE",
+    title: "POWER THAT NEVER SLEEPS",
+    body: "Beside the habitat, the reactor hums through the two-week night — the backbone behind the batteries.",
+    align: "left",
+  },
+  {
+    start: 0.67,
+    end: 0.71,
+    kicker: "06 / ARRIVAL",
     title: "ENTER THE HABITAT",
     body: "Through the airlock. The heart of Spirit Connect awaits inside.",
     align: "center",
@@ -158,8 +166,8 @@ export default function JourneyExperience() {
 
       /* bridge caption inside the black hold */
       if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.765) / 0.03));
-        const outO = Math.min(1, Math.max(0, (0.925 - p) / 0.03));
+        const inO = Math.min(1, Math.max(0, (p - 0.775) / 0.028));
+        const outO = Math.min(1, Math.max(0, (0.885 - p) / 0.028));
         captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
@@ -472,7 +480,7 @@ export default function JourneyExperience() {
               color: "rgba(240, 246, 255, 0.92)",
             }}
           >
-            INSIDE THE HABITAT — THE SPIRIT CONNECT PORTAL
+            WELCOME TO SPIRIT CONNECT
           </div>
           <div
             style={{
@@ -498,7 +506,9 @@ export default function JourneyExperience() {
           background: "#0e0d0c",
         }}
       >
-        {portalMounted && <PlaygroundCanvas />}
+        {portalMounted && (
+          <PlaygroundCanvas initialPreset={night ? "dark" : "light"} />
+        )}
       </div>
     </div>
   );

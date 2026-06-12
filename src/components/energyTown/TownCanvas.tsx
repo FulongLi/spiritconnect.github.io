@@ -31,12 +31,13 @@ const CAM_POSITIONS: [number, number, number][] = [
   [71, 5.5, 17], // 5 alongside the battery banks (BESS dwell)
   [67, 6, 2], // 6 turning toward the SST
   [62, 6.5, -19], // 7 circling the conversion stack (SST dwell)
-  [44, 7, -24], // 8 pulling away with the managed feed
-  [-26, 12, -14], // 9 the reactor — the structure beside the habitat
-  [-18, 8, 22], // 10 swinging around to face the main dome
-  [-8, 6, 14], // 11 final approach to the shell
-  [-2, 4.8, 7], // 12 crossing the hull — screen goes dark
-  [0, 4.5, 1.5], // 13 inside the dome
+  [52, 6, -30], // 8 sliding over to the data center
+  [42, 5, -32], // 9 along the server hall (DC dwell)
+  [-26, 12, -14], // 10 the reactor — the structure beside the habitat
+  [-18, 8, 22], // 11 swinging around to face the main dome
+  [-8, 6, 14], // 12 final approach to the shell
+  [-2, 4.8, 7], // 13 crossing the hull — screen goes dark
+  [0, 4.5, 1.5], // 14 inside the dome
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
@@ -48,7 +49,8 @@ const CAM_TARGETS: [number, number, number][] = [
   [63, 2, 12], // BESS
   [58, 3.5, -10],
   [54, 3.5, -13], // SST stack
-  [24, 4, -16],
+  [44, 2.5, -25], // data center
+  [38, 2, -23], // data center
   [-48, 4, -32], // reactor
   [0, 6, 0], // dome
   [0, 5.5, 0],
