@@ -128,6 +128,17 @@ export default function JourneyExperience() {
     if (!scroller) return;
     let raf = 0;
 
+    /* Normalize mouse-wheel scrolling across platforms (Windows mice,
+       Firefox line-mode deltas, etc.) — drive the container directly. */
+    const onWheel = (ev: WheelEvent) => {
+      if (ev.ctrlKey) return; // keep pinch-zoom gestures intact
+      ev.preventDefault();
+      const factor =
+        ev.deltaMode === 1 ? 33 : ev.deltaMode === 2 ? window.innerHeight : 1;
+      scroller.scrollTop += ev.deltaY * factor;
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const max = scroller.scrollHeight - scroller.clientHeight;
@@ -188,7 +199,10 @@ export default function JourneyExperience() {
       }
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("wheel", onWheel);
+    };
   }, []);
 
   return (
