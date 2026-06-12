@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { buildTown, DAY, NIGHT } from "./townBuilder";
 
 type Props = {
@@ -14,28 +19,41 @@ type Props = {
 };
 
 /* Camera flight path: positions and look-at targets, sampled by progress */
+// Closely-spaced waypoints inside the energy district make the camera
+// linger there; the flight ends by diving INTO the main dome — the
+// hologram portal then reads as the dome's interior.
 const CAM_POSITIONS: [number, number, number][] = [
-  [0, 125, 190], // 0 aerial overview
-  [-48, 52, 60], // 1 descending toward wind farm
-  [-108, 32, -28], // 2 sweeping past the turbines
-  [-30, 26, 70], // 3 banking across the valley
-  [62, 16, 96], // 4 approaching the solar farm
-  [70, 11, 48], // 5 skimming the panels
-  [16, 7, 26], // 6 entering the town streets
-  [2, 9, 14], // 7 among the buildings
-  [0, 80, -36], // 8 ascending into the sky
+  [0, 115, 185], // 0 aerial overview, Earth above the base
+  [62, 44, 118], // 1 descending toward the energy district
+  [86, 10, 66], // 2 arriving over the PV rows
+  [82, 7.5, 46], // 3 slow drift along the panels (PV dwell)
+  [76, 7, 28], // 4 leaving PV, containers ahead
+  [71, 5.5, 17], // 5 alongside the battery banks (BESS dwell)
+  [67, 6, 2], // 6 turning toward the SST
+  [62, 6.5, -19], // 7 circling the conversion stack (SST dwell)
+  [44, 7, -24], // 8 pulling away with the managed feed
+  [-26, 12, -14], // 9 the reactor — the structure beside the habitat
+  [-18, 8, 22], // 10 swinging around to face the main dome
+  [-8, 6, 14], // 11 final approach to the shell
+  [-2, 4.8, 7], // 12 crossing the hull — screen goes dark
+  [0, 4.5, 1.5], // 13 inside the dome
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
-  [0, 0, 0],
-  [-80, 14, -75],
-  [-85, 14, -85],
-  [20, 4, 40],
-  [72, 1, 72],
-  [60, 0, 56],
-  [-2, 8, 0],
-  [-6, 10, -6],
-  [0, 6, 0],
+  [0, 4, 0],
+  [70, 2, 44],
+  [72, 1.5, 40],
+  [70, 1.5, 34], // PV
+  [65, 2, 16],
+  [63, 2, 12], // BESS
+  [58, 3.5, -10],
+  [54, 3.5, -13], // SST stack
+  [24, 4, -16],
+  [-48, 4, -32], // reactor
+  [0, 6, 0], // dome
+  [0, 5.5, 0],
+  [0, 5, -2],
+  [0, 5, -6],
 ];
 
 export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: Props) {
@@ -61,7 +79,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, compact ? 1.5 : 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.05;
     if (quality === "high") {
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -71,6 +89,11 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     const scene = new THREE.Scene();
     scene.background = DAY.background.clone();
     scene.fog = new THREE.Fog(DAY.background.clone(), DAY.fogNear, DAY.fogFar);
+
+    // image-based lighting: gives metals (solar panels) real reflections
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.32;
 
     const camera = new THREE.PerspectiveCamera(
       52,
@@ -86,8 +109,12 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       DAY.hemiIntensity
     );
     scene.add(hemi);
+    // earthshine fill so shadowed sides never go dead black
+    const fill = new THREE.DirectionalLight("#6f8fc4", 0.3);
+    fill.position.set(-110, 60, -80);
+    scene.add(fill);
     const sun = new THREE.DirectionalLight(DAY.sunColor.clone(), DAY.sunIntensity);
-    sun.position.set(90, 130, 60);
+    sun.position.set(150, 65, 90); // low sun angle → long, dramatic lunar shadows
     if (quality === "high") {
       sun.castShadow = true;
       sun.shadow.mapSize.set(2048, 2048);
@@ -103,6 +130,26 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     /* town */
     const town = buildTown(quality);
     scene.add(town.group);
+
+    /* post-processing: bloom gives the emissive conduits a real glow */
+    const dpr = Math.min(window.devicePixelRatio, compact ? 1.5 : 2);
+    const rt = new THREE.WebGLRenderTarget(
+      window.innerWidth * dpr,
+      window.innerHeight * dpr,
+      { samples: quality === "high" ? 4 : 2, type: THREE.HalfFloatType }
+    );
+    const composer = new EffectComposer(renderer, rt);
+    composer.setPixelRatio(dpr);
+    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.35, // strength (raised at night)
+      0.55, // radius
+      0.88 // threshold: only emissives bloom in daylight
+    );
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
 
     /* camera path */
     const posCurve = new THREE.CatmullRomCurve3(
@@ -134,6 +181,17 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     const hemiGndD = DAY.hemiGround.clone();
     const hemiGndN = NIGHT.hemiGround.clone();
 
+    /* mouse parallax (desktop only) — subtle camera drift toward the cursor */
+    let mx = 0;
+    let my = 0;
+    let smx = 0;
+    let smy = 0;
+    const onPointerMove = (ev: PointerEvent) => {
+      mx = (ev.clientX / window.innerWidth - 0.5) * 2;
+      my = (ev.clientY / window.innerHeight - 0.5) * 2;
+    };
+    if (!compact) window.addEventListener("pointermove", onPointerMove);
+
     const clock = new THREE.Clock();
     let raf = 0;
     let disposed = false;
@@ -146,7 +204,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
 
       /* damped scroll progress */
       const target = Math.min(progressRef.current, 1);
-      smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 3.2);
+      smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 2.6);
 
       /* theme lerp toward target */
       const themeTarget = themeRef.current;
@@ -170,6 +228,10 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
         hemi.intensity =
           DAY.hemiIntensity +
           (NIGHT.hemiIntensity - DAY.hemiIntensity) * themeMix;
+        fill.intensity = 0.3 + 0.35 * themeMix;
+        scene.environmentIntensity = 0.32 - 0.18 * themeMix;
+        bloom.strength = 0.35 + 0.55 * themeMix;
+        bloom.threshold = 0.88 - 0.22 * themeMix;
         lastThemeApplied = themeMix;
       }
 
@@ -184,8 +246,14 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       camera.position.copy(camPos);
       camera.lookAt(camTgt);
 
+      // parallax: shift in camera space after orientation is set
+      smx += (mx - smx) * Math.min(1, dt * 2.2);
+      smy += (my - smy) * Math.min(1, dt * 2.2);
+      camera.translateX(smx * 1.7);
+      camera.translateY(-smy * 0.95);
+
       town.update(dt, elapsed);
-      renderer.render(scene, camera);
+      composer.render();
     }
     raf = requestAnimationFrame(frame);
 
@@ -193,6 +261,8 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+      bloom.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener("resize", onResize);
 
@@ -200,7 +270,11 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       disposed = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("pointermove", onPointerMove);
       town.dispose();
+      composer.dispose();
+      rt.dispose();
+      pmrem.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === mount) {
         mount.removeChild(renderer.domElement);

@@ -1,8 +1,13 @@
 import * as THREE from "three";
 
 /* ------------------------------------------------------------------ */
-/* Deterministic PRNG so the town layout is stable between reloads     */
+/* Lunar habitat — a futuristic human settlement on the Moon.          */
+/* Barren grey regolith with craters, geodesic domes, capsule modules, */
+/* connecting tubes, a solar farm, a glowing reactor core, and Earth   */
+/* hanging in a black, star-filled sky. Energy conduits are the only   */
+/* colour accent (brand blue + amber).                                 */
 /* ------------------------------------------------------------------ */
+
 function mulberry32(seed: number) {
   let a = seed >>> 0;
   return () => {
@@ -17,74 +22,314 @@ function mulberry32(seed: number) {
 const rand = mulberry32(20260611);
 const R = (min: number, max: number) => min + rand() * (max - min);
 
-/* ------------------------------------------------------------------ */
-/* Terrain height field — flat in the centre, gentle hills outside,   */
-/* one larger hill under the wind farm.                               */
-/* ------------------------------------------------------------------ */
 function smoothstep(a: number, b: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 }
 
+/* ---------------- value noise (fine regolith relief) ---------------- */
+function latticeHash(ix: number, iz: number) {
+  let h = (ix * 374761393 + iz * 668265263) | 0;
+  h = (h ^ (h >>> 13)) | 0;
+  h = Math.imul(h, 1274126177);
+  return (((h ^ (h >>> 16)) >>> 0) % 1000) / 1000;
+}
+
+function valueNoise(x: number, z: number) {
+  const ix = Math.floor(x);
+  const iz = Math.floor(z);
+  const fx = x - ix;
+  const fz = z - iz;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sz = fz * fz * (3 - 2 * fz);
+  const a = latticeHash(ix, iz);
+  const b = latticeHash(ix + 1, iz);
+  const c = latticeHash(ix, iz + 1);
+  const d = latticeHash(ix + 1, iz + 1);
+  return a + (b - a) * sx + (c - a) * sz + (a - b - c + d) * sx * sz;
+}
+
+function fbm(x: number, z: number) {
+  return (
+    valueNoise(x, z) * 0.55 +
+    valueNoise(x * 2.13, z * 2.13) * 0.28 +
+    valueNoise(x * 4.7, z * 4.7) * 0.17 -
+    0.5
+  );
+}
+
+/* ---------------- craters (deterministic, used by height + tint) --- */
+type Crater = { x: number; z: number; r: number };
+const CRATERS: Crater[] = (() => {
+  const rng = mulberry32(987654321);
+  const list: Crater[] = [];
+  for (let i = 0; i < 26; i++) {
+    const a = rng() * Math.PI * 2;
+    const dist = 45 + rng() * 145;
+    const r = 4 + rng() * (dist > 90 ? 26 : 12);
+    list.push({ x: Math.cos(a) * dist, z: Math.sin(a) * dist, r });
+  }
+  // a few small ones closer in
+  for (let i = 0; i < 8; i++) {
+    const a = rng() * Math.PI * 2;
+    const dist = 28 + rng() * 35;
+    list.push({ x: Math.cos(a) * dist, z: Math.sin(a) * dist, r: 2 + rng() * 4 });
+  }
+  // many craterlets for realistic pockmarking
+  for (let i = 0; i < 50; i++) {
+    const a = rng() * Math.PI * 2;
+    const dist = 30 + rng() * 170;
+    list.push({ x: Math.cos(a) * dist, z: Math.sin(a) * dist, r: 0.8 + rng() * 2.6 });
+  }
+  return list;
+})();
+
+/** Radius of the "mini-moon": ground curves away so the horizon is round. */
+const MOON_CURVE = 1250;
+
 export function terrainHeight(x: number, z: number) {
   const r = Math.hypot(x, z);
-  const edge = smoothstep(55, 165, r);
+  const flat = smoothstep(28, 90, r);
+  // gentle mare undulation, flattened near the habitat
   let h =
-    edge *
-    (2.6 * Math.sin(x * 0.045) +
-      2.0 * Math.cos(z * 0.05) +
-      1.6 * Math.sin((x + z) * 0.03) +
-      2.2);
-  // wind-farm hill
-  const dw = Math.hypot(x + 85, z + 85);
-  h += 8 * Math.exp(-(dw * dw) / (2 * 42 * 42));
+    flat *
+    (1.4 * Math.sin(x * 0.03) * Math.cos(z * 0.035) +
+      1.0 * Math.sin((x - z) * 0.022) +
+      0.8);
+  // fine fractal regolith relief (subtle near the base, stronger out wide)
+  h += fbm(x * 0.13, z * 0.13) * (0.35 + 1.45 * flat);
+  // craters: raised rim, sunken bowl
+  for (const c of CRATERS) {
+    const d = Math.hypot(x - c.x, z - c.z) / c.r;
+    if (d < 1.8) {
+      const rim = Math.exp(-((d - 1) * (d - 1)) / 0.07) * c.r * 0.055;
+      const bowl = d < 1 ? -(Math.cos(d * Math.PI) * 0.5 + 0.5) * c.r * 0.11 : 0;
+      h += rim + bowl;
+    }
+  }
+  // spherical drop-off → round horizon, square edges fall out of sight
+  h -= (r * r) / MOON_CURVE;
   return h;
 }
 
+/** crater shading: darker bowls, brighter ejecta rings around large craters */
+function craterShade(x: number, z: number) {
+  let shade = 1;
+  for (const c of CRATERS) {
+    const d = Math.hypot(x - c.x, z - c.z) / c.r;
+    if (d < 1) shade -= (1 - d) * 0.18;
+    else if (c.r > 9 && d < 1.9) {
+      shade += Math.exp(-((d - 1.35) * (d - 1.35)) / 0.12) * 0.07;
+    }
+  }
+  return Math.min(1.12, Math.max(0.72, shade));
+}
+
+/** fine granular regolith bump texture */
+function makeRegolithTexture() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext("2d")!;
+  const img = ctx.createImageData(256, 256);
+  const rng = mulberry32(13579);
+  for (let i = 0; i < 256 * 256; i++) {
+    const g = 110 + rng() * 70;
+    img.data[i * 4] = g;
+    img.data[i * 4 + 1] = g;
+    img.data[i * 4 + 2] = g;
+    img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  // a few soft blotches for medium-scale variation
+  for (let i = 0; i < 60; i++) {
+    const x = rng() * 256;
+    const y = rng() * 256;
+    const r = 6 + rng() * 22;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const tone = rng() > 0.5 ? "255,255,255" : "0,0,0";
+    g.addColorStop(0, `rgba(${tone},0.10)`);
+    g.addColorStop(1, `rgba(${tone},0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(22, 22);
+  return tex;
+}
+
 /* ------------------------------------------------------------------ */
-/* Day / night palettes                                                */
+/* Scene palettes (consumed by TownCanvas for sky/fog/lights)          */
+/* Lunar day: harsh white sun, bright grey dust, black sky.            */
+/* Lunar night: dim blue earthshine, glowing habitat.                  */
 /* ------------------------------------------------------------------ */
 export const DAY = {
-  background: new THREE.Color("#cfe9f5"),
-  fogNear: 170,
-  fogFar: 420,
-  hemiSky: new THREE.Color("#d9efff"),
-  hemiGround: new THREE.Color("#7fa05a"),
-  hemiIntensity: 1.0,
-  sunColor: new THREE.Color("#fff3d6"),
-  sunIntensity: 2.4,
-  terrainTint: new THREE.Color("#ffffff"),
-  wallTint: new THREE.Color("#ffffff"),
-  emissiveWarm: 0,
-  emissiveSolar: 0,
-  starOpacity: 0,
+  background: new THREE.Color("#050608"),
+  fogNear: 210,
+  fogFar: 520,
+  hemiSky: new THREE.Color("#9aa3ad"),
+  hemiGround: new THREE.Color("#3c3f43"),
+  hemiIntensity: 0.5,
+  sunColor: new THREE.Color("#fff8ee"),
+  sunIntensity: 3.0,
 };
 
 export const NIGHT = {
-  background: new THREE.Color("#070d1a"),
-  fogNear: 110,
-  fogFar: 360,
-  hemiSky: new THREE.Color("#16243f"),
-  hemiGround: new THREE.Color("#0c1410"),
-  hemiIntensity: 0.55,
-  sunColor: new THREE.Color("#7fa8ff"),
-  sunIntensity: 0.35,
-  terrainTint: new THREE.Color("#41546e"),
-  wallTint: new THREE.Color("#3d4760"),
-  emissiveWarm: 0.5,
-  emissiveSolar: 0.55,
-  starOpacity: 0.95,
+  background: new THREE.Color("#030407"),
+  fogNear: 150,
+  fogFar: 440,
+  hemiSky: new THREE.Color("#1c2a44"),
+  hemiGround: new THREE.Color("#0a0d12"),
+  hemiIntensity: 0.4,
+  sunColor: new THREE.Color("#8fb0e8"),
+  sunIntensity: 0.25,
 };
 
 export type Town = {
   group: THREE.Group;
   update: (dt: number, elapsed: number) => void;
-  applyTheme: (mix: number) => void; // 0 = day, 1 = night
+  applyTheme: (mix: number) => void; // 0 = lunar day, 1 = lunar night
   dispose: () => void;
 };
 
-/* ------------------------------------------------------------------ */
-/* Town construction                                                   */
+/* ---------------- helpers ---------------- */
+
+/** glowing energy conduit ribbon hugging the terrain */
+function makeRibbon(curve: THREE.CatmullRomCurve3, width: number, segments: number, lift: number) {
+  const pts = curve.getSpacedPoints(segments);
+  const verts = new Float32Array((segments + 1) * 2 * 3);
+  const idx: number[] = [];
+  const up = new THREE.Vector3(0, 1, 0);
+  const tangent = new THREE.Vector3();
+  const side = new THREE.Vector3();
+  for (let i = 0; i <= segments; i++) {
+    const p = pts[i];
+    const pNext = pts[Math.min(segments, i + 1)];
+    const pPrev = pts[Math.max(0, i - 1)];
+    tangent.subVectors(pNext, pPrev).setY(0).normalize();
+    side.crossVectors(up, tangent).normalize().multiplyScalar(width / 2);
+    const y0 = terrainHeight(p.x - side.x, p.z - side.z) + lift;
+    const y1 = terrainHeight(p.x + side.x, p.z + side.z) + lift;
+    verts[i * 6] = p.x - side.x;
+    verts[i * 6 + 1] = y0;
+    verts[i * 6 + 2] = p.z - side.z;
+    verts[i * 6 + 3] = p.x + side.x;
+    verts[i * 6 + 4] = y1;
+    verts[i * 6 + 5] = p.z + side.z;
+    if (i < segments) {
+      const a = i * 2;
+      idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(verts, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** photovoltaic cell-grid texture: cells, busbars, frame */
+function makeSolarCellTexture() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 192;
+  const ctx = c.getContext("2d")!;
+  // frame
+  ctx.fillStyle = "#b9c2cc";
+  ctx.fillRect(0, 0, 256, 192);
+  // panel background
+  ctx.fillStyle = "#0d2c55";
+  ctx.fillRect(6, 6, 244, 180);
+  const cols = 8;
+  const rows = 5;
+  const cw = 244 / cols;
+  const ch = 180 / rows;
+  const rng = mulberry32(24680);
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      const px = 6 + x * cw;
+      const py = 6 + y * ch;
+      // each cell: subtle radial sheen, slightly varied tone
+      const tone = 0.85 + rng() * 0.3;
+      const g = ctx.createLinearGradient(px, py, px + cw, py + ch);
+      g.addColorStop(0, `rgba(${Math.round(31 * tone)}, ${Math.round(95 * tone)}, ${Math.round(186 * tone)}, 1)`);
+      g.addColorStop(0.5, `rgba(${Math.round(20 * tone)}, ${Math.round(64 * tone)}, ${Math.round(140 * tone)}, 1)`);
+      g.addColorStop(1, `rgba(${Math.round(26 * tone)}, ${Math.round(82 * tone)}, ${Math.round(168 * tone)}, 1)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(px + 1.5, py + 1.5, cw - 3, ch - 3);
+      // busbar lines across each cell
+      ctx.strokeStyle = "rgba(190, 215, 240, 0.5)";
+      ctx.lineWidth = 0.8;
+      for (let b = 1; b <= 3; b++) {
+        ctx.beginPath();
+        ctx.moveTo(px + (b * cw) / 4, py + 2);
+        ctx.lineTo(px + (b * cw) / 4, py + ch - 2);
+        ctx.stroke();
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** stylized Earth texture */
+function makeEarthTexture() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, 0, 128);
+  g.addColorStop(0, "#2a6bb5");
+  g.addColorStop(0.5, "#1d5499");
+  g.addColorStop(1, "#2a6bb5");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 128);
+  const rng = mulberry32(42);
+  ctx.fillStyle = "#3f7a4f";
+  for (let i = 0; i < 14; i++) {
+    const x = rng() * 256;
+    const y = 20 + rng() * 88;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 10 + rng() * 22, 6 + rng() * 12, rng() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  for (let i = 0; i < 26; i++) {
+    const x = rng() * 256;
+    const y = rng() * 128;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 8 + rng() * 18, 2.5 + rng() * 4, rng() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.fillRect(0, 0, 256, 10);
+  ctx.fillRect(0, 118, 256, 10);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** soft radial glow sprite texture */
+function makeGlowTexture() {
+  const c = document.createElement("canvas");
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, "rgba(160,210,255,0.9)");
+  g.addColorStop(0.4, "rgba(110,170,255,0.32)");
+  g.addColorStop(1, "rgba(80,140,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 /* ------------------------------------------------------------------ */
 export function buildTown(quality: "high" | "low"): Town {
   const group = new THREE.Group();
@@ -93,414 +338,523 @@ export function buildTown(quality: "high" | "low"): Town {
     disposables.push(o);
     return o;
   };
-
   const shadows = quality === "high";
 
-  /* ---------------- terrain ---------------- */
-  const segs = quality === "high" ? 110 : 64;
-  const terrainGeo = track(new THREE.PlaneGeometry(380, 380, segs, segs));
-  terrainGeo.rotateX(-Math.PI / 2);
-  const pos = terrainGeo.attributes.position as THREE.BufferAttribute;
-  const colors = new Float32Array(pos.count * 3);
-  const cBase = new THREE.Color("#79a838");
-  const cLight = new THREE.Color("#90bf48");
-  const cDark = new THREE.Color("#5e8c2e");
-  const tmp = new THREE.Color();
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const z = pos.getZ(i);
-    const h = terrainHeight(x, z);
-    pos.setY(i, h);
-    const n = rand();
-    tmp.copy(cBase).lerp(n > 0.5 ? cLight : cDark, Math.abs(n - 0.5) * 1.4);
-    tmp.lerp(cLight, smoothstep(0, 12, h) * 0.35);
-    colors[i * 3] = tmp.r;
-    colors[i * 3 + 1] = tmp.g;
-    colors[i * 3 + 2] = tmp.b;
-  }
-  terrainGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  terrainGeo.computeVertexNormals();
-  const terrainMat = track(
-    new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })
-  );
-  const terrain = new THREE.Mesh(terrainGeo, terrainMat);
-  terrain.receiveShadow = shadows;
-  group.add(terrain);
-
-  /* ---------------- shared materials ---------------- */
-  const wallMat = track(
-    new THREE.MeshLambertMaterial({
-      color: "#f4f1ea",
-      flatShading: true,
-      emissive: new THREE.Color("#ffb45a"),
-      emissiveIntensity: 0,
-    })
-  );
-  const roofMat = track(
-    new THREE.MeshLambertMaterial({ flatShading: true, color: "#ffffff" })
-  );
-  const towerMat = track(
-    new THREE.MeshLambertMaterial({
-      color: "#e8ecef",
-      flatShading: true,
-      emissive: new THREE.Color("#9fc4ff"),
-      emissiveIntensity: 0,
-    })
-  );
-  const trunkMat = track(
-    new THREE.MeshLambertMaterial({ color: "#7a5a3a", flatShading: true })
-  );
-  const foliageMat = track(
-    new THREE.MeshLambertMaterial({ flatShading: true, color: "#ffffff" })
-  );
-  const panelMat = track(
-    new THREE.MeshLambertMaterial({
-      color: "#1f5fa8",
-      flatShading: true,
-      emissive: new THREE.Color("#2e9bff"),
-      emissiveIntensity: 0,
-    })
-  );
-  const turbineMat = track(
-    new THREE.MeshLambertMaterial({ color: "#f2f4f5", flatShading: true })
-  );
-  const cableMat = track(
-    new THREE.MeshLambertMaterial({ color: "#8d9aa0", flatShading: true })
-  );
-
-  /* ---------------- houses ---------------- */
-  const clusterCenters: [number, number][] = [
-    [42, 22],
-    [-38, 32],
-    [27, -42],
-    [-22, -38],
-    [58, -12],
-    [-55, 5],
-  ];
-  type HouseSpec = { x: number; z: number; w: number; d: number; h: number; rot: number };
-  const houses: HouseSpec[] = [];
-  for (const [cx, cz] of clusterCenters) {
-    const n = 6 + Math.floor(rand() * 4);
-    for (let i = 0; i < n; i++) {
-      const a = rand() * Math.PI * 2;
-      const r = R(3, 14);
-      houses.push({
-        x: cx + Math.cos(a) * r,
-        z: cz + Math.sin(a) * r,
-        w: R(2.2, 3.4),
-        d: R(2.4, 3.8),
-        h: R(1.8, 2.6),
-        rot: Math.floor(rand() * 4) * (Math.PI / 2) + R(-0.15, 0.15),
-      });
-    }
-  }
-
-  const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
-  const roofGeo = track(new THREE.ConeGeometry(0.72, 1, 4));
-
-  const houseMesh = new THREE.InstancedMesh(boxGeo, wallMat, houses.length);
-  const roofMesh = new THREE.InstancedMesh(roofGeo, roofMat, houses.length);
-  houseMesh.castShadow = shadows;
-  roofMesh.castShadow = shadows;
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const e = new THREE.Euler();
   const s = new THREE.Vector3();
   const v = new THREE.Vector3();
-  const roofRed = new THREE.Color("#c84b3c");
-  const roofBlue = new THREE.Color("#2f6fb3");
-  houses.forEach((hs, i) => {
-    const gy = terrainHeight(hs.x, hs.z);
-    e.set(0, hs.rot, 0);
-    q.setFromEuler(e);
-    m.compose(v.set(hs.x, gy + hs.h / 2, hs.z), q, s.set(hs.w, hs.h, hs.d));
-    houseMesh.setMatrixAt(i, m);
-    e.set(0, hs.rot + Math.PI / 4, 0);
-    q.setFromEuler(e);
-    const rh = hs.h * 0.65;
-    m.compose(
-      v.set(hs.x, gy + hs.h + rh / 2, hs.z),
-      q,
-      s.set(Math.max(hs.w, hs.d) * 1.15, rh, Math.max(hs.w, hs.d) * 1.15)
-    );
-    roofMesh.setMatrixAt(i, m);
-    roofMesh.setColorAt(i, rand() > 0.3 ? roofRed : roofBlue);
-  });
-  group.add(houseMesh, roofMesh);
 
-  /* ---------------- office towers + apartments ---------------- */
-  type TowerSpec = { x: number; z: number; w: number; d: number; h: number };
-  const towers: TowerSpec[] = [
-    { x: -6, z: -4, w: 11, d: 9, h: 20 },
-    { x: 8, z: 4, w: 9, d: 9, h: 16 },
-    { x: -2, z: 12, w: 8, d: 7, h: 12 },
-    { x: 12, z: -10, w: 7, d: 8, h: 14 },
-    { x: -16, z: 6, w: 7, d: 7, h: 10 },
-  ];
-  const ringR = 32;
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + 0.4;
-    towers.push({
-      x: Math.cos(a) * ringR,
-      z: Math.sin(a) * ringR,
-      w: R(6, 9),
-      d: R(5, 8),
-      h: R(6, 10),
-    });
+  /* ---------------- materials (PBR for richer shading) ------------- */
+  const std = (color: string, extra?: THREE.MeshStandardMaterialParameters) =>
+    track(
+      new THREE.MeshStandardMaterial({
+        color,
+        flatShading: true,
+        roughness: 0.9,
+        metalness: 0.05,
+        ...extra,
+      })
+    );
+
+  const regolithTex = track(makeRegolithTexture());
+  const terrainMat = std("#ffffff", {
+    roughness: 1,
+    metalness: 0,
+    flatShading: false, // smooth shading: craters read as curved bowls, not facets
+    bumpMap: regolithTex,
+    bumpScale: 0.55,
+  });
+  // brand-blue tinted shells; double-sided so the dome hull stays solid
+  // when the camera flies through it in the final shot
+  const shellMat = std("#cfe0ec", {
+    roughness: 0.5,
+    metalness: 0.12,
+    side: THREE.DoubleSide,
+  });
+  const shellDarkMat = std("#a9bfd1", { roughness: 0.6, metalness: 0.15 });
+  const solarCellTex = track(makeSolarCellTexture());
+  const solarMat = std("#ffffff", {
+    map: solarCellTex,
+    bumpMap: solarCellTex,
+    bumpScale: 0.06,
+    roughness: 0.3,
+    metalness: 0.45,
+    flatShading: false,
+    emissive: new THREE.Color("#1f7fe8"),
+    emissiveIntensity: 0.1, // panels read deep blue even in shadow
+  });
+  const conduitMat = std("#10161f", {
+    roughness: 0.4,
+    emissive: new THREE.Color("#2ebcfe"),
+    emissiveIntensity: 0.55,
+  });
+  const coreMat = std("#0d1726", {
+    roughness: 0.3,
+    emissive: new THREE.Color("#67d6ff"),
+    emissiveIntensity: 0.9,
+  });
+  const stripMat = std("#2b3346", {
+    roughness: 0.4,
+    emissive: new THREE.Color("#ffd9a0"),
+    emissiveIntensity: 0.3,
+  });
+
+  /* ---------------- terrain ---------------- */
+  const segs = quality === "high" ? 220 : 120;
+  const terrainGeo = track(new THREE.PlaneGeometry(480, 480, segs, segs));
+  terrainGeo.rotateX(-Math.PI / 2);
+  const pos = terrainGeo.attributes.position as THREE.BufferAttribute;
+  const colors = new Float32Array(pos.count * 3);
+  const baseGrey = 0.5; // real regolith is a dark, dusty grey
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    pos.setY(i, terrainHeight(x, z));
+    const g = baseGrey * (0.94 + rand() * 0.12) * craterShade(x, z);
+    colors[i * 3] = g;
+    colors[i * 3 + 1] = g;
+    colors[i * 3 + 2] = g * 1.02; // faint cool cast
   }
-  const towerMesh = new THREE.InstancedMesh(boxGeo, towerMat, towers.length);
-  towerMesh.castShadow = shadows;
-  const towerShades = ["#e8ecef", "#dfe5e9", "#eef1f3", "#d6dde2"].map(
-    (c) => new THREE.Color(c)
+  terrainGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  terrainGeo.computeVertexNormals();
+  terrainMat.vertexColors = true;
+  const terrain = new THREE.Mesh(terrainGeo, terrainMat);
+  terrain.receiveShadow = shadows;
+  group.add(terrain);
+
+  /* ---------------- habitat: domes ---------------- */
+  type Dome = { x: number; z: number; r: number };
+  const domes: Dome[] = [
+    { x: 0, z: 0, r: 14 },
+    { x: 23, z: 9, r: 8.5 },
+    { x: -19, z: 13, r: 7.5 },
+    { x: 9, z: -19, r: 6 },
+    { x: -14, z: -14, r: 5 },
+  ];
+  const seamMat = track(
+    new THREE.LineBasicMaterial({ color: "#7e8a9c", transparent: true, opacity: 0.25 })
   );
-  towers.forEach((t, i) => {
-    const gy = terrainHeight(t.x, t.z);
-    m.compose(
-      v.set(t.x, gy + t.h / 2, t.z),
-      q.setFromEuler(e.set(0, 0, 0)),
-      s.set(t.w, t.h, t.d)
+  for (const d of domes) {
+    const gy = terrainHeight(d.x, d.z);
+    const domeGeo = track(
+      new THREE.SphereGeometry(d.r, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2)
     );
-    towerMesh.setMatrixAt(i, m);
-    towerMesh.setColorAt(i, towerShades[i % towerShades.length]);
-  });
-  group.add(towerMesh);
-
-  /* ---------------- rooftop solar ---------------- */
-  const roofPanels: THREE.Matrix4[] = [];
-  const addRoofPanels = (x: number, z: number, topY: number, w: number, d: number) => {
-    const cols = Math.max(1, Math.floor(w / 2.4));
-    const rows = Math.max(1, Math.floor(d / 2.4));
-    for (let cI = 0; cI < cols; cI++) {
-      for (let rI = 0; rI < rows; rI++) {
-        const px = x - w / 2 + (cI + 0.5) * (w / cols);
-        const pz = z - d / 2 + (rI + 0.5) * (d / rows);
-        const mm = new THREE.Matrix4();
-        mm.compose(
-          new THREE.Vector3(px, topY + 0.12, pz),
-          new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.18, 0, 0)),
-          new THREE.Vector3(w / cols - 0.5, 0.12, d / rows - 0.5)
-        );
-        roofPanels.push(mm);
-      }
+    const dome = new THREE.Mesh(domeGeo, shellMat);
+    dome.position.set(d.x, gy + 0.1, d.z);
+    dome.castShadow = shadows;
+    group.add(dome);
+    // geodesic panel seams
+    const seamSrc = track(
+      new THREE.SphereGeometry(d.r * 1.004, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2)
+    );
+    const seamGeo = track(new THREE.WireframeGeometry(seamSrc));
+    const seams = new THREE.LineSegments(seamGeo, seamMat);
+    seams.position.set(d.x, gy + 0.1, d.z);
+    group.add(seams);
+    // slim glowing base ring
+    const ring = new THREE.Mesh(
+      track(new THREE.TorusGeometry(d.r * 1.04, 0.2, 8, 56)),
+      conduitMat
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(d.x, gy + 0.35, d.z);
+    group.add(ring);
+    // warm window band partway up the larger domes
+    if (d.r >= 7) {
+      const band = new THREE.Mesh(
+        track(new THREE.TorusGeometry(d.r * 0.9, 0.14, 8, 56)),
+        stripMat
+      );
+      band.rotation.x = Math.PI / 2;
+      band.position.set(d.x, gy + d.r * 0.42, d.z);
+      group.add(band);
     }
-  };
-  towers.forEach((t) => {
-    if (rand() > 0.25)
-      addRoofPanels(t.x, t.z, terrainHeight(t.x, t.z) + t.h, t.w * 0.9, t.d * 0.9);
-  });
+  }
 
-  /* ---------------- ground solar farm ---------------- */
-  const solarCenter = { x: 72, z: 72 };
-  const farmPanels: THREE.Matrix4[] = [];
+  /* ---------------- habitat: capsule modules + window strips ------- */
+  type Module = { x: number; z: number; len: number; rot: number };
+  const modules: Module[] = [
+    { x: 12, z: 16, len: 9, rot: 0.5 },
+    { x: -8, z: 20, len: 8, rot: -0.4 },
+    { x: 20, z: -8, len: 10, rot: 1.2 },
+    { x: -22, z: -2, len: 9, rot: 0.2 },
+    { x: 2, z: -26, len: 8, rot: -1.0 },
+    { x: 32, z: 2, len: 7, rot: 0.9 },
+  ];
+  const ribGeo = track(new THREE.TorusGeometry(1.58, 0.08, 6, 22));
+  for (const mod of modules) {
+    const gy = terrainHeight(mod.x, mod.z);
+    const capGeo = track(new THREE.CapsuleGeometry(1.5, mod.len, 4, 16));
+    const cap = new THREE.Mesh(capGeo, shellMat);
+    cap.rotation.z = Math.PI / 2;
+    cap.rotation.y = mod.rot;
+    cap.position.set(mod.x, gy + 1.5, mod.z);
+    cap.castShadow = shadows;
+    group.add(cap);
+    // structural ribs around the hull
+    const axX = -Math.cos(mod.rot);
+    const axZ = Math.sin(mod.rot);
+    for (const f of [-0.32, 0, 0.32]) {
+      const rib = new THREE.Mesh(ribGeo, shellDarkMat);
+      rib.position.set(
+        mod.x + axX * mod.len * f,
+        gy + 1.5,
+        mod.z + axZ * mod.len * f
+      );
+      rib.rotation.y = mod.rot - Math.PI / 2;
+      group.add(rib);
+    }
+    // window strips on both sides
+    for (const side of [-1, 1]) {
+      const stripGeo = track(new THREE.BoxGeometry(mod.len * 0.72, 0.28, 0.06));
+      const strip = new THREE.Mesh(stripGeo, stripMat);
+      const offX = Math.sin(mod.rot) * 1.52 * side;
+      const offZ = Math.cos(mod.rot) * 1.52 * side;
+      strip.position.set(mod.x + offX, gy + 1.8, mod.z + offZ);
+      strip.rotation.y = mod.rot;
+      group.add(strip);
+    }
+  }
+
+  /* ---------------- connecting tubes ---------------- */
+  const tubeLinks: [number, number, number, number][] = [
+    [0, 0, 23, 9],
+    [0, 0, -19, 13],
+    [0, 0, 9, -19],
+    [0, 0, -14, -14],
+    [23, 9, 32, 2],
+    [-19, 13, -8, 20],
+    [9, -19, 2, -26],
+  ];
+  const tubeGeoUnit = track(new THREE.CylinderGeometry(0.8, 0.8, 1, 10));
+  for (const [ax, az, bx, bz] of tubeLinks) {
+    const ay = terrainHeight(ax, az) + 1.1;
+    const by = terrainHeight(bx, bz) + 1.1;
+    const A = new THREE.Vector3(ax, ay, az);
+    const B = new THREE.Vector3(bx, by, bz);
+    const dir = new THREE.Vector3().subVectors(B, A);
+    const len = dir.length();
+    const tube = new THREE.Mesh(tubeGeoUnit, shellDarkMat);
+    tube.scale.set(1, len, 1);
+    tube.position.copy(A).addScaledVector(dir, 0.5);
+    tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+    tube.castShadow = shadows;
+    group.add(tube);
+  }
+
+  /* ---------------- comms tower ---------------- */
+  {
+    const gy = terrainHeight(34, -30);
+    const mast = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.3, 13, 6)), shellDarkMat);
+    mast.position.set(34, gy + 6.5, -30);
+    mast.castShadow = shadows;
+    const dish = new THREE.Mesh(track(new THREE.CircleGeometry(2.4, 18)), shellMat);
+    dish.position.set(34, gy + 12.4, -30);
+    dish.rotation.x = -Math.PI / 3;
+    dish.material.side = THREE.DoubleSide;
+    const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 8, 6)), coreMat);
+    tip.position.set(34, gy + 13.2, -30);
+    group.add(mast, dish, tip);
+  }
+
+  /* ---------------- reactor core ---------------- */
+  const reactor = { x: -48, z: -32 };
+  {
+    const gy = terrainHeight(reactor.x, reactor.z);
+    const base = new THREE.Mesh(track(new THREE.CylinderGeometry(5, 5.6, 1.2, 14)), shellDarkMat);
+    base.position.set(reactor.x, gy + 0.6, reactor.z);
+    const body = new THREE.Mesh(track(new THREE.CylinderGeometry(3, 3.4, 5.5, 12)), shellMat);
+    body.position.set(reactor.x, gy + 3.9, reactor.z);
+    body.castShadow = shadows;
+    const core = new THREE.Mesh(track(new THREE.CylinderGeometry(2.1, 2.1, 6.0, 12)), coreMat);
+    core.position.set(reactor.x, gy + 3.95, reactor.z);
+    const haloRing = new THREE.Mesh(
+      track(new THREE.TorusGeometry(4.6, 0.26, 8, 48)),
+      conduitMat
+    );
+    haloRing.rotation.x = Math.PI / 2;
+    haloRing.position.set(reactor.x, gy + 1.4, reactor.z);
+    group.add(base, body, core, haloRing);
+    // radiator fins
+    for (let i = 0; i < 4; i++) {
+      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.25, 4.2, 3.4)), shellDarkMat);
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      fin.position.set(reactor.x + Math.cos(a) * 4.6, gy + 3.4, reactor.z + Math.sin(a) * 4.6);
+      fin.rotation.y = -a;
+      fin.castShadow = shadows;
+      group.add(fin);
+    }
+  }
+
+  /* ---------------- landing pad + lander ---------------- */
+  const pad = { x: -18, z: 52 };
+  {
+    const gy = terrainHeight(pad.x, pad.z);
+    const padMesh = new THREE.Mesh(track(new THREE.CylinderGeometry(11, 11.6, 0.5, 24)), shellDarkMat);
+    padMesh.position.set(pad.x, gy + 0.25, pad.z);
+    padMesh.receiveShadow = shadows;
+    const padRing = new THREE.Mesh(
+      track(new THREE.TorusGeometry(9.6, 0.18, 8, 64)),
+      conduitMat
+    );
+    padRing.rotation.x = Math.PI / 2;
+    padRing.position.set(pad.x, gy + 0.55, pad.z);
+    // inner touchdown marking
+    const padMark = new THREE.Mesh(
+      track(new THREE.TorusGeometry(5.6, 0.1, 6, 48)),
+      shellDarkMat
+    );
+    padMark.rotation.x = Math.PI / 2;
+    padMark.position.set(pad.x, gy + 0.53, pad.z);
+    group.add(padMesh, padRing, padMark);
+    // small lander
+    const body = new THREE.Mesh(track(new THREE.ConeGeometry(1.8, 3.2, 8)), shellMat);
+    body.position.set(pad.x + 2, gy + 2.3, pad.z - 1);
+    body.castShadow = shadows;
+    group.add(body);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + 0.4;
+      const leg = new THREE.Mesh(track(new THREE.CylinderGeometry(0.07, 0.07, 1.6, 5)), shellDarkMat);
+      leg.position.set(
+        pad.x + 2 + Math.cos(a) * 1.5,
+        gy + 1.0,
+        pad.z - 1 + Math.sin(a) * 1.5
+      );
+      leg.rotation.z = Math.cos(a) * 0.5;
+      leg.rotation.x = -Math.sin(a) * 0.5;
+      group.add(leg);
+    }
+  }
+
+  /* ---------------- solar farm ---------------- */
+  const solarCenter = { x: 72, z: 42 };
+  const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
+  const panelPlacements: THREE.Matrix4[] = [];
+  const legPlacements: THREE.Matrix4[] = [];
+  // Panels face the sun (and the camera's approach from the south-east):
+  // tilt up by 0.55 rad, then yaw the whole array toward the sun azimuth.
+  const panelYaw = Math.atan2(150 - solarCenter.x, 90 - solarCenter.z); // toward sun at (150, 65, 90)
+  const panelTilt = 0.55;
+  const cosY = Math.cos(panelYaw);
+  const sinY = Math.sin(panelYaw);
   for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 7; col++) {
-      const px = solarCenter.x - 21 + col * 6.4 + R(-0.3, 0.3);
-      const pz = solarCenter.z - 13 + row * 6.0 + R(-0.3, 0.3);
+    for (let col = 0; col < 6; col++) {
+      const px = solarCenter.x - 19 + col * 7.6 + R(-0.2, 0.2);
+      const pz = solarCenter.z - 14 + row * 7.0 + R(-0.2, 0.2);
       const gy = terrainHeight(px, pz);
       const mm = new THREE.Matrix4();
       mm.compose(
-        new THREE.Vector3(px, gy + 0.9, pz),
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.5, 0, 0)),
-        new THREE.Vector3(5.4, 0.16, 4.4)
+        new THREE.Vector3(px, gy + 1.5, pz),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(panelTilt, panelYaw, 0, "YXZ")),
+        new THREE.Vector3(6.6, 0.18, 5.0)
       );
-      farmPanels.push(mm);
+      panelPlacements.push(mm);
+      for (const lx of [-2.4, 2.4]) {
+        // rotate the local leg offset (lx, 0, -0.7) by the array yaw
+        const ox = lx * cosY - 0.7 * sinY;
+        const oz = -lx * sinY - 0.7 * cosY;
+        const lm = new THREE.Matrix4();
+        lm.compose(
+          new THREE.Vector3(px + ox, gy + 0.6, pz + oz),
+          new THREE.Quaternion(),
+          new THREE.Vector3(0.16, 1.2, 0.16)
+        );
+        legPlacements.push(lm);
+      }
     }
   }
-  const allPanels = [...roofPanels, ...farmPanels];
-  const panelMesh = new THREE.InstancedMesh(boxGeo, panelMat, allPanels.length);
+  const panelMesh = new THREE.InstancedMesh(boxGeo, solarMat, panelPlacements.length);
   panelMesh.castShadow = shadows;
-  allPanels.forEach((mm, i) => panelMesh.setMatrixAt(i, mm));
-  group.add(panelMesh);
+  panelPlacements.forEach((mm, i) => panelMesh.setMatrixAt(i, mm));
+  const legMesh = new THREE.InstancedMesh(boxGeo, shellDarkMat, legPlacements.length);
+  legPlacements.forEach((mm, i) => legMesh.setMatrixAt(i, mm));
+  group.add(panelMesh, legMesh);
 
-  /* ---------------- trees ---------------- */
-  const treeCount = quality === "high" ? 320 : 160;
-  const pineGeo = track(new THREE.ConeGeometry(0.9, 2.4, 6));
-  const roundGeo = track(new THREE.IcosahedronGeometry(1.05, 0));
-  const trunkGeo = track(new THREE.CylinderGeometry(0.16, 0.22, 1, 5));
-  const pineMesh = new THREE.InstancedMesh(pineGeo, foliageMat, treeCount);
-  const roundMesh = new THREE.InstancedMesh(roundGeo, foliageMat, treeCount);
-  const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount * 2);
-  pineMesh.castShadow = shadows;
-  roundMesh.castShadow = shadows;
-  const greens = ["#3e8a3c", "#59a838", "#2e7d32", "#6cab46"].map(
-    (c) => new THREE.Color(c)
-  );
-  let pineI = 0;
-  let roundI = 0;
-  let trunkI = 0;
-  for (let i = 0; i < treeCount * 2; i++) {
-    const a = rand() * Math.PI * 2;
-    const r = 18 + Math.pow(rand(), 0.6) * 150;
-    const x = Math.cos(a) * r;
-    const z = Math.sin(a) * r;
-    // keep solar farm + wind hill summit clear
-    if (Math.hypot(x - solarCenter.x, z - solarCenter.z) < 26) continue;
-    const gy = terrainHeight(x, z);
-    const sc = R(0.8, 1.7);
-    m.compose(
-      v.set(x, gy + 0.5 * sc, z),
-      q.setFromEuler(e.set(0, 0, 0)),
-      s.set(sc, sc, sc)
-    );
-    trunkMesh.setMatrixAt(trunkI++, m);
-    const color = greens[Math.floor(rand() * greens.length)];
-    if (rand() > 0.45 && pineI < treeCount) {
-      m.compose(
-        v.set(x, gy + sc + 1.2 * sc, z),
-        q,
-        s.set(sc, sc * R(1, 1.6), sc)
+  /* ---------------- battery energy storage (BESS) ---------------- */
+  const bessLightMat = std("#10161f", {
+    roughness: 0.4,
+    emissive: new THREE.Color("#2ebcfe"),
+    emissiveIntensity: 0.8,
+  });
+  const bessCenter = { x: 63, z: 12 };
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 3; col++) {
+      const bx = bessCenter.x - 6 + col * 6 + (row % 2) * 1.2;
+      const bz = bessCenter.z - 3.5 + row * 7;
+      const gy = terrainHeight(bx, bz);
+      const body = new THREE.Mesh(track(new THREE.BoxGeometry(4.4, 2.7, 2.7)), shellMat);
+      body.position.set(bx, gy + 1.45, bz);
+      body.rotation.y = 0.18;
+      body.castShadow = shadows;
+      group.add(body);
+      // blue accent stripe + status light strip
+      const stripe = new THREE.Mesh(track(new THREE.BoxGeometry(4.46, 0.5, 2.76)), solarMat);
+      stripe.position.set(bx, gy + 2.35, bz);
+      stripe.rotation.y = 0.18;
+      group.add(stripe);
+      const status = new THREE.Mesh(track(new THREE.BoxGeometry(3.4, 0.16, 0.06)), bessLightMat);
+      status.position.set(
+        bx + Math.sin(0.18) * 1.41,
+        gy + 1.0,
+        bz + Math.cos(0.18) * 1.41
       );
-      pineMesh.setMatrixAt(pineI, m);
-      pineMesh.setColorAt(pineI, color);
-      pineI++;
-    } else if (roundI < treeCount) {
-      m.compose(v.set(x, gy + sc + 1.0 * sc, z), q, s.set(sc, sc, sc));
-      roundMesh.setMatrixAt(roundI, m);
-      roundMesh.setColorAt(roundI, color);
-      roundI++;
+      status.rotation.y = 0.18;
+      group.add(status);
     }
-    if (pineI >= treeCount && roundI >= treeCount) break;
-  }
-  pineMesh.count = pineI;
-  roundMesh.count = roundI;
-  trunkMesh.count = trunkI;
-  group.add(pineMesh, roundMesh, trunkMesh);
-
-  /* ---------------- wind turbines ---------------- */
-  const towerGeo = track(new THREE.CylinderGeometry(0.24, 0.5, 16, 7));
-  const nacelleGeo = track(new THREE.BoxGeometry(1.4, 0.8, 0.8));
-  const bladeGeo = track(new THREE.BoxGeometry(0.5, 7, 0.14));
-  bladeGeo.translate(0, 3.5, 0); // pivot at hub
-  const bladeGroups: THREE.Group[] = [];
-  const turbinePositions: [number, number][] = [];
-  for (let i = 0; i < 9; i++) {
-    const tx = -85 + Math.cos((i / 9) * Math.PI * 2) * R(14, 38) + R(-6, 6);
-    const tz = -85 + Math.sin((i / 9) * Math.PI * 2) * R(14, 38) + R(-6, 6);
-    turbinePositions.push([tx, tz]);
-    const gy = terrainHeight(tx, tz);
-    const tg = new THREE.Group();
-    tg.position.set(tx, gy, tz);
-    tg.rotation.y = Math.PI * 0.3 + R(-0.2, 0.2); // face roughly same wind direction
-    const towerM = new THREE.Mesh(towerGeo, turbineMat);
-    towerM.position.y = 8;
-    towerM.castShadow = shadows;
-    const nac = new THREE.Mesh(nacelleGeo, turbineMat);
-    nac.position.set(0, 16, 0);
-    nac.castShadow = shadows;
-    const blades = new THREE.Group();
-    blades.position.set(0.85, 16, 0);
-    blades.rotation.y = Math.PI / 2;
-    for (let b = 0; b < 3; b++) {
-      const blade = new THREE.Mesh(bladeGeo, turbineMat);
-      blade.rotation.z = (b / 3) * Math.PI * 2;
-      blade.castShadow = shadows;
-      blades.add(blade);
-    }
-    blades.userData.speed = R(0.6, 1.1);
-    blades.rotation.z = rand() * Math.PI * 2;
-    bladeGroups.push(blades);
-    tg.add(towerM, nac, blades);
-    group.add(tg);
   }
 
-  /* ---------------- cable network + energy flow ---------------- */
+  /* ---------------- solid-state transformer (SST) station --------- */
+  const sstCenter = { x: 56, z: -12 };
+  const sstRingMat = std("#1a1410", {
+    roughness: 0.35,
+    emissive: new THREE.Color("#ffc23f"),
+    emissiveIntensity: 0.8,
+  });
+  {
+    const gy = terrainHeight(sstCenter.x, sstCenter.z);
+    // platform
+    const platform = new THREE.Mesh(track(new THREE.BoxGeometry(15, 0.7, 11)), shellDarkMat);
+    platform.position.set(sstCenter.x, gy + 0.35, sstCenter.z);
+    platform.receiveShadow = shadows;
+    group.add(platform);
+    // conversion stack: three drums separated by glowing amber rings
+    for (let i = 0; i < 3; i++) {
+      const drum = new THREE.Mesh(
+        track(new THREE.CylinderGeometry(2.1, 2.2, 1.55, 16)),
+        shellMat
+      );
+      drum.position.set(sstCenter.x - 3, gy + 1.6 + i * 2.05, sstCenter.z - 1);
+      drum.castShadow = shadows;
+      group.add(drum);
+      const joint = new THREE.Mesh(
+        track(new THREE.TorusGeometry(2.0, 0.16, 8, 36)),
+        sstRingMat
+      );
+      joint.rotation.x = Math.PI / 2;
+      joint.position.set(sstCenter.x - 3, gy + 2.45 + i * 2.05, sstCenter.z - 1);
+      group.add(joint);
+    }
+    // cooling fins on the stack
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.2, 4.6, 2.2)), shellDarkMat);
+      fin.position.set(
+        sstCenter.x - 3 + Math.cos(a) * 2.9,
+        gy + 3.6,
+        sstCenter.z - 1 + Math.sin(a) * 2.9
+      );
+      fin.rotation.y = -a;
+      fin.castShadow = shadows;
+      group.add(fin);
+    }
+    // control cabinets with blue status strips
+    for (const [cx, cz] of [
+      [3.6, 2.4],
+      [3.6, -2.6],
+    ] as [number, number][]) {
+      const cab = new THREE.Mesh(track(new THREE.BoxGeometry(2.4, 3.1, 1.8)), shellMat);
+      cab.position.set(sstCenter.x + cx, gy + 2.25, sstCenter.z + cz);
+      cab.castShadow = shadows;
+      group.add(cab);
+      const led = new THREE.Mesh(track(new THREE.BoxGeometry(1.7, 0.14, 0.06)), bessLightMat);
+      led.position.set(sstCenter.x + cx, gy + 3.2, sstCenter.z + cz + 0.94);
+      group.add(led);
+    }
+  }
+
+  /* ---------------- energy conduits + flowing dots ---------------- */
   const pathDefs: [number, number][][] = [
-    // wind farm -> town centre
+    // solar farm -> battery storage
     [
-      [-78, -72],
-      [-52, -44],
-      [-28, -20],
-      [-10, -8],
+      [66, 36],
+      [64, 26],
+      [63, 17],
     ],
-    // solar farm -> town centre
+    // battery storage -> SST station
     [
-      [66, 64],
-      [46, 42],
-      [24, 18],
-      [10, 6],
+      [62, 7],
+      [59, -1],
+      [57, -8],
     ],
-    // ring road around the centre
+    // SST station -> habitat (the managed feed)
     [
-      [26, 0],
-      [18, 19],
-      [0, 27],
-      [-19, 18],
-      [-26, 0],
-      [-18, -19],
-      [0, -26],
-      [19, -18],
-      [26, 0],
+      [51, -13],
+      [36, -10],
+      [20, -5],
+      [10, -2],
     ],
-    // spurs to housing clusters
+    // reactor -> habitat
     [
-      [24, 10],
-      [34, 17],
-      [42, 22],
+      [-44, -28],
+      [-30, -18],
+      [-16, -8],
+      [-6, -2],
     ],
+    // habitat ring
     [
-      [-22, 14],
-      [-31, 24],
-      [-38, 32],
+      [18, 0],
+      [13, 13],
+      [0, 19],
+      [-13, 13],
+      [-18, 0],
+      [-13, -13],
+      [0, -18],
+      [13, -13],
+      [18, 0],
     ],
+    // habitat -> landing pad
     [
-      [14, -22],
-      [21, -33],
-      [27, -42],
+      [-4, 16],
+      [-10, 32],
+      [-16, 44],
     ],
+    // habitat -> comms tower
     [
-      [-13, -22],
-      [-18, -31],
-      [-22, -38],
-    ],
-    [
-      [30, -4],
-      [45, -8],
-      [58, -12],
-    ],
-    [
-      [-28, 2],
-      [-42, 4],
-      [-55, 5],
+      [16, -10],
+      [25, -20],
+      [33, -28],
     ],
   ];
 
   type Flow = { samples: Float32Array; nSamples: number; count: number; speed: number };
   const flows: Flow[] = [];
+  const conduitPulses: { mat: THREE.MeshStandardMaterial; phase: number }[] = [];
   let totalDots = 0;
+  let pathIndex = 0;
   for (const def of pathDefs) {
-    const pts = def.map(
-      ([x, z]) => new THREE.Vector3(x, terrainHeight(x, z) + 0.35, z)
-    );
+    const pts = def.map(([x, z]) => new THREE.Vector3(x, terrainHeight(x, z) + 0.25, z));
     const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.35);
     const len = curve.getLength();
-    const tube = track(
-      new THREE.TubeGeometry(curve, Math.max(24, Math.floor(len / 2.2)), 0.32, 5)
-    );
-    const tubeMesh = new THREE.Mesh(tube, cableMat);
-    tubeMesh.receiveShadow = shadows;
-    group.add(tubeMesh);
+    const ribbon = track(makeRibbon(curve, 1.1, Math.max(28, Math.floor(len / 1.8)), 0.16));
+    const ribbonMat = track(conduitMat.clone());
+    conduitPulses.push({ mat: ribbonMat, phase: pathIndex * 1.35 });
+    pathIndex++;
+    const conduitMesh = new THREE.Mesh(ribbon, ribbonMat);
+    group.add(conduitMesh);
 
     const nSamples = 220;
     const spaced = curve.getSpacedPoints(nSamples - 1);
     const samples = new Float32Array(nSamples * 3);
     spaced.forEach((p, i) => {
       samples[i * 3] = p.x;
-      samples[i * 3 + 1] = p.y + 0.55;
+      samples[i * 3 + 1] = terrainHeight(p.x, p.z) + 0.6;
       samples[i * 3 + 2] = p.z;
     });
-    const count = Math.max(4, Math.round(len / 4.2));
-    flows.push({ samples, nSamples, count, speed: R(0.025, 0.045) });
+    const count = Math.max(5, Math.round(len / 3.2));
+    flows.push({ samples, nSamples, count, speed: R(0.03, 0.05) });
     totalDots += count;
   }
 
   const dotPositions = new Float32Array(totalDots * 3);
   const dotColors = new Float32Array(totalDots * 3);
-  const cBlue = new THREE.Color("#2e9bff");
-  const cYellow = new THREE.Color("#ffd23f");
+  const cBlue = new THREE.Color("#2ebcfe");
+  const cAmber = new THREE.Color("#ffc23f");
   let di = 0;
   for (const f of flows) {
     for (let i = 0; i < f.count; i++) {
-      const c = i % 2 === 0 ? cBlue : cYellow;
+      const c = i % 3 === 2 ? cAmber : cBlue;
       dotColors[di * 3] = c.r;
       dotColors[di * 3 + 1] = c.g;
       dotColors[di * 3 + 2] = c.b;
@@ -512,7 +866,7 @@ export function buildTown(quality: "high" | "low"): Town {
   dotGeo.setAttribute("color", new THREE.BufferAttribute(dotColors, 3));
   const dotMat = track(
     new THREE.PointsMaterial({
-      size: 1.5,
+      size: 1.35,
       vertexColors: true,
       transparent: true,
       opacity: 0.95,
@@ -525,25 +879,27 @@ export function buildTown(quality: "high" | "low"): Town {
   dots.frustumCulled = false;
   group.add(dots);
 
-  /* ---------------- stars (night only) ---------------- */
-  const starCount = 700;
+  /* ---------------- sky: stars + Earth ---------------- */
+  const starCount = 1400;
   const starPos = new Float32Array(starCount * 3);
+  const starSizes = new Float32Array(starCount);
   for (let i = 0; i < starCount; i++) {
     const a = rand() * Math.PI * 2;
-    const elev = Math.asin(rand() * 0.92 + 0.06);
-    const rr = 330;
+    const elev = Math.asin(rand() * 0.95 + 0.04);
+    const rr = 380;
     starPos[i * 3] = Math.cos(a) * Math.cos(elev) * rr;
     starPos[i * 3 + 1] = Math.sin(elev) * rr;
     starPos[i * 3 + 2] = Math.sin(a) * Math.cos(elev) * rr;
+    starSizes[i] = rand();
   }
   const starGeo = track(new THREE.BufferGeometry());
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
   const starMat = track(
     new THREE.PointsMaterial({
-      color: "#cfe2ff",
-      size: 1.2,
+      color: "#dde8ff",
+      size: 1.3,
       transparent: true,
-      opacity: 0,
+      opacity: 0.85,
       sizeAttenuation: false,
       depthWrite: false,
     })
@@ -552,43 +908,212 @@ export function buildTown(quality: "high" | "low"): Town {
   stars.frustumCulled = false;
   group.add(stars);
 
-  /* ---------------- theme bindings ---------------- */
-  const lerpC = (out: THREE.Color, a: THREE.Color, b: THREE.Color, t: number) =>
-    out.copy(a).lerp(b, t);
-  const dayWall = new THREE.Color("#ffffff");
-  const dayTerrain = new THREE.Color("#ffffff");
-  const dayCable = new THREE.Color("#8d9aa0");
-  const nightCable = new THREE.Color("#3a4556");
-  const dayTurbine = new THREE.Color("#f2f4f5");
-  const nightTurbine = new THREE.Color("#4a5468");
-  const dayTrunk = new THREE.Color("#7a5a3a");
-  const nightTrunk = new THREE.Color("#2e2a30");
-  const dayPanel = new THREE.Color("#1f5fa8");
-  const nightPanel = new THREE.Color("#16365e");
+  // a handful of bright "hero" stars
+  const brightCount = 130;
+  const brightPos = new Float32Array(brightCount * 3);
+  for (let i = 0; i < brightCount; i++) {
+    const a = rand() * Math.PI * 2;
+    const elev = Math.asin(rand() * 0.94 + 0.05);
+    const rr = 375;
+    brightPos[i * 3] = Math.cos(a) * Math.cos(elev) * rr;
+    brightPos[i * 3 + 1] = Math.sin(elev) * rr;
+    brightPos[i * 3 + 2] = Math.sin(a) * Math.cos(elev) * rr;
+  }
+  const brightGeo = track(new THREE.BufferGeometry());
+  brightGeo.setAttribute("position", new THREE.BufferAttribute(brightPos, 3));
+  const brightMat = track(
+    new THREE.PointsMaterial({
+      color: "#ffffff",
+      size: 2.4,
+      transparent: true,
+      opacity: 0.9,
+      sizeAttenuation: false,
+      depthWrite: false,
+    })
+  );
+  const brightStars = new THREE.Points(brightGeo, brightMat);
+  brightStars.frustumCulled = false;
+  group.add(brightStars);
+
+  // faint Milky Way band across the sky
+  const mwCount = quality === "high" ? 2400 : 1200;
+  const mwPos = new Float32Array(mwCount * 3);
+  const mwNormal = new THREE.Vector3(0.42, 1, 0.3).normalize();
+  const mwU = new THREE.Vector3(1, 0, 0).cross(mwNormal).normalize();
+  const mwV = new THREE.Vector3().crossVectors(mwNormal, mwU).normalize();
+  const mwDir = new THREE.Vector3();
+  let mwI = 0;
+  for (let i = 0; i < mwCount * 2 && mwI < mwCount; i++) {
+    const th = rand() * Math.PI * 2;
+    const spread = (rand() + rand() + rand() - 1.5) * 0.16;
+    mwDir
+      .copy(mwU)
+      .multiplyScalar(Math.cos(th))
+      .addScaledVector(mwV, Math.sin(th))
+      .addScaledVector(mwNormal, spread)
+      .normalize();
+    if (mwDir.y < 0.03) continue; // keep above the horizon
+    mwPos[mwI * 3] = mwDir.x * 372;
+    mwPos[mwI * 3 + 1] = mwDir.y * 372;
+    mwPos[mwI * 3 + 2] = mwDir.z * 372;
+    mwI++;
+  }
+  const mwGeo = track(new THREE.BufferGeometry());
+  mwGeo.setAttribute("position", new THREE.BufferAttribute(mwPos.slice(0, mwI * 3), 3));
+  const mwMat = track(
+    new THREE.PointsMaterial({
+      color: "#b9c8e8",
+      size: 0.9,
+      transparent: true,
+      opacity: 0.42,
+      sizeAttenuation: false,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    })
+  );
+  const milkyWay = new THREE.Points(mwGeo, mwMat);
+  milkyWay.frustumCulled = false;
+  group.add(milkyWay);
+
+  /* ---------------- drifting dust motes ---------------- */
+  const dustCount = quality === "high" ? 360 : 160;
+  const dustPos = new Float32Array(dustCount * 3);
+  for (let i = 0; i < dustCount; i++) {
+    dustPos[i * 3] = R(-115, 115);
+    dustPos[i * 3 + 1] = R(0.5, 16);
+    dustPos[i * 3 + 2] = R(-115, 115);
+  }
+  const dustGeo = track(new THREE.BufferGeometry());
+  dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = track(
+    new THREE.PointsMaterial({
+      color: "#aab4c4",
+      size: 0.55,
+      transparent: true,
+      opacity: 0.13,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+    })
+  );
+  const dust = new THREE.Points(dustGeo, dustMat);
+  dust.frustumCulled = false;
+  group.add(dust);
+
+  const earthTex = track(makeEarthTexture());
+  const earthMat = track(new THREE.MeshBasicMaterial({ map: earthTex, fog: false }));
+  const earth = new THREE.Mesh(track(new THREE.SphereGeometry(17, 28, 20)), earthMat);
+  earth.position.set(130, 150, -180);
+  group.add(earth);
+  const glowTex = track(makeGlowTexture());
+  const glowMat = track(
+    new THREE.SpriteMaterial({
+      map: glowTex,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
+    })
+  );
+  const earthGlow = new THREE.Sprite(glowMat);
+  earthGlow.scale.setScalar(58);
+  earthGlow.position.copy(earth.position);
+  group.add(earthGlow);
+
+  /* ---------------- blinking beacons ---------------- */
+  const beaconRedMat = track(
+    new THREE.SpriteMaterial({
+      map: glowTex,
+      color: "#ff5a4a",
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  const beaconRed = new THREE.Sprite(beaconRedMat);
+  beaconRed.scale.setScalar(3.2);
+  beaconRed.position.set(34, terrainHeight(34, -30) + 13.6, -30); // comms tower tip
+  group.add(beaconRed);
+
+  const beaconBlueMat = track(
+    new THREE.SpriteMaterial({
+      map: glowTex,
+      color: "#9fd8ff",
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  const beaconBlue = new THREE.Sprite(beaconBlueMat);
+  beaconBlue.scale.setScalar(2.6);
+  beaconBlue.position.set(0, terrainHeight(0, 0) + 14.6, 0); // main dome apex
+  group.add(beaconBlue);
+
+  /* ---------------- theme ---------------- */
+  const themePairs: [THREE.MeshStandardMaterial, string, string][] = [
+    [terrainMat, "#ffffff", "#5d6b85"],
+    [shellMat, "#cfe0ec", "#39435a"],
+    [shellDarkMat, "#a9bfd1", "#2b3346"],
+    [solarMat, "#ffffff", "#7088ad"],
+    [conduitMat, "#10161f", "#0b1018"],
+  ];
+  const pairColors = themePairs.map(
+    ([mat, d, n]) => [mat, new THREE.Color(d), new THREE.Color(n)] as const
+  );
 
   function applyTheme(mix: number) {
-    lerpC(terrainMat.color, dayTerrain, NIGHT.terrainTint, mix);
-    lerpC(wallMat.color, dayWall, NIGHT.wallTint, mix);
-    lerpC(roofMat.color, dayWall, NIGHT.wallTint, mix);
-    lerpC(towerMat.color, dayWall, NIGHT.wallTint, mix);
-    lerpC(foliageMat.color, dayWall, NIGHT.terrainTint, mix);
-    lerpC(cableMat.color, dayCable, nightCable, mix);
-    lerpC(turbineMat.color, dayTurbine, nightTurbine, mix);
-    lerpC(trunkMat.color, dayTrunk, nightTrunk, mix);
-    lerpC(panelMat.color, dayPanel, nightPanel, mix);
-    wallMat.emissiveIntensity = NIGHT.emissiveWarm * mix;
-    towerMat.emissiveIntensity = 0.3 * mix;
-    panelMat.emissiveIntensity = NIGHT.emissiveSolar * mix;
-    starMat.opacity = NIGHT.starOpacity * mix;
-    dotMat.size = 1.5 + 0.7 * mix;
+    for (const [material, d, n] of pairColors) {
+      material.color.copy(d).lerp(n, mix);
+    }
+    for (const p of conduitPulses) {
+      p.mat.color.copy(conduitMat.color);
+    }
+    conduitMat.emissiveIntensity = 0.55 + 0.85 * mix;
+    coreMat.emissiveIntensity = 0.9 + 0.7 * mix;
+    stripMat.emissiveIntensity = 0.3 + 0.9 * mix;
+    solarMat.emissiveIntensity = 0.12 + 0.45 * mix;
+    starMat.opacity = 0.85 + 0.1 * mix;
+    dotMat.size = 1.35 + 0.75 * mix;
+    glowMat.opacity = 0.55 + 0.2 * mix;
+    dustMat.opacity = 0.13 + 0.07 * mix;
   }
 
   /* ---------------- per-frame update ---------------- */
   const flowOffsets = flows.map(() => rand());
-  function update(dt: number, _elapsed: number) {
-    for (const bg of bladeGroups) {
-      bg.rotation.z += dt * (bg.userData.speed as number);
+  let corePulse = 0;
+  function update(dt: number, elapsed: number) {
+    // reactor core breathing
+    corePulse = (Math.sin(elapsed * 1.6) + 1) / 2;
+    coreMat.emissiveIntensity =
+      (0.9 + 0.7 * lastMix) * (0.85 + corePulse * 0.3);
+
+    // dust drifts slowly around the base
+    dust.rotation.y = elapsed * 0.0045;
+    dust.position.y = Math.sin(elapsed * 0.12) * 0.6;
+
+    // Earth turns imperceptibly
+    earth.rotation.y = elapsed * 0.008;
+
+    // energy waves travel along the conduits (staggered pulse)
+    const baseGlow = 0.55 + 0.85 * lastMix;
+    for (const p of conduitPulses) {
+      const w = 0.5 + 0.5 * Math.sin(elapsed * 1.7 + p.phase);
+      p.mat.emissiveIntensity = baseGlow * (0.75 + 0.45 * w);
     }
+
+    // SST conversion rings hum
+    sstRingMat.emissiveIntensity =
+      (0.7 + 0.6 * lastMix) * (0.8 + 0.3 * Math.sin(elapsed * 2.1));
+
+    // beacon blinking
+    const blink = Math.max(0, Math.sin(elapsed * 2.3));
+    beaconRedMat.opacity = 0.15 + 0.75 * blink * blink * blink;
+    const breathe = 0.5 + 0.5 * Math.sin(elapsed * 1.1);
+    beaconBlueMat.opacity = 0.35 + 0.4 * breathe;
+
     let idx = 0;
     for (let fi = 0; fi < flows.length; fi++) {
       const f = flows[fi];
@@ -599,31 +1124,29 @@ export function buildTown(quality: "high" | "low"): Town {
         const i0 = Math.floor(fIdx);
         const i1 = Math.min(f.nSamples - 1, i0 + 1);
         const frac = fIdx - i0;
-        dotPositions[idx * 3] =
-          f.samples[i0 * 3] + (f.samples[i1 * 3] - f.samples[i0 * 3]) * frac;
+        dotPositions[idx * 3] = f.samples[i0 * 3] + (f.samples[i1 * 3] - f.samples[i0 * 3]) * frac;
         dotPositions[idx * 3 + 1] =
-          f.samples[i0 * 3 + 1] +
-          (f.samples[i1 * 3 + 1] - f.samples[i0 * 3 + 1]) * frac;
+          f.samples[i0 * 3 + 1] + (f.samples[i1 * 3 + 1] - f.samples[i0 * 3 + 1]) * frac;
         dotPositions[idx * 3 + 2] =
-          f.samples[i0 * 3 + 2] +
-          (f.samples[i1 * 3 + 2] - f.samples[i0 * 3 + 2]) * frac;
+          f.samples[i0 * 3 + 2] + (f.samples[i1 * 3 + 2] - f.samples[i0 * 3 + 2]) * frac;
         idx++;
       }
     }
     (dotGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true;
   }
 
+  let lastMix = 0;
+  const applyThemeWrapped = (mix: number) => {
+    lastMix = mix;
+    applyTheme(mix);
+  };
+
   function dispose() {
     for (const d of disposables) d.dispose();
-    houseMesh.dispose();
-    roofMesh.dispose();
-    towerMesh.dispose();
     panelMesh.dispose();
-    pineMesh.dispose();
-    roundMesh.dispose();
-    trunkMesh.dispose();
+    legMesh.dispose();
   }
 
-  applyTheme(0);
-  return { group, update, applyTheme, dispose };
+  applyThemeWrapped(0);
+  return { group, update, applyTheme: applyThemeWrapped, dispose };
 }

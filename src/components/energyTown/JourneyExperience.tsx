@@ -17,11 +17,13 @@ const PlaygroundCanvas = dynamic(
 /* ------------------------------------------------------------------ */
 /* Scroll layout                                                       */
 /* ------------------------------------------------------------------ */
-const SECTIONS = 8; // total scroll length = SECTIONS * 100vh
+const SECTIONS = 10; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
-const PORTAL_MOUNT = 0.7; // mount the hologram portal early so it preloads
-const PORTAL_FADE_START = 0.86;
-const PORTAL_FADE_END = 0.97;
+const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
+const BLACKOUT_START = 0.7; // dome hull fills the frame…
+const BLACKOUT_END = 0.745; // …dark as we cross inside…
+const PORTAL_FADE_START = 0.86; // …then the dome interior lights up: the portal
+const PORTAL_FADE_END = 0.95;
 
 type Chapter = {
   start: number;
@@ -37,40 +39,48 @@ const CHAPTERS: Chapter[] = [
     start: 0.0,
     end: 0.09,
     kicker: "SPIRIT CONNECT",
-    title: "ENERGY FOR A TYPE I CIVILISATION",
-    body: "Energy helps humanity enter a Type I civilisation. Scroll to follow the flow.",
+    title: "POWERING HUMANITY'S NEXT HOME",
+    body: "Energy helps humanity enter a Type I civilisation. Scroll to visit the outpost.",
     align: "center",
   },
   {
-    start: 0.14,
+    start: 0.13,
     end: 0.27,
-    kicker: "01 / HARVEST THE WIND",
-    title: "WHERE POWER BEGINS",
-    body: "Clean power starts where the wind never sleeps. AI-driven power electronics turn motion into megawatts — the mission of Spirit Connect AIPE Labs.",
+    kicker: "01 / PV ARRAY",
+    title: "CAPTURE THE SUN",
+    body: "Fourteen days of unfiltered sunlight. Photovoltaic fields harvest every photon that falls on the regolith.",
     align: "left",
   },
   {
-    start: 0.34,
-    end: 0.47,
-    kicker: "02 / CAPTURE THE SUN",
-    title: "EVERY ROOFTOP, A POWER PLANT",
-    body: "Intelligent converters squeeze every photon. From utility farms to rooftops, energy is harvested wherever light falls.",
+    start: 0.3,
+    end: 0.41,
+    kicker: "02 / ENERGY STORAGE",
+    title: "HOLD THE LIGHT",
+    body: "Battery banks store the lunar day, ready to carry the outpost through the two-week night.",
     align: "right",
   },
   {
-    start: 0.54,
-    end: 0.66,
-    kicker: "03 / POWER EVERY HOME",
-    title: "A LIVING NETWORK",
-    body: "Energy flows through the community like a nervous system — AI for everyday life, connecting tools, homes, and ideas.",
+    start: 0.44,
+    end: 0.56,
+    kicker: "03 / SOLID-STATE TRANSFORMER",
+    title: "SHAPE THE POWER",
+    body: "An AI-designed solid-state transformer converts, regulates, and routes every watt — power electronics, the craft of Spirit Connect AIPE Labs.",
     align: "left",
   },
   {
-    start: 0.72,
-    end: 0.82,
-    kicker: "04 / ASCEND",
-    title: "FROM ENERGY TO INTELLIGENCE",
-    body: "Rise above the grid. The Spirit Connect portal awaits.",
+    start: 0.545,
+    end: 0.625,
+    kicker: "04 / THE CORE",
+    title: "POWER THAT NEVER SLEEPS",
+    body: "Beside the habitat, the reactor hums through the two-week night — the backbone behind the batteries.",
+    align: "right",
+  },
+  {
+    start: 0.645,
+    end: 0.7,
+    kicker: "05 / ARRIVAL",
+    title: "ENTER THE HABITAT",
+    body: "Through the airlock. The heart of Spirit Connect awaits inside.",
     align: "center",
   },
 ];
@@ -91,6 +101,9 @@ export default function JourneyExperience() {
   const chapterRefs = useRef<(HTMLDivElement | null)[]>([]);
   const hintRef = useRef<HTMLDivElement>(null);
   const portalWrapRef = useRef<HTMLDivElement>(null);
+  const railDotRef = useRef<HTMLDivElement>(null);
+  const blackoutRef = useRef<HTMLDivElement>(null);
+  const captionRef = useRef<HTMLDivElement>(null);
   const [night, setNight] = useState(false);
   const [portalMounted, setPortalMounted] = useState(false);
   const portalMountedRef = useRef(false);
@@ -127,6 +140,27 @@ export default function JourneyExperience() {
       if (hintRef.current) {
         const o = Math.max(0, 1 - p / 0.04);
         hintRef.current.style.opacity = o.toFixed(3);
+      }
+
+      /* progress rail indicator */
+      if (railDotRef.current) {
+        railDotRef.current.style.top = `${(p * 100).toFixed(2)}%`;
+      }
+
+      /* fade to the portal's warm black before the handoff */
+      if (blackoutRef.current) {
+        const o = Math.min(
+          1,
+          Math.max(0, (p - BLACKOUT_START) / (BLACKOUT_END - BLACKOUT_START))
+        );
+        blackoutRef.current.style.opacity = o.toFixed(3);
+      }
+
+      /* bridge caption inside the black hold */
+      if (captionRef.current) {
+        const inO = Math.min(1, Math.max(0, (p - 0.765) / 0.03));
+        const outO = Math.min(1, Math.max(0, (0.925 - p) / 0.03));
+        captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
       /* portal mount + crossfade */
@@ -170,6 +204,89 @@ export default function JourneyExperience() {
         flightEnd={FLIGHT_END}
       />
 
+      {/* subtle vignette for a polished, cinematic feel */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(4, 8, 16, 0.32) 100%)",
+        }}
+      />
+
+      {/* film grain */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 3,
+          pointerEvents: "none",
+          opacity: 0.05,
+          mixBlendMode: "soft-light",
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        }}
+      />
+
+      {/* intro fade from black */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 22,
+          pointerEvents: "none",
+          background: "#000",
+          animation: "journeyIntroFade 1.6s ease 0.15s forwards",
+        }}
+      >
+        <style>{`@keyframes journeyIntroFade { to { opacity: 0; } }`}</style>
+      </div>
+
+      {/* progress rail with chapter ticks */}
+      <div
+        style={{
+          position: "fixed",
+          right: 22,
+          top: "50%",
+          transform: "translateY(-50%)",
+          height: "38vh",
+          width: 2,
+          zIndex: 4,
+          background: "rgba(240, 246, 255, 0.16)",
+          pointerEvents: "none",
+        }}
+      >
+        {CHAPTERS.map((c) => (
+          <div
+            key={c.kicker}
+            style={{
+              position: "absolute",
+              left: -2,
+              top: `${((c.start + c.end) / 2) * 100}%`,
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "rgba(240, 246, 255, 0.35)",
+            }}
+          />
+        ))}
+        <div
+          ref={railDotRef}
+          style={{
+            position: "absolute",
+            left: -3,
+            top: 0,
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: "#2ebcfe",
+            boxShadow: "0 0 10px rgba(46, 188, 254, 0.9)",
+          }}
+        />
+      </div>
+
       {/* chapter overlays */}
       {CHAPTERS.map((c, i) => (
         <div
@@ -199,11 +316,8 @@ export default function JourneyExperience() {
             style={{
               maxWidth: 520,
               textAlign: c.align === "center" ? "center" : "left",
-              color: night ? "rgba(240, 246, 255, 0.95)" : "rgba(16, 26, 20, 0.92)",
-              textShadow: night
-                ? "0 2px 18px rgba(0, 8, 24, 0.55)"
-                : "0 2px 16px rgba(235, 248, 255, 0.6)",
-              transition: "color 0.9s ease, text-shadow 0.9s ease",
+              color: "rgba(240, 246, 255, 0.95)",
+              textShadow: "0 2px 18px rgba(0, 8, 24, 0.6)",
             }}
           >
             <div
@@ -259,11 +373,10 @@ export default function JourneyExperience() {
           alignItems: "center",
           gap: 6,
           pointerEvents: "none",
-          color: night ? "rgba(240, 246, 255, 0.85)" : "rgba(16, 26, 20, 0.7)",
+          color: "rgba(240, 246, 255, 0.85)",
           fontFamily: "var(--font-ibm-mono), monospace",
           fontSize: 10,
           letterSpacing: "0.3em",
-          transition: "color 0.9s ease",
         }}
       >
         <span>SCROLL</span>
@@ -280,9 +393,9 @@ export default function JourneyExperience() {
           right: 18,
           zIndex: 6,
           padding: "9px 16px",
-          background: night ? "rgba(8, 14, 26, 0.55)" : "rgba(250, 253, 255, 0.55)",
-          color: night ? "rgba(240, 246, 255, 0.92)" : "rgba(16, 26, 20, 0.85)",
-          border: `1px solid ${night ? "rgba(160, 190, 240, 0.4)" : "rgba(16, 26, 20, 0.25)"}`,
+          background: "rgba(8, 14, 26, 0.55)",
+          color: "rgba(240, 246, 255, 0.92)",
+          border: `1px solid ${night ? "rgba(160, 190, 240, 0.4)" : "rgba(240, 246, 255, 0.3)"}`,
           backdropFilter: "blur(10px)",
           fontFamily: "var(--font-ibm-mono), monospace",
           fontSize: 10,
@@ -292,8 +405,85 @@ export default function JourneyExperience() {
         }}
         aria-label="Toggle day / night mode"
       >
-        {night ? "◐ NIGHT" : "◑ DAY"}
+        {night ? "◐ LUNAR NIGHT" : "◑ LUNAR DAY"}
       </button>
+
+      {/* brand wordmark, consistent with the portal's overlay header */}
+      <div
+        style={{
+          position: "fixed",
+          top: 20,
+          left: 22,
+          zIndex: 6,
+          pointerEvents: "none",
+          fontFamily: "var(--font-ibm-mono), monospace",
+          fontSize: 11,
+          letterSpacing: "0.26em",
+          color: "rgba(240, 246, 255, 0.88)",
+          textShadow: "0 1px 10px rgba(0, 8, 24, 0.6)",
+        }}
+      >
+        SPIRIT CONNECT
+      </div>
+
+      {/* warm-black dip that matches the portal's background */}
+      <div
+        ref={blackoutRef}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9,
+          opacity: 0,
+          pointerEvents: "none",
+          background: "#0e0d0c",
+        }}
+      >
+        <div
+          ref={captionRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 14,
+            opacity: 0,
+            textAlign: "center",
+            padding: "0 24px",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ibm-mono), monospace",
+              fontSize: 10,
+              letterSpacing: "0.34em",
+              color: "rgba(46, 188, 254, 0.85)",
+            }}
+          >
+            AIRLOCK SEALED
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-bebas), sans-serif",
+              fontSize: "clamp(26px, 3.6vw, 44px)",
+              letterSpacing: "0.06em",
+              lineHeight: 1,
+              color: "rgba(240, 246, 255, 0.92)",
+            }}
+          >
+            INSIDE THE HABITAT — THE SPIRIT CONNECT PORTAL
+          </div>
+          <div
+            style={{
+              width: 46,
+              height: 1,
+              background: "rgba(46, 188, 254, 0.6)",
+              marginTop: 4,
+            }}
+          />
+        </div>
+      </div>
 
       {/* final destination: the existing hologram portal */}
       <div
