@@ -41,8 +41,10 @@ const SPECS: (GroundSpec | OrbitSpec)[] = [
     rotY: -0.6,
     footprint: 10,
   },
-  // NASA Crawler — heavy transport, parked at a distance from the pads
-  { kind: "ground", urls: ["/glb/crawler.glb"], x: -74, z: -2, rotY: 1.1, footprint: 11 },
+  // NASA Crawler — asset file was lost to an iCloud sync glitch before it
+  // was ever committed. Re-download "Crawler" from NASA 3D Resources into
+  // public/glb/ and re-enable this entry.
+  // { kind: "ground", urls: ["/glb/crawler.glb"], x: -74, z: -2, rotY: 1.1, footprint: 11 },
   // (CYGNSS satellite removed: it read as a strange object in the
   //  opening dark-space shot. Asset kept in public/glb for future use.)
 ];
