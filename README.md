@@ -1,14 +1,39 @@
-# Spirit Connect Brand Portal
+# Spirit Connect — Lunar Micro-Grid Journey & Brand Portal
 
-Spirit Connect Brand Portal is the main 3D showcase for the Spirit Connect ecosystem. It presents the parent brand and its current branches through an interactive WebGPU hologram stage, a branch information panel, and a compact news ticker.
+The Spirit Connect homepage is a two-layer 3D experience.
 
-Public site:
+**Layer 1 — The Journey (outer).** A scroll-driven cinematic flight across a
+futuristic lunar settlement, presenting a complete micro-grid the way Spirit
+Connect thinks about energy systems:
 
-[https://spiritconnect.co.uk](https://spiritconnect.co.uk)
+1. **PV Array** — photovoltaic fields harvesting the two-week lunar day
+2. **Energy Storage** — battery banks that hold the light
+3. **Solid-State Transformer (SST)** — AI-designed power conversion and
+   routing, the craft of Spirit Connect AIPE Labs
+4. **Data Center** — where clean energy becomes intelligence
+5. **The Core** — a reactor that carries the outpost through the lunar night
+6. **The Habitat** — domes, capsule modules, connecting tubes, landing pad,
+   comms tower, and a lunar rover
 
-## Current Branches
+Energy flows as glowing particles along the conduits that link every module.
 
-The homepage currently presents four branches in this order:
+**Layer 2 — The Portal (inner).** The final shot dives through the main dome's
+hull. Inside is the Spirit Connect holographic brand portal — the WebGPU
+particle stage, branch panels, and news ticker — presenting the ecosystem.
+
+Public site: [https://spiritconnect.co.uk](https://spiritconnect.co.uk)
+
+## Experience
+
+- Scroll drives the camera along a fixed flight path; chapter copy fades in per zone
+- `◑ LUNAR DAY / ◐ LUNAR NIGHT` toggle (top right); the portal inherits the same
+  theme so inside and outside stay consistent
+- Desktop: mouse-parallax camera, soft shadows, MSAA, bloom post-processing
+- Compact / touch devices automatically run a reduced-quality profile
+- The lunar scene is fully procedural (no external 3D assets); higher-fidelity
+  models and textures (e.g. NASA CGI Moon Kit maps) can be dropped in later
+
+## Current Branches (portal)
 
 1. **Spirit Connect** - the parent brand and main portal.
 2. **Spirit Connect AIPE Labs** - AI-powered power electronics engineering and design automation.
@@ -17,136 +42,66 @@ The homepage currently presents four branches in this order:
 4. **Spirit Connect Fantasy** - future imagination, storytelling, digital art, and interactive worlds.
    [https://fulongli.github.io/Spirit-Connect-Fantasy/](https://fulongli.github.io/Spirit-Connect-Fantasy/)
 
-## Experience
-
-- Full-screen WebGPU / Three.js hologram stage
-- Particle-based model transitions for each branch
-- Spirit Connect and AIPE Labs logo-based particle models
-- Procedural sphere model for AI Labs
-- Procedural brush model for Fantasy
-- Right-side branch panel with summary, status, keywords, and branch links
-- Left-side brand statement and latest news ticker
-- Dark futuristic visual style with a light/dark preset toggle
-- Static export support for GitHub Pages
-
 ## Tech Stack
 
-- Next.js 16
-- React 19
-- TypeScript
-- Three.js / WebGPU
-- Leva controls
-- Tailwind CSS
-- GitHub Pages
+- Next.js 16, React 19, TypeScript
+- Three.js — WebGL journey scene (PBR, EffectComposer + UnrealBloom)
+- Three.js / WebGPU — hologram portal with particle model transitions
+- Leva controls, Tailwind CSS
+- GitHub Pages (static export)
 
 ## Local Development
 
-Install dependencies:
-
 ```bash
 npm install
-```
-
-Run the local dev server:
-
-```bash
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-If port 3000 is already in use:
-
-```bash
-npm run dev -- -p 3003
-```
-
-## Build
-
-Run lint:
-
-```bash
+npm run dev          # http://localhost:3000
+npm run dev -- -p 3003   # if port 3000 is taken
 npm run lint
-```
-
-Create a production static export:
-
-```bash
-npm run build
-```
-
-The static site is generated in:
-
-```text
-out/
+npm run build        # static export to out/
 ```
 
 ## Deployment
 
-This repository includes a GitHub Pages workflow:
+Pushes to `main`/`master` trigger `.github/workflows/deploy-main-site.yml`:
 
-```text
-.github/workflows/deploy-main-site.yml
-```
+1. Installs dependencies with `npm ci`
+2. Builds the static site with `npm run build`
+3. Uploads `out/` to GitHub Pages
 
-The workflow:
-
-1. Installs dependencies with `npm ci`.
-2. Builds the static site with `npm run build`.
-3. Uploads `out/` to GitHub Pages.
-
-To publish:
-
-1. Push to `main` or `master`, or run the workflow manually.
-2. In GitHub repository settings, set Pages source to `GitHub Actions`.
-3. Keep the custom domain configured as `spiritconnect.co.uk`.
+GitHub Pages source must be set to `GitHub Actions`; the custom domain is
+`spiritconnect.co.uk` (via `public/CNAME`). **Build artifacts are not committed
+to the repository** — `out/` and `.next/` are gitignored and generated fresh on
+every deployment.
 
 ## Project Structure
 
 ```text
-src/app/                          Next.js app entry and static branch pages
-src/components/brandPortal/        Branch data, branch panel, and latest news
-src/components/hologramParticles/  WebGPU particle renderer and procedural models
-src/components/overlay/            Header, footer, controls, and model selector
-src/components/shared/             Fonts, theme, and asset path helpers
+src/app/page.tsx                   Homepage = the lunar journey
+src/app/journey/                   Alias route for the same experience
+src/app/branches/[id]/             Static branch detail pages
+src/components/energyTown/         Lunar journey (outer layer)
+  townBuilder.ts                     procedural moon + micro-grid construction
+  TownCanvas.tsx                     renderer, camera path, post-processing
+  JourneyExperience.tsx              scroll container, chapters, portal handoff
+src/components/hologramParticles/  WebGPU hologram portal (inner layer)
+src/components/brandPortal/        Branch data, branch panel, latest news
+src/components/overlay/            Header, footer, controls, model selector
+src/components/shared/             Fonts, theme, asset path helpers
 public/assets/                     Logos and visual textures
 public/glb/                        Local GLB model assets
 public/CNAME                       Custom domain for GitHub Pages
-out/                               Generated static export
 ```
 
-## Updating Branches
+## Updating Content
 
-Branch content is configured in:
-
-```text
-src/components/brandPortal/brands.ts
-```
-
-To add or update a branch, edit the `BRAND_BRANCHES` array. Each branch defines:
-
-- `label`
-- `url`
-- `title`
-- `eyebrow`
-- `summary`
-- `detail`
-- `status`
-- `href`
-- `keywords`
-
-Procedural particle models are implemented in:
-
-```text
-src/components/hologramParticles/ParticlesHologram.tsx
-```
+- Portal branch content: `src/components/brandPortal/brands.ts` (`BRAND_BRANCHES`)
+- Journey chapters & pacing: `CHAPTERS` in
+  `src/components/energyTown/JourneyExperience.tsx`
+- Camera flight path: `CAM_POSITIONS` / `CAM_TARGETS` in
+  `src/components/energyTown/TownCanvas.tsx`
+- Scene layout (modules, conduits, palettes): `src/components/energyTown/townBuilder.ts`
 
 ## Notes
 
 - The main site is the Spirit Connect brand portal, not a standalone AIPE Labs site.
 - AIPE Labs remains one branch inside the wider Spirit Connect ecosystem.
-- The exported root files such as `index.html`, `_next/`, and `branches/` are generated deployment artifacts. Update them from `out/` after a build if serving the repository root directly.

@@ -1,7 +1,0 @@
-1:"$Sreact.fragment"
-2:I[8500,["319","static/chunks/app/branches/%5Bid%5D/page-e03376f1cd5dcae0.js"],""]
-3:I[484,[],"OutletBoundary"]
-4:"$Sreact.suspense"
-:HL["/_next/static/css/292e2a452a74219c.css","style"]
-0:{"buildId":"uNvfEAFygUsBlR8d6i7uu","rsc":["$","$1","c",{"children":[["$","main",null,{"className":"page_page__DTs1P","style":{"--branch-accent":"#a7f06a"},"children":[["$","$L2",null,{"className":"page_back__do_Xb","href":"/","children":"Back to projector"}],["$","section",null,{"className":"page_panel__j7fv8","children":[["$","p",null,{"className":"page_eyebrow__VmYGm","children":"Interactive worlds"}],["$","h1",null,{"children":"Spirit Connect Fantasy"}],["$","p",null,{"className":"page_summary__FAVz7","children":"Playable worlds, future imagination, and interactive stories."}],["$","p",null,{"className":"page_detail__MV72l","children":"A branch for games and real-time experiences where mechanics, worldbuilding, fantasy storytelling, and creative technology meet."}],["$","div",null,{"className":"page_keywords__zp9X1","children":[["$","span","fantasy",{"children":"fantasy"}],["$","span","games",{"children":"games"}],["$","span","worlds",{"children":"worlds"}]]}]]}]]}],[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/292e2a452a74219c.css","precedence":"next"}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"loading":null,"isPartial":false}
-5:null

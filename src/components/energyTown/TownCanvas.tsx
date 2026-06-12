@@ -138,7 +138,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     const rt = new THREE.WebGLRenderTarget(
       window.innerWidth * dpr,
       window.innerHeight * dpr,
-      { samples: quality === "high" ? 4 : 2, type: THREE.HalfFloatType }
+      { samples: quality === "high" ? 8 : 2, type: THREE.HalfFloatType }
     );
     const composer = new EffectComposer(renderer, rt);
     composer.setPixelRatio(dpr);
