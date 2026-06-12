@@ -948,6 +948,7 @@ export function buildTown(quality: "high" | "low"): Town {
     [[39, 2], [30, 2], [20, 1]], // SST -> habitat ring
     [[38, -4], [12, -24], [-16, -24], [-40, -8], [-50, 4], [-54, 8]], // SST -> pad A / chargers
     [[-38, 12], [-41, 19], [-43, 25]], // chargers -> pad B
+    [[-55, 15], [-50, 21], [-46, 25]], // pad A -> pad B
     // habitat ring loop
     [
       [18, 0],

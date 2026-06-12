@@ -93,10 +93,10 @@ const CHAPTERS: Chapter[] = [
   {
     start: 0.6,
     end: 0.68,
-    kicker: "06 / CLOSE THE LOOP",
-    title: "ENERGY POWERS AI. AI DESIGNS BETTER ENERGY.",
-    sub: "The loop closes inside the habitat.",
-    body: "Spirit Connect AIPE Labs connects power electronics, intelligent modelling, and future energy infrastructure into a self-improving engineering loop.",
+    kicker: "06 / CHARGING & LANDING",
+    title: "POWER ON THE MOVE",
+    sub: "Every vehicle docks into the same grid.",
+    body: "Landing pads and charging stations extend the micro-grid to rovers, landers, and future mobility — energy delivered wherever the mission goes.",
     align: "center",
   },
 ];
