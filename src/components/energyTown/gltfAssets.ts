@@ -30,19 +30,19 @@ type OrbitSpec = {
 };
 
 const SPECS: (GroundSpec | OrbitSpec)[] = [
-  // NASA Space Exploration Vehicle — parked by the landing pad
-  { kind: "ground", urls: ["/glb/sev.glb"], x: -4, z: 48, rotY: -0.5, footprint: 5.5 },
+  // NASA Space Exploration Vehicle — parked on a charging spot by the pad
+  { kind: "ground", urls: ["/glb/sev.glb"], x: 44, z: -7.2, rotY: -1.1, footprint: 5.5 },
   // NASA Habitat Demonstration Unit (two parts, kept in relative position)
   {
     kind: "ground",
     urls: ["/glb/hdu1.glb", "/glb/hdu2.glb"],
-    x: 14,
-    z: 30,
+    x: -20,
+    z: 26,
     rotY: -0.6,
     footprint: 10,
   },
-  // NASA Crawler — heavy transport, staged near the data center
-  { kind: "ground", urls: ["/glb/crawler.glb"], x: 24, z: -34, rotY: 0.9, footprint: 11 },
+  // NASA Crawler — heavy transport, staged beside the landing pad
+  { kind: "ground", urls: ["/glb/crawler.glb"], x: 27, z: -28, rotY: 0.5, footprint: 11 },
   // (CYGNSS satellite removed: it read as a strange object in the
   //  opening dark-space shot. Asset kept in public/glb for future use.)
 ];

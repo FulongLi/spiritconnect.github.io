@@ -1,11 +1,13 @@
 import * as THREE from "three";
 
 /* ------------------------------------------------------------------ */
-/* Lunar habitat — a futuristic human settlement on the Moon.          */
-/* Barren grey regolith with craters, geodesic domes, capsule modules, */
-/* connecting tubes, a solar farm, a glowing reactor core, and Earth   */
-/* hanging in a black, star-filled sky. Energy conduits are the only   */
-/* colour accent (brand blue + amber).                                 */
+/* Lunar micro-grid, organized by energy flow:                         */
+/*   INPUTS  : PV array + nuclear reactor (east, side by side)         */
+/*   STORAGE : battery banks (BESS)                                    */
+/*   PROCESS : solid-state transformer (SST) + landing pad / charging  */
+/*   LOADS   : data centre + habitat ring (domes & capsules in a       */
+/*             closed loop of tubes), with the portal pedestal inside  */
+/*             the main dome.                                          */
 /* ------------------------------------------------------------------ */
 
 function mulberry32(seed: number) {
@@ -27,7 +29,28 @@ function smoothstep(a: number, b: number, x: number) {
   return t * t * (3 - 2 * t);
 }
 
-/* ---------------- value noise (fine regolith relief) ---------------- */
+/* ---------------- key sites (flattened ground, no craters) --------- */
+const SITES: [number, number][] = [
+  [95, 50], // PV array
+  [92, 16], // reactor
+  [70, 30], // BESS
+  [50, 8], // SST
+  [38, -16], // landing pad + charging
+  [14, -36], // data centre
+  [-20, 26], // HDU
+  [-32, -18], // comms tower
+];
+
+function siteMask(x: number, z: number) {
+  let m = 0;
+  for (const [sx, sz] of SITES) {
+    const d2 = (x - sx) * (x - sx) + (z - sz) * (z - sz);
+    m = Math.max(m, Math.exp(-d2 / (2 * 20 * 20)));
+  }
+  return m;
+}
+
+/* ---------------- value noise ---------------- */
 function latticeHash(ix: number, iz: number) {
   let h = (ix * 374761393 + iz * 668265263) | 0;
   h = (h ^ (h >>> 13)) | 0;
@@ -58,28 +81,37 @@ function fbm(x: number, z: number) {
   );
 }
 
-/* ---------------- craters (deterministic, used by height + tint) --- */
+/* ---------------- craters (avoid the built sites) ---------------- */
 type Crater = { x: number; z: number; r: number };
 const CRATERS: Crater[] = (() => {
   const rng = mulberry32(987654321);
   const list: Crater[] = [];
-  for (let i = 0; i < 26; i++) {
+  const clearOfSites = (x: number, z: number, r: number) =>
+    SITES.every(([sx, sz]) => Math.hypot(x - sx, z - sz) > r + 24);
+  let guard = 0;
+  while (list.length < 26 && guard++ < 300) {
     const a = rng() * Math.PI * 2;
     const dist = 45 + rng() * 145;
     const r = 4 + rng() * (dist > 90 ? 26 : 12);
-    list.push({ x: Math.cos(a) * dist, z: Math.sin(a) * dist, r });
+    const x = Math.cos(a) * dist;
+    const z = Math.sin(a) * dist;
+    if (clearOfSites(x, z, r)) list.push({ x, z, r });
   }
-  // a few small ones closer in
-  for (let i = 0; i < 8; i++) {
+  guard = 0;
+  while (list.length < 34 && guard++ < 300) {
     const a = rng() * Math.PI * 2;
     const dist = 28 + rng() * 35;
-    list.push({ x: Math.cos(a) * dist, z: Math.sin(a) * dist, r: 2 + rng() * 4 });
+    const x = Math.cos(a) * dist;
+    const z = Math.sin(a) * dist;
+    if (clearOfSites(x, z, 4)) list.push({ x, z, r: 2 + rng() * 4 });
   }
-  // many craterlets for realistic pockmarking
-  for (let i = 0; i < 50; i++) {
+  guard = 0;
+  while (list.length < 84 && guard++ < 600) {
     const a = rng() * Math.PI * 2;
     const dist = 30 + rng() * 170;
-    list.push({ x: Math.cos(a) * dist, z: Math.sin(a) * dist, r: 0.8 + rng() * 2.6 });
+    const x = Math.cos(a) * dist;
+    const z = Math.sin(a) * dist;
+    if (clearOfSites(x, z, 3)) list.push({ x, z, r: 0.8 + rng() * 2.6 });
   }
   return list;
 })();
@@ -90,15 +122,14 @@ const MOON_CURVE = 1250;
 export function terrainHeight(x: number, z: number) {
   const r = Math.hypot(x, z);
   const flat = smoothstep(28, 90, r);
-  // gentle mare undulation, flattened near the habitat
   let h =
     flat *
     (1.4 * Math.sin(x * 0.03) * Math.cos(z * 0.035) +
       1.0 * Math.sin((x - z) * 0.022) +
       0.8);
-  // fine fractal regolith relief (subtle near the base, stronger out wide)
   h += fbm(x * 0.13, z * 0.13) * (0.35 + 1.45 * flat);
-  // craters: raised rim, sunken bowl
+  // flatten under the built sites
+  h *= 1 - 0.88 * siteMask(x, z);
   for (const c of CRATERS) {
     const d = Math.hypot(x - c.x, z - c.z) / c.r;
     if (d < 1.8) {
@@ -107,15 +138,13 @@ export function terrainHeight(x: number, z: number) {
       h += rim + bowl;
     }
   }
-  // spherical drop-off → round horizon, square edges fall out of sight
   h -= (r * r) / MOON_CURVE;
-  // steep circular limb: the visible silhouette becomes a clean round arc
-  // instead of the square plane's projected edges
+  // steep circular limb → clean round horizon arc
   h -= smoothstep(215, 245, r) * 60;
   return h;
 }
 
-/** crater shading: darker bowls, brighter ejecta rings around large craters */
+/** crater shading: darker bowls, brighter ejecta rings */
 function craterShade(x: number, z: number) {
   let shade = 1;
   for (const c of CRATERS) {
@@ -128,7 +157,7 @@ function craterShade(x: number, z: number) {
   return Math.min(1.12, Math.max(0.72, shade));
 }
 
-/** fine granular regolith bump texture */
+/* ---------------- textures ---------------- */
 function makeRegolithTexture() {
   const c = document.createElement("canvas");
   c.width = 256;
@@ -144,7 +173,6 @@ function makeRegolithTexture() {
     img.data[i * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
-  // a few soft blotches for medium-scale variation
   for (let i = 0; i < 60; i++) {
     const x = rng() * 256;
     const y = rng() * 256;
@@ -163,10 +191,82 @@ function makeRegolithTexture() {
   return tex;
 }
 
-/* ------------------------------------------------------------------ */
-/* Scene palettes (consumed by TownCanvas for sky/fog/lights)          */
-/* Lunar day: harsh white sun, bright grey dust, black sky.            */
-/* Lunar night: dim blue earthshine, glowing habitat.                  */
+function makeSolarCellTexture() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 192;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#b9c2cc";
+  ctx.fillRect(0, 0, 256, 192);
+  ctx.fillStyle = "#0d2c55";
+  ctx.fillRect(6, 6, 244, 180);
+  const cols = 8;
+  const rows = 5;
+  const cw = 244 / cols;
+  const ch = 180 / rows;
+  const rng = mulberry32(24680);
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      const px = 6 + x * cw;
+      const py = 6 + y * ch;
+      const tone = 0.85 + rng() * 0.3;
+      const g = ctx.createLinearGradient(px, py, px + cw, py + ch);
+      g.addColorStop(0, `rgba(${Math.round(31 * tone)}, ${Math.round(95 * tone)}, ${Math.round(186 * tone)}, 1)`);
+      g.addColorStop(0.5, `rgba(${Math.round(20 * tone)}, ${Math.round(64 * tone)}, ${Math.round(140 * tone)}, 1)`);
+      g.addColorStop(1, `rgba(${Math.round(26 * tone)}, ${Math.round(82 * tone)}, ${Math.round(168 * tone)}, 1)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(px + 1.5, py + 1.5, cw - 3, ch - 3);
+      ctx.strokeStyle = "rgba(190, 215, 240, 0.5)";
+      ctx.lineWidth = 0.8;
+      for (let b = 1; b <= 3; b++) {
+        ctx.beginPath();
+        ctx.moveTo(px + (b * cw) / 4, py + 2);
+        ctx.lineTo(px + (b * cw) / 4, py + ch - 2);
+        ctx.stroke();
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** soft radial glow sprite texture */
+function makeGlowTexture() {
+  const c = document.createElement("canvas");
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, "rgba(160,210,255,0.9)");
+  g.addColorStop(0.4, "rgba(110,170,255,0.32)");
+  g.addColorStop(1, "rgba(80,140,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** round point sprite for the energy dots */
+function makeDotTexture() {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 64;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, "rgba(255,255,255,1)");
+  g.addColorStop(0.45, "rgba(255,255,255,0.9)");
+  g.addColorStop(0.7, "rgba(255,255,255,0.25)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 /* ------------------------------------------------------------------ */
 export const DAY = {
   background: new THREE.Color("#050608"),
@@ -193,11 +293,9 @@ export const NIGHT = {
 export type Town = {
   group: THREE.Group;
   update: (dt: number, elapsed: number) => void;
-  applyTheme: (mix: number) => void; // 0 = lunar day, 1 = lunar night
+  applyTheme: (mix: number) => void;
   dispose: () => void;
 };
-
-/* ---------------- helpers ---------------- */
 
 /** glowing energy conduit ribbon hugging the terrain */
 function makeRibbon(curve: THREE.CatmullRomCurve3, width: number, segments: number, lift: number) {
@@ -233,69 +331,6 @@ function makeRibbon(curve: THREE.CatmullRomCurve3, width: number, segments: numb
   return geo;
 }
 
-/** photovoltaic cell-grid texture: cells, busbars, frame */
-function makeSolarCellTexture() {
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 192;
-  const ctx = c.getContext("2d")!;
-  // frame
-  ctx.fillStyle = "#b9c2cc";
-  ctx.fillRect(0, 0, 256, 192);
-  // panel background
-  ctx.fillStyle = "#0d2c55";
-  ctx.fillRect(6, 6, 244, 180);
-  const cols = 8;
-  const rows = 5;
-  const cw = 244 / cols;
-  const ch = 180 / rows;
-  const rng = mulberry32(24680);
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      const px = 6 + x * cw;
-      const py = 6 + y * ch;
-      // each cell: subtle radial sheen, slightly varied tone
-      const tone = 0.85 + rng() * 0.3;
-      const g = ctx.createLinearGradient(px, py, px + cw, py + ch);
-      g.addColorStop(0, `rgba(${Math.round(31 * tone)}, ${Math.round(95 * tone)}, ${Math.round(186 * tone)}, 1)`);
-      g.addColorStop(0.5, `rgba(${Math.round(20 * tone)}, ${Math.round(64 * tone)}, ${Math.round(140 * tone)}, 1)`);
-      g.addColorStop(1, `rgba(${Math.round(26 * tone)}, ${Math.round(82 * tone)}, ${Math.round(168 * tone)}, 1)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(px + 1.5, py + 1.5, cw - 3, ch - 3);
-      // busbar lines across each cell
-      ctx.strokeStyle = "rgba(190, 215, 240, 0.5)";
-      ctx.lineWidth = 0.8;
-      for (let b = 1; b <= 3; b++) {
-        ctx.beginPath();
-        ctx.moveTo(px + (b * cw) / 4, py + 2);
-        ctx.lineTo(px + (b * cw) / 4, py + ch - 2);
-        ctx.stroke();
-      }
-    }
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  return tex;
-}
-
-/** soft radial glow sprite texture */
-function makeGlowTexture() {
-  const c = document.createElement("canvas");
-  c.width = 128;
-  c.height = 128;
-  const ctx = c.getContext("2d")!;
-  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-  g.addColorStop(0, "rgba(160,210,255,0.9)");
-  g.addColorStop(0.4, "rgba(110,170,255,0.32)");
-  g.addColorStop(1, "rgba(80,140,255,0)");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 128, 128);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
 /* ------------------------------------------------------------------ */
 export function buildTown(quality: "high" | "low"): Town {
   const group = new THREE.Group();
@@ -312,7 +347,7 @@ export function buildTown(quality: "high" | "low"): Town {
   const s = new THREE.Vector3();
   const v = new THREE.Vector3();
 
-  /* ---------------- materials (PBR for richer shading) ------------- */
+  /* ---------------- materials ---------------- */
   const std = (color: string, extra?: THREE.MeshStandardMaterialParameters) =>
     track(
       new THREE.MeshStandardMaterial({
@@ -328,16 +363,14 @@ export function buildTown(quality: "high" | "low"): Town {
   const terrainMat = std("#ffffff", {
     roughness: 1,
     metalness: 0,
-    flatShading: false, // smooth shading: craters read as curved bowls, not facets
+    flatShading: false,
     bumpMap: regolithTex,
-    bumpScale: 0.38, // restrained: too much bump shimmers/aliases in motion
+    bumpScale: 0.38,
   });
-  // brand-blue tinted shells; double-sided so the dome hull stays solid
-  // when the camera flies through it in the final shot
   const shellMat = std("#cfe0ec", {
     roughness: 0.5,
     metalness: 0.12,
-    side: THREE.DoubleSide,
+    side: THREE.DoubleSide, // dome hull stays solid during the fly-through
   });
   const shellDarkMat = std("#a9bfd1", { roughness: 0.6, metalness: 0.15 });
   const solarCellTex = track(makeSolarCellTexture());
@@ -349,7 +382,7 @@ export function buildTown(quality: "high" | "low"): Town {
     metalness: 0.45,
     flatShading: false,
     emissive: new THREE.Color("#1f7fe8"),
-    emissiveIntensity: 0.1, // panels read deep blue even in shadow
+    emissiveIntensity: 0.1,
   });
   const conduitMat = std("#10161f", {
     roughness: 0.4,
@@ -366,6 +399,8 @@ export function buildTown(quality: "high" | "low"): Town {
     emissive: new THREE.Color("#ffd9a0"),
     emissiveIntensity: 0.3,
   });
+  const goldMat = std("#c9a86a", { roughness: 0.35, metalness: 0.6 });
+  const floorMat = std("#1a2230", { roughness: 0.8, metalness: 0.1 });
 
   /* ---------------- terrain ---------------- */
   const segs = quality === "high" ? 220 : 120;
@@ -373,7 +408,7 @@ export function buildTown(quality: "high" | "low"): Town {
   terrainGeo.rotateX(-Math.PI / 2);
   const pos = terrainGeo.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
-  const baseGrey = 0.5; // real regolith is a dark, dusty grey
+  const baseGrey = 0.5;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const z = pos.getZ(i);
@@ -381,7 +416,7 @@ export function buildTown(quality: "high" | "low"): Town {
     const g = baseGrey * (0.94 + rand() * 0.12) * craterShade(x, z);
     colors[i * 3] = g;
     colors[i * 3 + 1] = g;
-    colors[i * 3 + 2] = g * 1.02; // faint cool cast
+    colors[i * 3 + 2] = g * 1.02;
   }
   terrainGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   terrainGeo.computeVertexNormals();
@@ -390,15 +425,29 @@ export function buildTown(quality: "high" | "low"): Town {
   terrain.receiveShadow = shadows;
   group.add(terrain);
 
-  /* ---------------- habitat: domes ---------------- */
+  /* ================== LOADS: habitat ring (closed loop) =========== */
   type Dome = { x: number; z: number; r: number };
+  const RING_R = 21;
+  const ringNodes: { x: number; z: number; angle: number; isDome: boolean }[] = [];
+  const domeIdx = new Set([0, 3, 5, 8]);
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2 + 0.18;
+    ringNodes.push({
+      x: Math.cos(angle) * RING_R,
+      z: Math.sin(angle) * RING_R,
+      angle,
+      isDome: domeIdx.has(i),
+    });
+  }
   const domes: Dome[] = [
-    { x: 0, z: 0, r: 14 },
-    { x: 23, z: 9, r: 8.5 },
-    { x: -19, z: 13, r: 7.5 },
-    { x: 9, z: -19, r: 6 },
-    { x: -14, z: -14, r: 5 },
+    { x: 0, z: 0, r: 14 }, // main dome — the portal lives inside
+    ...ringNodes.filter((n) => n.isDome).map((n, i) => ({
+      x: n.x,
+      z: n.z,
+      r: [8.5, 7.5, 6.5, 6][i] ?? 6,
+    })),
   ];
+
   const seamMat = track(
     new THREE.LineBasicMaterial({ color: "#7e8a9c", transparent: true, opacity: 0.25 })
   );
@@ -419,7 +468,7 @@ export function buildTown(quality: "high" | "low"): Town {
     const seams = new THREE.LineSegments(seamGeo, seamMat);
     seams.position.set(d.x, gy + 0.1, d.z);
     group.add(seams);
-    // slim glowing base ring
+    // glowing base ring
     const ring = new THREE.Mesh(
       track(new THREE.TorusGeometry(d.r * 1.04, 0.2, 8, 56)),
       conduitMat
@@ -427,6 +476,16 @@ export function buildTown(quality: "high" | "low"): Town {
     ring.rotation.x = Math.PI / 2;
     ring.position.set(d.x, gy + 0.35, d.z);
     group.add(ring);
+    // brand-blue crown ring near the apex
+    const crownH = d.r * 0.78;
+    const crownR = Math.sqrt(Math.max(0.05, d.r * d.r - crownH * crownH));
+    const crown = new THREE.Mesh(
+      track(new THREE.TorusGeometry(crownR * 1.02, 0.14, 8, 48)),
+      conduitMat
+    );
+    crown.rotation.x = Math.PI / 2;
+    crown.position.set(d.x, gy + 0.1 + crownH, d.z);
+    group.add(crown);
     // warm window band partway up the larger domes
     if (d.r >= 7) {
       const band = new THREE.Mesh(
@@ -439,16 +498,16 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ---------------- habitat: capsule modules + window strips ------- */
+  /* ----- capsule modules on the ring (tangent orientation) ----- */
   type Module = { x: number; z: number; len: number; rot: number };
-  const modules: Module[] = [
-    { x: 12, z: 16, len: 9, rot: 0.5 },
-    { x: -8, z: 20, len: 8, rot: -0.4 },
-    { x: 20, z: -8, len: 10, rot: 1.2 },
-    { x: -22, z: -2, len: 9, rot: 0.2 },
-    { x: 2, z: -26, len: 8, rot: -1.0 },
-    { x: 32, z: 2, len: 7, rot: 0.9 },
-  ];
+  const modules: Module[] = ringNodes
+    .filter((n) => !n.isDome)
+    .map((n) => ({
+      x: n.x,
+      z: n.z,
+      len: R(7.5, 9.5),
+      rot: Math.PI / 2 - n.angle, // tangent to the ring
+    }));
   const ribGeo = track(new THREE.TorusGeometry(1.58, 0.08, 6, 22));
   for (const mod of modules) {
     const gy = terrainHeight(mod.x, mod.z);
@@ -459,20 +518,14 @@ export function buildTown(quality: "high" | "low"): Town {
     cap.position.set(mod.x, gy + 1.5, mod.z);
     cap.castShadow = shadows;
     group.add(cap);
-    // structural ribs around the hull
     const axX = -Math.cos(mod.rot);
     const axZ = Math.sin(mod.rot);
     for (const f of [-0.32, 0, 0.32]) {
       const rib = new THREE.Mesh(ribGeo, shellDarkMat);
-      rib.position.set(
-        mod.x + axX * mod.len * f,
-        gy + 1.5,
-        mod.z + axZ * mod.len * f
-      );
+      rib.position.set(mod.x + axX * mod.len * f, gy + 1.5, mod.z + axZ * mod.len * f);
       rib.rotation.y = mod.rot - Math.PI / 2;
       group.add(rib);
     }
-    // window strips on both sides
     for (const side of [-1, 1]) {
       const stripGeo = track(new THREE.BoxGeometry(mod.len * 0.72, 0.28, 0.06));
       const strip = new THREE.Mesh(stripGeo, stripMat);
@@ -484,18 +537,9 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ---------------- connecting tubes ---------------- */
-  const tubeLinks: [number, number, number, number][] = [
-    [0, 0, 23, 9],
-    [0, 0, -19, 13],
-    [0, 0, 9, -19],
-    [0, 0, -14, -14],
-    [23, 9, 32, 2],
-    [-19, 13, -8, 20],
-    [9, -19, 2, -26],
-  ];
+  /* ----- tubes: consecutive ring nodes (closed loop) + spokes ----- */
   const tubeGeoUnit = track(new THREE.CylinderGeometry(0.8, 0.8, 1, 10));
-  for (const [ax, az, bx, bz] of tubeLinks) {
+  const addTube = (ax: number, az: number, bx: number, bz: number) => {
     const ay = terrainHeight(ax, az) + 1.1;
     const by = terrainHeight(bx, bz) + 1.1;
     const A = new THREE.Vector3(ax, ay, az);
@@ -508,102 +552,73 @@ export function buildTown(quality: "high" | "low"): Town {
     tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
     tube.castShadow = shadows;
     group.add(tube);
+  };
+  for (let i = 0; i < ringNodes.length; i++) {
+    const a = ringNodes[i];
+    const b = ringNodes[(i + 1) % ringNodes.length];
+    addTube(a.x, a.z, b.x, b.z);
+  }
+  // spokes from the main dome to each ring dome
+  for (const n of ringNodes.filter((n) => n.isDome)) {
+    addTube(0, 0, n.x, n.z);
   }
 
-  /* ---------------- comms tower ---------------- */
+  /* ----- main dome interior: floor + holographic pedestal ----- */
   {
-    const gy = terrainHeight(34, -30);
-    const mast = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.3, 13, 6)), shellDarkMat);
-    mast.position.set(34, gy + 6.5, -30);
-    mast.castShadow = shadows;
-    const dish = new THREE.Mesh(track(new THREE.CircleGeometry(2.4, 18)), shellMat);
-    dish.position.set(34, gy + 12.4, -30);
-    dish.rotation.x = -Math.PI / 3;
-    dish.material.side = THREE.DoubleSide;
-    const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 8, 6)), coreMat);
-    tip.position.set(34, gy + 13.2, -30);
-    group.add(mast, dish, tip);
-  }
-
-  /* ---------------- reactor core ---------------- */
-  const reactor = { x: -48, z: -32 };
-  {
-    const gy = terrainHeight(reactor.x, reactor.z);
-    const base = new THREE.Mesh(track(new THREE.CylinderGeometry(5, 5.6, 1.2, 14)), shellDarkMat);
-    base.position.set(reactor.x, gy + 0.6, reactor.z);
-    const body = new THREE.Mesh(track(new THREE.CylinderGeometry(3, 3.4, 5.5, 12)), shellMat);
-    body.position.set(reactor.x, gy + 3.9, reactor.z);
-    body.castShadow = shadows;
-    const core = new THREE.Mesh(track(new THREE.CylinderGeometry(2.1, 2.1, 6.0, 12)), coreMat);
-    core.position.set(reactor.x, gy + 3.95, reactor.z);
-    const haloRing = new THREE.Mesh(
-      track(new THREE.TorusGeometry(4.6, 0.26, 8, 48)),
-      conduitMat
-    );
-    haloRing.rotation.x = Math.PI / 2;
-    haloRing.position.set(reactor.x, gy + 1.4, reactor.z);
-    group.add(base, body, core, haloRing);
-    // radiator fins
-    for (let i = 0; i < 4; i++) {
-      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.25, 4.2, 3.4)), shellDarkMat);
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      fin.position.set(reactor.x + Math.cos(a) * 4.6, gy + 3.4, reactor.z + Math.sin(a) * 4.6);
-      fin.rotation.y = -a;
-      fin.castShadow = shadows;
-      group.add(fin);
+    const gy = terrainHeight(0, 0);
+    const floor = new THREE.Mesh(track(new THREE.CircleGeometry(13.4, 40)), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, gy + 0.16, 0);
+    group.add(floor);
+    // concentric floor light rings
+    for (const fr of [4.5, 8, 11.2]) {
+      const fring = new THREE.Mesh(
+        track(new THREE.TorusGeometry(fr, 0.07, 6, 48)),
+        conduitMat
+      );
+      fring.rotation.x = Math.PI / 2;
+      fring.position.set(0, gy + 0.2, 0);
+      group.add(fring);
     }
-  }
-
-  /* ---------------- landing pad + lander ---------------- */
-  const pad = { x: -18, z: 52 };
-  {
-    const gy = terrainHeight(pad.x, pad.z);
-    const padMesh = new THREE.Mesh(track(new THREE.CylinderGeometry(11, 11.6, 0.5, 24)), shellDarkMat);
-    padMesh.position.set(pad.x, gy + 0.25, pad.z);
-    padMesh.receiveShadow = shadows;
-    const padRing = new THREE.Mesh(
-      track(new THREE.TorusGeometry(9.6, 0.18, 8, 64)),
-      conduitMat
-    );
-    padRing.rotation.x = Math.PI / 2;
-    padRing.position.set(pad.x, gy + 0.55, pad.z);
-    // inner touchdown marking
-    const padMark = new THREE.Mesh(
-      track(new THREE.TorusGeometry(5.6, 0.1, 6, 48)),
+    // central pedestal (the portal stage)
+    const ped = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(2.4, 2.8, 0.8, 24)),
       shellDarkMat
     );
-    padMark.rotation.x = Math.PI / 2;
-    padMark.position.set(pad.x, gy + 0.53, pad.z);
-    group.add(padMesh, padRing, padMark);
-    // small lander
-    const body = new THREE.Mesh(track(new THREE.ConeGeometry(1.8, 3.2, 8)), shellMat);
-    body.position.set(pad.x + 2, gy + 2.3, pad.z - 1);
-    body.castShadow = shadows;
-    group.add(body);
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 + 0.4;
-      const leg = new THREE.Mesh(track(new THREE.CylinderGeometry(0.07, 0.07, 1.6, 5)), shellDarkMat);
-      leg.position.set(
-        pad.x + 2 + Math.cos(a) * 1.5,
-        gy + 1.0,
-        pad.z - 1 + Math.sin(a) * 1.5
-      );
-      leg.rotation.z = Math.cos(a) * 0.5;
-      leg.rotation.x = -Math.sin(a) * 0.5;
-      group.add(leg);
-    }
+    ped.position.set(0, gy + 0.6, 0);
+    group.add(ped);
+    const pedRing = new THREE.Mesh(
+      track(new THREE.TorusGeometry(2.0, 0.12, 8, 40)),
+      coreMat
+    );
+    pedRing.rotation.x = Math.PI / 2;
+    pedRing.position.set(0, gy + 1.04, 0);
+    group.add(pedRing);
+    // soft holographic light shaft rising from the pedestal
+    const beamMat = track(
+      new THREE.MeshBasicMaterial({
+        color: "#2ebcfe",
+        transparent: true,
+        opacity: 0.1,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      })
+    );
+    const beam = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(0.6, 1.9, 8.5, 20, 1, true)),
+      beamMat
+    );
+    beam.position.set(0, gy + 5.3, 0);
+    group.add(beam);
   }
 
-  /* (lunar rover: replaced by the NASA SEV model, loaded in gltfAssets) */
-
-  /* ---------------- solar farm ---------------- */
-  const solarCenter = { x: 72, z: 42 };
+  /* ================== INPUTS: PV array + reactor =================== */
+  const solarCenter = { x: 95, z: 50 };
   const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
   const panelPlacements: THREE.Matrix4[] = [];
   const legPlacements: THREE.Matrix4[] = [];
-  // Panels face the sun (and the camera's approach from the south-east):
-  // tilt up by 0.55 rad, then yaw the whole array toward the sun azimuth.
-  const panelYaw = Math.atan2(150 - solarCenter.x, 90 - solarCenter.z); // toward sun at (150, 65, 90)
+  const panelYaw = Math.atan2(150 - solarCenter.x, 90 - solarCenter.z);
   const panelTilt = 0.55;
   const cosY = Math.cos(panelYaw);
   const sinY = Math.sin(panelYaw);
@@ -620,7 +635,6 @@ export function buildTown(quality: "high" | "low"): Town {
       );
       panelPlacements.push(mm);
       for (const lx of [-2.4, 2.4]) {
-        // rotate the local leg offset (lx, 0, -0.7) by the array yaw
         const ox = lx * cosY - 0.7 * sinY;
         const oz = -lx * sinY - 0.7 * cosY;
         const lm = new THREE.Matrix4();
@@ -640,13 +654,88 @@ export function buildTown(quality: "high" | "low"): Town {
   legPlacements.forEach((mm, i) => legMesh.setMatrixAt(i, mm));
   group.add(panelMesh, legMesh);
 
-  /* ---------------- battery energy storage (BESS) ---------------- */
+  /* ----- nuclear reactor (detailed) ----- */
+  const reactor = { x: 92, z: 16 };
+  {
+    const gy = terrainHeight(reactor.x, reactor.z);
+    const X = reactor.x;
+    const Z = reactor.z;
+    // octagonal platform + skirt
+    const platform = new THREE.Mesh(track(new THREE.CylinderGeometry(7, 7.6, 0.9, 8)), shellDarkMat);
+    platform.position.set(X, gy + 0.45, Z);
+    platform.receiveShadow = shadows;
+    group.add(platform);
+    // main vessel with segment rings
+    const vessel = new THREE.Mesh(track(new THREE.CylinderGeometry(2.9, 3.3, 6.2, 16)), shellMat);
+    vessel.position.set(X, gy + 4.0, Z);
+    vessel.castShadow = shadows;
+    group.add(vessel);
+    for (const ry of [2.4, 4.0, 5.6]) {
+      const seg = new THREE.Mesh(track(new THREE.TorusGeometry(3.12, 0.12, 8, 32)), shellDarkMat);
+      seg.rotation.x = Math.PI / 2;
+      seg.position.set(X, gy + ry, Z);
+      group.add(seg);
+    }
+    // glowing core showing through the vessel
+    const core = new THREE.Mesh(track(new THREE.CylinderGeometry(2.2, 2.2, 6.4, 12)), coreMat);
+    core.position.set(X, gy + 4.0, Z);
+    group.add(core);
+    // top cap dome + vent + antenna
+    const cap = new THREE.Mesh(
+      track(new THREE.SphereGeometry(2.9, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)),
+      shellMat
+    );
+    cap.position.set(X, gy + 7.1, Z);
+    cap.castShadow = shadows;
+    group.add(cap);
+    const vent = new THREE.Mesh(track(new THREE.CylinderGeometry(0.35, 0.45, 1.6, 8)), shellDarkMat);
+    vent.position.set(X + 1.2, gy + 8.4, Z + 0.6);
+    group.add(vent);
+    const antenna = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.08, 2.4, 6)), shellDarkMat);
+    antenna.position.set(X, gy + 10.0, Z);
+    const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.14, 8, 6)), coreMat);
+    tip.position.set(X, gy + 11.2, Z);
+    group.add(antenna, tip);
+    // radiator fins (bigger, panel-like)
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.25, 5.0, 3.4)), shellDarkMat);
+      fin.position.set(X + Math.cos(a) * 4.9, gy + 3.6, Z + Math.sin(a) * 4.9);
+      fin.rotation.y = -a;
+      fin.castShadow = shadows;
+      group.add(fin);
+    }
+    // coolant tanks + connecting pipes
+    for (const side of [-1, 1]) {
+      const tank = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.95, 2.2, 4, 12)), shellMat);
+      tank.position.set(X + side * 5.6, gy + 2.3, Z - 3.6);
+      tank.castShadow = shadows;
+      group.add(tank);
+      const pipe = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.18, 4.2, 8)), shellDarkMat);
+      pipe.rotation.z = Math.PI / 2;
+      pipe.rotation.y = 0.6 * side;
+      pipe.position.set(X + side * 3.4, gy + 1.7, Z - 2.2);
+      group.add(pipe);
+    }
+    // pipe ring around the vessel base
+    const pipeRing = new THREE.Mesh(track(new THREE.TorusGeometry(3.8, 0.16, 8, 40)), shellDarkMat);
+    pipeRing.rotation.x = Math.PI / 2;
+    pipeRing.position.set(X, gy + 1.15, Z);
+    group.add(pipeRing);
+    // glowing halo + ground ring
+    const halo = new THREE.Mesh(track(new THREE.TorusGeometry(4.6, 0.22, 8, 48)), conduitMat);
+    halo.rotation.x = Math.PI / 2;
+    halo.position.set(X, gy + 1.5, Z);
+    group.add(halo);
+  }
+
+  /* ================== STORAGE: battery banks ======================= */
   const bessLightMat = std("#10161f", {
     roughness: 0.4,
     emissive: new THREE.Color("#2ebcfe"),
     emissiveIntensity: 0.8,
   });
-  const bessCenter = { x: 63, z: 12 };
+  const bessCenter = { x: 70, z: 30 };
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 3; col++) {
       const bx = bessCenter.x - 6 + col * 6 + (row % 2) * 1.2;
@@ -657,24 +746,19 @@ export function buildTown(quality: "high" | "low"): Town {
       body.rotation.y = 0.18;
       body.castShadow = shadows;
       group.add(body);
-      // blue accent stripe + status light strip
       const stripe = new THREE.Mesh(track(new THREE.BoxGeometry(4.46, 0.5, 2.76)), solarMat);
       stripe.position.set(bx, gy + 2.35, bz);
       stripe.rotation.y = 0.18;
       group.add(stripe);
       const status = new THREE.Mesh(track(new THREE.BoxGeometry(3.4, 0.16, 0.06)), bessLightMat);
-      status.position.set(
-        bx + Math.sin(0.18) * 1.41,
-        gy + 1.0,
-        bz + Math.cos(0.18) * 1.41
-      );
+      status.position.set(bx + Math.sin(0.18) * 1.41, gy + 1.0, bz + Math.cos(0.18) * 1.41);
       status.rotation.y = 0.18;
       group.add(status);
     }
   }
 
-  /* ---------------- solid-state transformer (SST) station --------- */
-  const sstCenter = { x: 56, z: -12 };
+  /* ================== PROCESS: SST station ========================= */
+  const sstCenter = { x: 50, z: 8 };
   const sstRingMat = std("#1a1410", {
     roughness: 0.35,
     emissive: new THREE.Color("#ffc23f"),
@@ -682,47 +766,32 @@ export function buildTown(quality: "high" | "low"): Town {
   });
   {
     const gy = terrainHeight(sstCenter.x, sstCenter.z);
-    // platform
     const platform = new THREE.Mesh(track(new THREE.BoxGeometry(15, 0.7, 11)), shellDarkMat);
     platform.position.set(sstCenter.x, gy + 0.35, sstCenter.z);
     platform.receiveShadow = shadows;
     group.add(platform);
-    // rectangular converter body with glowing amber conversion bands
     const sstBody = new THREE.Mesh(track(new THREE.BoxGeometry(4.6, 5.4, 3.6)), shellMat);
     sstBody.position.set(sstCenter.x - 3, gy + 3.1, sstCenter.z - 1);
     sstBody.castShadow = shadows;
     group.add(sstBody);
     for (const bandY of [2.3, 4.1]) {
-      const band = new THREE.Mesh(
-        track(new THREE.BoxGeometry(4.78, 0.22, 3.78)),
-        sstRingMat
-      );
+      const band = new THREE.Mesh(track(new THREE.BoxGeometry(4.78, 0.22, 3.78)), sstRingMat);
       band.position.set(sstCenter.x - 3, gy + bandY, sstCenter.z - 1);
       group.add(band);
     }
-    // radiator fins on the back face
     for (let k = 0; k < 5; k++) {
       const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 4.2, 1.3)), shellDarkMat);
-      fin.position.set(
-        sstCenter.x - 3 - 1.8 + k * 0.9,
-        gy + 3.1,
-        sstCenter.z - 1 - 2.4
-      );
+      fin.position.set(sstCenter.x - 3 - 1.8 + k * 0.9, gy + 3.1, sstCenter.z - 1 - 2.4);
       fin.castShadow = shadows;
       group.add(fin);
     }
-    // insulator bushings on the roof
     for (const bx of [-1.3, 0, 1.3]) {
-      const post = new THREE.Mesh(
-        track(new THREE.CylinderGeometry(0.13, 0.16, 0.85, 8)),
-        shellDarkMat
-      );
+      const post = new THREE.Mesh(track(new THREE.CylinderGeometry(0.13, 0.16, 0.85, 8)), shellDarkMat);
       post.position.set(sstCenter.x - 3 + bx, gy + 6.2, sstCenter.z - 1);
-      const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.18, 8, 6)), sstRingMat);
-      tip.position.set(sstCenter.x - 3 + bx, gy + 6.72, sstCenter.z - 1);
-      group.add(post, tip);
+      const tipB = new THREE.Mesh(track(new THREE.SphereGeometry(0.18, 8, 6)), sstRingMat);
+      tipB.position.set(sstCenter.x - 3 + bx, gy + 6.72, sstCenter.z - 1);
+      group.add(post, tipB);
     }
-    // control cabinets with blue status strips
     for (const [cx, cz] of [
       [3.6, 2.4],
       [3.6, -2.6],
@@ -737,8 +806,110 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ---------------- data center ---------------- */
-  const dcCenter = { x: 40, z: -24 };
+  /* ----- landing pad (level, never sunken) + detailed lander ----- */
+  const pad = { x: 38, z: -16 };
+  let padTop = 0;
+  {
+    // sample the rim so the pad always clears the local terrain
+    let maxEdge = -1e9;
+    let minEdge = 1e9;
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      const h = terrainHeight(pad.x + Math.cos(a) * 11, pad.z + Math.sin(a) * 11);
+      maxEdge = Math.max(maxEdge, h);
+      minEdge = Math.min(minEdge, h);
+    }
+    padTop = maxEdge + 0.4;
+    const baseH = padTop - (minEdge - 1.2);
+    const padMesh = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(11, 11.8, baseH, 28)),
+      shellDarkMat
+    );
+    padMesh.position.set(pad.x, padTop - baseH / 2, pad.z);
+    padMesh.receiveShadow = shadows;
+    group.add(padMesh);
+    const padRing = new THREE.Mesh(track(new THREE.TorusGeometry(9.6, 0.18, 8, 64)), conduitMat);
+    padRing.rotation.x = Math.PI / 2;
+    padRing.position.set(pad.x, padTop + 0.06, pad.z);
+    const padMark = new THREE.Mesh(track(new THREE.TorusGeometry(5.6, 0.1, 6, 48)), shellDarkMat);
+    padMark.rotation.x = Math.PI / 2;
+    padMark.position.set(pad.x, padTop + 0.04, pad.z);
+    group.add(padRing, padMark);
+
+    /* detailed lander on the pad */
+    const lx = pad.x + 2.5;
+    const lz = pad.z - 1.5;
+    const lander = new THREE.Group();
+    lander.position.set(lx, padTop, lz);
+    lander.rotation.y = 0.6;
+    // descent stage: octagonal, gold-foil skirt
+    const descent = new THREE.Mesh(track(new THREE.CylinderGeometry(1.6, 1.7, 1.0, 8)), goldMat);
+    descent.position.y = 1.35;
+    descent.castShadow = shadows;
+    lander.add(descent);
+    const skirt = new THREE.Mesh(track(new THREE.CylinderGeometry(1.7, 1.95, 0.35, 8)), goldMat);
+    skirt.position.y = 0.78;
+    lander.add(skirt);
+    // engine nozzle
+    const nozzle = new THREE.Mesh(track(new THREE.CylinderGeometry(0.32, 0.62, 0.6, 12)), shellDarkMat);
+    nozzle.position.y = 0.42;
+    lander.add(nozzle);
+    // ascent module: cone + porthole ring
+    const ascent = new THREE.Mesh(track(new THREE.ConeGeometry(1.25, 1.7, 8)), shellMat);
+    ascent.position.y = 2.7;
+    ascent.castShadow = shadows;
+    lander.add(ascent);
+    const portRing = new THREE.Mesh(track(new THREE.TorusGeometry(0.95, 0.07, 6, 24)), stripMat);
+    portRing.rotation.x = Math.PI / 2;
+    portRing.position.y = 2.25;
+    lander.add(portRing);
+    // antenna + dish
+    const mastL = new THREE.Mesh(track(new THREE.CylinderGeometry(0.04, 0.05, 1.1, 6)), shellDarkMat);
+    mastL.position.set(0.5, 3.9, 0.2);
+    const dishL = new THREE.Mesh(track(new THREE.CircleGeometry(0.34, 12)), shellMat);
+    dishL.position.set(0.5, 4.5, 0.2);
+    dishL.rotation.x = -Math.PI / 3;
+    (dishL.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+    lander.add(mastL, dishL);
+    // four legs with footpads
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const leg = new THREE.Mesh(track(new THREE.CylinderGeometry(0.07, 0.09, 2.1, 6)), shellDarkMat);
+      leg.position.set(Math.cos(a) * 1.75, 1.0, Math.sin(a) * 1.75);
+      leg.rotation.z = Math.cos(a) * 0.55;
+      leg.rotation.x = -Math.sin(a) * 0.55;
+      const foot = new THREE.Mesh(track(new THREE.CylinderGeometry(0.34, 0.42, 0.12, 10)), goldMat);
+      foot.position.set(Math.cos(a) * 2.45, 0.07, Math.sin(a) * 2.45);
+      lander.add(leg, foot);
+    }
+    group.add(lander);
+
+    /* charging stations between the pad and the SST */
+    for (let i = 0; i < 3; i++) {
+      const cx = pad.x + 6 + i * 5.2;
+      const cz = pad.z + 9.5;
+      const gy = terrainHeight(cx, cz);
+      const pillar = new THREE.Mesh(track(new THREE.BoxGeometry(0.55, 1.9, 0.45)), shellMat);
+      pillar.position.set(cx, gy + 0.95, cz + 2.4);
+      pillar.castShadow = shadows;
+      group.add(pillar);
+      const screen = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.5, 0.05)), bessLightMat);
+      screen.position.set(cx, gy + 1.35, cz + 2.16);
+      group.add(screen);
+      const arm = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.05, 1.4, 6)), shellDarkMat);
+      arm.rotation.x = Math.PI / 2.6;
+      arm.position.set(cx, gy + 1.85, cz + 1.8);
+      group.add(arm);
+      // glowing charging spot on the ground
+      const spot = new THREE.Mesh(track(new THREE.PlaneGeometry(3.6, 3.6)), conduitMat);
+      spot.rotation.x = -Math.PI / 2;
+      spot.position.set(cx, gy + 0.12, cz - 0.6);
+      group.add(spot);
+    }
+  }
+
+  /* ================== LOAD: data centre ============================ */
+  const dcCenter = { x: 14, z: -36 };
   {
     const rot = 0.3;
     const gy = terrainHeight(dcCenter.x, dcCenter.z);
@@ -747,26 +918,17 @@ export function buildTown(quality: "high" | "low"): Town {
     hall.rotation.y = rot;
     hall.castShadow = shadows;
     group.add(hall);
-    // roof radiator fins (servers run hot, even on the Moon)
     for (let k = 0; k < 5; k++) {
       const fx = -4 + k * 2;
       const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.18, 1.1, 5.9)), shellDarkMat);
-      fin.position.set(
-        dcCenter.x + Math.cos(rot) * fx,
-        gy + 4.55,
-        dcCenter.z - Math.sin(rot) * fx
-      );
+      fin.position.set(dcCenter.x + Math.cos(rot) * fx, gy + 4.55, dcCenter.z - Math.sin(rot) * fx);
       fin.rotation.y = rot;
       fin.castShadow = shadows;
       group.add(fin);
     }
-    // server status light rows on both long walls
     for (const side of [-1, 1]) {
       for (const ly of [1.1, 2.0, 2.9]) {
-        const strip = new THREE.Mesh(
-          track(new THREE.BoxGeometry(9.6, 0.14, 0.06)),
-          bessLightMat
-        );
+        const strip = new THREE.Mesh(track(new THREE.BoxGeometry(9.6, 0.14, 0.06)), bessLightMat);
         strip.position.set(
           dcCenter.x + Math.sin(rot) * 3.31 * side,
           gy + ly,
@@ -778,45 +940,65 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
+  /* ---------------- comms tower ---------------- */
+  {
+    const gy = terrainHeight(-32, -18);
+    const mast = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.3, 13, 6)), shellDarkMat);
+    mast.position.set(-32, gy + 6.5, -18);
+    mast.castShadow = shadows;
+    const dish = new THREE.Mesh(track(new THREE.CircleGeometry(2.4, 18)), shellMat);
+    dish.position.set(-32, gy + 12.4, -18);
+    dish.rotation.x = -Math.PI / 3;
+    (dish.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+    const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 8, 6)), coreMat);
+    tip.position.set(-32, gy + 13.2, -18);
+    group.add(mast, dish, tip);
+  }
+
   /* ---------------- energy conduits + flowing dots ---------------- */
   const pathDefs: [number, number][][] = [
-    // solar farm -> battery storage
+    // PV -> BESS
     [
-      [66, 36],
-      [64, 26],
-      [63, 17],
+      [90, 46],
+      [80, 38],
+      [73, 33],
     ],
-    // battery storage -> SST station
+    // reactor -> BESS
     [
-      [62, 7],
-      [59, -1],
-      [57, -8],
+      [89, 19],
+      [80, 25],
+      [73, 29],
     ],
-    // SST station -> habitat (the managed feed)
+    // BESS -> SST
     [
-      [51, -13],
-      [36, -10],
-      [20, -5],
-      [10, -2],
+      [67, 27],
+      [58, 17],
+      [52, 11],
     ],
-    // SST station -> data center (compute is a load too)
+    // SST -> data centre
     [
-      [52, -15],
-      [46, -20],
-      [41, -23],
+      [46, 4],
+      [32, -14],
+      [20, -29],
+      [15, -34],
     ],
-    // reactor -> habitat
+    // SST -> habitat ring
     [
-      [-44, -28],
-      [-30, -18],
-      [-16, -8],
-      [-6, -2],
+      [45, 8],
+      [32, 5],
+      [20, 2],
     ],
-    // habitat ring
+    // SST -> charging / landing pad
+    [
+      [46, 2],
+      [43, -5],
+      [41, -10],
+    ],
+    // habitat ring loop
     [
       [18, 0],
       [13, 13],
-      [0, 19],
+      [0, 18],
       [-13, 13],
       [-18, 0],
       [-13, -13],
@@ -824,17 +1006,11 @@ export function buildTown(quality: "high" | "low"): Town {
       [13, -13],
       [18, 0],
     ],
-    // habitat -> landing pad
+    // ring -> comms tower
     [
-      [-4, 16],
-      [-10, 32],
-      [-16, 44],
-    ],
-    // habitat -> comms tower
-    [
-      [16, -10],
-      [25, -20],
-      [33, -28],
+      [-17, -5],
+      [-25, -12],
+      [-31, -17],
     ],
   ];
 
@@ -884,9 +1060,11 @@ export function buildTown(quality: "high" | "low"): Town {
   const dotGeo = track(new THREE.BufferGeometry());
   dotGeo.setAttribute("position", new THREE.BufferAttribute(dotPositions, 3));
   dotGeo.setAttribute("color", new THREE.BufferAttribute(dotColors, 3));
+  const dotTex = track(makeDotTexture());
   const dotMat = track(
     new THREE.PointsMaterial({
       size: 1.35,
+      map: dotTex, // round sprites instead of square points
       vertexColors: true,
       transparent: true,
       opacity: 0.95,
@@ -899,10 +1077,36 @@ export function buildTown(quality: "high" | "low"): Town {
   dots.frustumCulled = false;
   group.add(dots);
 
-  /* ---------------- sky: stars + Earth ---------------- */
+  /* ---------------- drifting dust ---------------- */
+  const dustCount = quality === "high" ? 360 : 160;
+  const dustPos = new Float32Array(dustCount * 3);
+  for (let i = 0; i < dustCount; i++) {
+    dustPos[i * 3] = R(-115, 115);
+    dustPos[i * 3 + 1] = R(0.5, 16);
+    dustPos[i * 3 + 2] = R(-115, 115);
+  }
+  const dustGeo = track(new THREE.BufferGeometry());
+  dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = track(
+    new THREE.PointsMaterial({
+      color: "#aab4c4",
+      size: 0.55,
+      transparent: true,
+      opacity: 0.13,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+    })
+  );
+  const dust = new THREE.Points(dustGeo, dustMat);
+  dust.frustumCulled = false;
+  group.add(dust);
+
+  /* ---------------- sky: stars + Milky Way ---------------- */
+  const glowTex = track(makeGlowTexture());
+
   const starCount = 1400;
   const starPos = new Float32Array(starCount * 3);
-  const starSizes = new Float32Array(starCount);
   for (let i = 0; i < starCount; i++) {
     const a = rand() * Math.PI * 2;
     const elev = Math.asin(rand() * 0.95 + 0.04);
@@ -910,7 +1114,6 @@ export function buildTown(quality: "high" | "low"): Town {
     starPos[i * 3] = Math.cos(a) * Math.cos(elev) * rr;
     starPos[i * 3 + 1] = Math.sin(elev) * rr;
     starPos[i * 3 + 2] = Math.sin(a) * Math.cos(elev) * rr;
-    starSizes[i] = rand();
   }
   const starGeo = track(new THREE.BufferGeometry());
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
@@ -928,7 +1131,6 @@ export function buildTown(quality: "high" | "low"): Town {
   stars.frustumCulled = false;
   group.add(stars);
 
-  // a handful of bright "hero" stars
   const brightCount = 130;
   const brightPos = new Float32Array(brightCount * 3);
   for (let i = 0; i < brightCount; i++) {
@@ -955,7 +1157,6 @@ export function buildTown(quality: "high" | "low"): Town {
   brightStars.frustumCulled = false;
   group.add(brightStars);
 
-  // faint Milky Way band across the sky
   const mwCount = quality === "high" ? 2400 : 1200;
   const mwPos = new Float32Array(mwCount * 3);
   const mwNormal = new THREE.Vector3(0.42, 1, 0.3).normalize();
@@ -972,7 +1173,7 @@ export function buildTown(quality: "high" | "low"): Town {
       .addScaledVector(mwV, Math.sin(th))
       .addScaledVector(mwNormal, spread)
       .normalize();
-    if (mwDir.y < 0.03) continue; // keep above the horizon
+    if (mwDir.y < 0.03) continue;
     mwPos[mwI * 3] = mwDir.x * 372;
     mwPos[mwI * 3 + 1] = mwDir.y * 372;
     mwPos[mwI * 3 + 2] = mwDir.z * 372;
@@ -995,36 +1196,7 @@ export function buildTown(quality: "high" | "low"): Town {
   milkyWay.frustumCulled = false;
   group.add(milkyWay);
 
-  /* ---------------- drifting dust motes ---------------- */
-  const dustCount = quality === "high" ? 360 : 160;
-  const dustPos = new Float32Array(dustCount * 3);
-  for (let i = 0; i < dustCount; i++) {
-    dustPos[i * 3] = R(-115, 115);
-    dustPos[i * 3 + 1] = R(0.5, 16);
-    dustPos[i * 3 + 2] = R(-115, 115);
-  }
-  const dustGeo = track(new THREE.BufferGeometry());
-  dustGeo.setAttribute("position", new THREE.BufferAttribute(dustPos, 3));
-  const dustMat = track(
-    new THREE.PointsMaterial({
-      color: "#aab4c4",
-      size: 0.55,
-      transparent: true,
-      opacity: 0.13,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      sizeAttenuation: true,
-    })
-  );
-  const dust = new THREE.Points(dustGeo, dustMat);
-  dust.frustumCulled = false;
-  group.add(dust);
-
-  // (Earth removed: the stylized texture read as an unidentifiable object
-  //  in the opening shot. The dark space stays clean and minimal.)
-  const glowTex = track(makeGlowTexture());
-
-  /* ---------------- blinking beacons ---------------- */
+  /* ---------------- beacons ---------------- */
   const beaconRedMat = track(
     new THREE.SpriteMaterial({
       map: glowTex,
@@ -1037,7 +1209,7 @@ export function buildTown(quality: "high" | "low"): Town {
   );
   const beaconRed = new THREE.Sprite(beaconRedMat);
   beaconRed.scale.setScalar(3.2);
-  beaconRed.position.set(34, terrainHeight(34, -30) + 13.6, -30); // comms tower tip
+  beaconRed.position.set(-32, terrainHeight(-32, -18) + 13.6, -18);
   group.add(beaconRed);
 
   const beaconBlueMat = track(
@@ -1052,7 +1224,7 @@ export function buildTown(quality: "high" | "low"): Town {
   );
   const beaconBlue = new THREE.Sprite(beaconBlueMat);
   beaconBlue.scale.setScalar(2.6);
-  beaconBlue.position.set(0, terrainHeight(0, 0) + 14.6, 0); // main dome apex
+  beaconBlue.position.set(0, terrainHeight(0, 0) + 14.6, 0);
   group.add(beaconBlue);
 
   /* ---------------- theme ---------------- */
@@ -1062,6 +1234,8 @@ export function buildTown(quality: "high" | "low"): Town {
     [shellDarkMat, "#a9bfd1", "#2b3346"],
     [solarMat, "#ffffff", "#7088ad"],
     [conduitMat, "#10161f", "#0b1018"],
+    [goldMat, "#c9a86a", "#5d5038"],
+    [floorMat, "#1a2230", "#10151f"],
   ];
   const pairColors = themePairs.map(
     ([mat, d, n]) => [mat, new THREE.Color(d), new THREE.Color(n)] as const
@@ -1077,7 +1251,7 @@ export function buildTown(quality: "high" | "low"): Town {
     conduitMat.emissiveIntensity = 0.55 + 0.85 * mix;
     coreMat.emissiveIntensity = 0.9 + 0.7 * mix;
     stripMat.emissiveIntensity = 0.3 + 0.9 * mix;
-    solarMat.emissiveIntensity = 0.12 + 0.45 * mix;
+    solarMat.emissiveIntensity = 0.1 + 0.45 * mix;
     starMat.opacity = 0.85 + 0.1 * mix;
     dotMat.size = 1.35 + 0.75 * mix;
     dustMat.opacity = 0.13 + 0.07 * mix;
@@ -1085,29 +1259,22 @@ export function buildTown(quality: "high" | "low"): Town {
 
   /* ---------------- per-frame update ---------------- */
   const flowOffsets = flows.map(() => rand());
-  let corePulse = 0;
+  let lastMix = 0;
   function update(dt: number, elapsed: number) {
-    // reactor core breathing
-    corePulse = (Math.sin(elapsed * 1.6) + 1) / 2;
-    coreMat.emissiveIntensity =
-      (0.9 + 0.7 * lastMix) * (0.85 + corePulse * 0.3);
+    const corePulse = (Math.sin(elapsed * 1.6) + 1) / 2;
+    coreMat.emissiveIntensity = (0.9 + 0.7 * lastMix) * (0.85 + corePulse * 0.3);
 
-    // dust drifts slowly around the base
     dust.rotation.y = elapsed * 0.0045;
     dust.position.y = Math.sin(elapsed * 0.12) * 0.6;
 
-    // energy waves travel along the conduits (staggered pulse)
     const baseGlow = 0.55 + 0.85 * lastMix;
     for (const p of conduitPulses) {
       const w = 0.5 + 0.5 * Math.sin(elapsed * 1.7 + p.phase);
       p.mat.emissiveIntensity = baseGlow * (0.75 + 0.45 * w);
     }
 
-    // SST conversion rings hum
-    sstRingMat.emissiveIntensity =
-      (0.7 + 0.6 * lastMix) * (0.8 + 0.3 * Math.sin(elapsed * 2.1));
+    sstRingMat.emissiveIntensity = (0.7 + 0.6 * lastMix) * (0.8 + 0.3 * Math.sin(elapsed * 2.1));
 
-    // beacon blinking
     const blink = Math.max(0, Math.sin(elapsed * 2.3));
     beaconRedMat.opacity = 0.15 + 0.75 * blink * blink * blink;
     const breathe = 0.5 + 0.5 * Math.sin(elapsed * 1.1);
@@ -1134,7 +1301,6 @@ export function buildTown(quality: "high" | "low"): Town {
     (dotGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true;
   }
 
-  let lastMix = 0;
   const applyThemeWrapped = (mix: number) => {
     lastMix = mix;
     applyTheme(mix);

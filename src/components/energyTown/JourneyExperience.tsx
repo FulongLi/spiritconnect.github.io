@@ -20,10 +20,10 @@ const PlaygroundCanvas = dynamic(
 const SECTIONS = 10; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
-const BLACKOUT_START = 0.71; // dome hull fills the frame…
-const BLACKOUT_END = 0.76; // …dark as we cross inside…
-const PORTAL_FADE_START = 0.85; // …then the dome interior lights up: the portal
-const PORTAL_FADE_END = 0.915;
+const BLACKOUT_START = 0.79; // after we've seen the pedestal inside the dome…
+const BLACKOUT_END = 0.835; // …a brief dark beat…
+const PORTAL_FADE_START = 0.865; // …then the portal materializes on the stage
+const PORTAL_FADE_END = 0.925;
 
 type Chapter = {
   start: number;
@@ -47,7 +47,7 @@ const CHAPTERS: Chapter[] = [
   },
   {
     start: 0.115,
-    end: 0.225,
+    end: 0.235,
     kicker: "01 / SOLAR FIELD",
     title: "HARVEST THE SUN",
     sub: "Solar energy begins the loop.",
@@ -55,44 +55,44 @@ const CHAPTERS: Chapter[] = [
     align: "left",
   },
   {
-    start: 0.25,
-    end: 0.345,
-    kicker: "02 / ENERGY STORAGE",
-    title: "STORE THE LIGHT",
-    sub: "Storage gives energy continuity.",
-    body: "Battery systems absorb fluctuation, bridge darkness, and turn intermittent generation into dependable power for mission-critical operation.",
-    align: "right",
-  },
-  {
-    start: 0.375,
-    end: 0.47,
-    kicker: "03 / SOLID-STATE TRANSFORMER",
-    title: "SHAPE THE GRID",
-    sub: "Solid-state transformers form the backbone of advanced energy networks.",
-    body: "Wide-bandgap devices, high-frequency magnetics, control, protection, thermal design, and power routing are integrated into one intelligent conversion hub.",
-    align: "left",
-  },
-  {
-    start: 0.5,
-    end: 0.59,
-    kicker: "04 / DATA CENTRE",
-    title: "TRAIN THE INTELLIGENCE",
-    sub: "Inside the data centre, energy becomes computation.",
-    body: "Digital twins, converter simulations, device databases, magnetic models, thermal behaviour, and AI design agents learn from the power system — then help design the next one.",
-    align: "right",
-  },
-  {
-    start: 0.605,
-    end: 0.655,
-    kicker: "05 / NUCLEAR POWER CORE",
+    start: 0.252,
+    end: 0.3,
+    kicker: "02 / NUCLEAR POWER CORE",
     title: "POWER BEYOND THE SUN",
     sub: "Some missions cannot depend on sunlight alone.",
     body: "Nuclear power cores provide long-duration, high-reliability energy for deep-space operation, shadowed regions, and always-on infrastructure.",
+    align: "right",
+  },
+  {
+    start: 0.315,
+    end: 0.41,
+    kicker: "03 / ENERGY STORAGE",
+    title: "STORE THE LIGHT",
+    sub: "Storage gives energy continuity.",
+    body: "Battery systems absorb fluctuation, bridge darkness, and turn intermittent generation into dependable power for mission-critical operation.",
     align: "left",
   },
   {
-    start: 0.67,
-    end: 0.71,
+    start: 0.435,
+    end: 0.53,
+    kicker: "04 / SOLID-STATE TRANSFORMER",
+    title: "SHAPE THE GRID",
+    sub: "Solid-state transformers form the backbone of advanced energy networks.",
+    body: "Wide-bandgap devices, high-frequency magnetics, control, protection, thermal design, and power routing are integrated into one intelligent conversion hub.",
+    align: "right",
+  },
+  {
+    start: 0.555,
+    end: 0.645,
+    kicker: "05 / DATA CENTRE",
+    title: "TRAIN THE INTELLIGENCE",
+    sub: "Inside the data centre, energy becomes computation.",
+    body: "Digital twins, converter simulations, device databases, magnetic models, thermal behaviour, and AI design agents learn from the power system — then help design the next one.",
+    align: "left",
+  },
+  {
+    start: 0.66,
+    end: 0.715,
     kicker: "06 / CLOSE THE LOOP",
     title: "ENERGY POWERS AI. AI DESIGNS BETTER ENERGY.",
     sub: "The loop closes inside the habitat.",
@@ -187,8 +187,8 @@ export default function JourneyExperience() {
 
       /* bridge caption inside the black hold */
       if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.768) / 0.02));
-        const outO = Math.min(1, Math.max(0, (0.842 - p) / 0.02));
+        const inO = Math.min(1, Math.max(0, (p - 0.802) / 0.022));
+        const outO = Math.min(1, Math.max(0, (0.868 - p) / 0.022));
         captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 

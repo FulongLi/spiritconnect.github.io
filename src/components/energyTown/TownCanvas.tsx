@@ -23,40 +23,44 @@ type Props = {
 // Closely-spaced waypoints inside the energy district make the camera
 // linger there; the flight ends by diving INTO the main dome — the
 // hologram portal then reads as the dome's interior.
+// Narrative order follows the energy flow:
+// inputs (PV + reactor) → storage (BESS) → processing (SST, with the
+// landing pad / charging area beside it) → loads (data centre, habitat)
+// → into the main dome, ending at the holographic pedestal.
 const CAM_POSITIONS: [number, number, number][] = [
   [0, 165, 250], // 0 opening: in dark space above the lunar surface
-  [62, 44, 118], // 1 descending toward the energy district
-  [86, 10, 66], // 2 arriving over the PV rows
-  [82, 7.5, 46], // 3 slow drift along the panels (PV dwell)
-  [76, 7, 28], // 4 leaving PV, containers ahead
-  [71, 5.5, 17], // 5 alongside the battery banks (BESS dwell)
-  [67, 6, 2], // 6 turning toward the SST
-  [62, 6.5, -19], // 7 circling the conversion stack (SST dwell)
-  [52, 6, -30], // 8 sliding over to the data center
-  [42, 5, -32], // 9 along the server hall (DC dwell)
-  [-26, 12, -14], // 10 the reactor — the structure beside the habitat
-  [-18, 8, 22], // 11 swinging around to face the main dome
-  [-8, 6, 14], // 12 final approach to the shell
-  [-2, 4.8, 7], // 13 crossing the hull — screen goes dark
-  [0, 4.5, 1.5], // 14 inside the dome
+  [80, 48, 120], // 1 descending toward the input zone
+  [112, 9, 64], // 2 arriving over the PV rows
+  [106, 7.5, 42], // 3 slow drift along the panels (PV dwell)
+  [104, 8, 24], // 4 the reactor beside the array (nuclear dwell)
+  [88, 7, 32], // 5 leaving the inputs, containers ahead
+  [76, 5.5, 24], // 6 alongside the battery banks (BESS dwell)
+  [62, 7, 18], // 7 turning toward the SST
+  [45, 5.5, -2], // 8 at the conversion hub (SST dwell, pad behind)
+  [34, 6, -26], // 9 passing the charging area toward the data centre
+  [10, 5, -44], // 10 along the server hall (DC dwell)
+  [-20, 8, 14], // 11 swinging around to face the main dome
+  [-10, 6, 13], // 12 final approach to the shell
+  [-3, 4.6, 6], // 13 crossing the hull into the interior
+  [0, 4.1, 1.6], // 14 settling in front of the pedestal
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
-  [0, 70, -30], // mostly black sky + Earth, horizon low in frame
-  [70, 2, 44],
-  [72, 1.5, 40],
-  [70, 1.5, 34], // PV
-  [65, 2, 16],
-  [63, 2, 12], // BESS
-  [58, 3.5, -10],
-  [54, 3.5, -13], // SST stack
-  [44, 2.5, -25], // data center
-  [38, 2, -23], // data center
-  [-48, 4, -32], // reactor
-  [0, 6, 0], // dome
-  [0, 5.5, 0],
-  [0, 5, -2],
-  [0, 5, -6],
+  [0, 85, -40], // mostly black sky, horizon low in frame
+  [95, 3, 52],
+  [96, 2, 50],
+  [95, 2, 46], // PV
+  [92, 5, 16], // reactor
+  [71, 2.5, 30],
+  [70, 2, 30], // BESS
+  [50, 4, 8],
+  [49, 3.5, 7], // SST
+  [15, 2.5, -36],
+  [14, 2, -35], // data centre
+  [0, 6, 0], // main dome
+  [0, 5, 0],
+  [0, 3.6, 0], // pedestal
+  [0, 3.2, -0.5],
 ];
 
 export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: Props) {
