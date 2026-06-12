@@ -22,8 +22,8 @@ const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
 const BLACKOUT_START = 0.71; // dome hull fills the frame…
 const BLACKOUT_END = 0.76; // …dark as we cross inside…
-const PORTAL_FADE_START = 0.875; // …then the dome interior lights up: the portal
-const PORTAL_FADE_END = 0.94;
+const PORTAL_FADE_START = 0.85; // …then the dome interior lights up: the portal
+const PORTAL_FADE_END = 0.915;
 
 type Chapter = {
   start: number;
@@ -40,10 +40,9 @@ const CHAPTERS: Chapter[] = [
   {
     start: 0.0,
     end: 0.085,
-    kicker: "SPIRIT CONNECT AIPE LABS",
+    kicker: "SPIRIT CONNECT",
     title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
-    sub: "Spirit Connect AIPE Labs builds AI-assisted power electronics tools for the next generation of intelligent energy systems.",
-    body: "A closed loop between power conversion, intelligent computation, and future energy infrastructure.",
+    body: "",
     align: "center",
   },
   {
@@ -188,8 +187,8 @@ export default function JourneyExperience() {
 
       /* bridge caption inside the black hold */
       if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.78) / 0.025));
-        const outO = Math.min(1, Math.max(0, (0.868 - p) / 0.025));
+        const inO = Math.min(1, Math.max(0, (p - 0.768) / 0.02));
+        const outO = Math.min(1, Math.max(0, (0.842 - p) / 0.02));
         captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
@@ -332,7 +331,8 @@ export default function JourneyExperience() {
             inset: 0,
             zIndex: 2,
             display: "flex",
-            alignItems: "center",
+            // hero text sits high up, in the dark space above the horizon
+            alignItems: i === 0 ? "flex-start" : "center",
             justifyContent:
               c.align === "center"
                 ? "center"
@@ -340,6 +340,7 @@ export default function JourneyExperience() {
                   ? "flex-start"
                   : "flex-end",
             padding: "0 clamp(20px, 7vw, 110px)",
+            paddingTop: i === 0 ? "13vh" : 0,
             pointerEvents: "none",
             opacity: 0,
             visibility: "hidden",
@@ -390,19 +391,21 @@ export default function JourneyExperience() {
                 {c.sub}
               </p>
             )}
-            <p
-              style={{
-                fontFamily: "var(--font-barlow), sans-serif",
-                fontSize: "clamp(15px, 1.5vw, 18px)",
-                fontWeight: 300,
-                lineHeight: 1.55,
-                letterSpacing: "0.03em",
-                margin: "12px 0 0",
-                opacity: 0.92,
-              }}
-            >
-              {c.body}
-            </p>
+            {c.body && (
+              <p
+                style={{
+                  fontFamily: "var(--font-barlow), sans-serif",
+                  fontSize: "clamp(15px, 1.5vw, 18px)",
+                  fontWeight: 300,
+                  lineHeight: 1.55,
+                  letterSpacing: "0.03em",
+                  margin: "12px 0 0",
+                  opacity: 0.92,
+                }}
+              >
+                {c.body}
+              </p>
+            )}
           </div>
         </div>
       ))}

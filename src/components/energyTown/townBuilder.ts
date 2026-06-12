@@ -109,6 +109,9 @@ export function terrainHeight(x: number, z: number) {
   }
   // spherical drop-off → round horizon, square edges fall out of sight
   h -= (r * r) / MOON_CURVE;
+  // steep circular limb: the visible silhouette becomes a clean round arc
+  // instead of the square plane's projected edges
+  h -= smoothstep(215, 245, r) * 60;
   return h;
 }
 
@@ -273,43 +276,6 @@ function makeSolarCellTexture() {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
-  return tex;
-}
-
-/** stylized Earth texture */
-function makeEarthTexture() {
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 128;
-  const ctx = c.getContext("2d")!;
-  const g = ctx.createLinearGradient(0, 0, 0, 128);
-  g.addColorStop(0, "#2a6bb5");
-  g.addColorStop(0.5, "#1d5499");
-  g.addColorStop(1, "#2a6bb5");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 256, 128);
-  const rng = mulberry32(42);
-  ctx.fillStyle = "#3f7a4f";
-  for (let i = 0; i < 14; i++) {
-    const x = rng() * 256;
-    const y = 20 + rng() * 88;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 10 + rng() * 22, 6 + rng() * 12, rng() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
-  for (let i = 0; i < 26; i++) {
-    const x = rng() * 256;
-    const y = rng() * 128;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 8 + rng() * 18, 2.5 + rng() * 4, rng() * Math.PI, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.fillRect(0, 0, 256, 10);
-  ctx.fillRect(0, 118, 256, 10);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -1054,26 +1020,9 @@ export function buildTown(quality: "high" | "low"): Town {
   dust.frustumCulled = false;
   group.add(dust);
 
-  const earthTex = track(makeEarthTexture());
-  const earthMat = track(new THREE.MeshBasicMaterial({ map: earthTex, fog: false }));
-  const earth = new THREE.Mesh(track(new THREE.SphereGeometry(17, 28, 20)), earthMat);
-  earth.position.set(130, 150, -180);
-  group.add(earth);
+  // (Earth removed: the stylized texture read as an unidentifiable object
+  //  in the opening shot. The dark space stays clean and minimal.)
   const glowTex = track(makeGlowTexture());
-  const glowMat = track(
-    new THREE.SpriteMaterial({
-      map: glowTex,
-      transparent: true,
-      opacity: 0.55,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      fog: false,
-    })
-  );
-  const earthGlow = new THREE.Sprite(glowMat);
-  earthGlow.scale.setScalar(58);
-  earthGlow.position.copy(earth.position);
-  group.add(earthGlow);
 
   /* ---------------- blinking beacons ---------------- */
   const beaconRedMat = track(
@@ -1131,7 +1080,6 @@ export function buildTown(quality: "high" | "low"): Town {
     solarMat.emissiveIntensity = 0.12 + 0.45 * mix;
     starMat.opacity = 0.85 + 0.1 * mix;
     dotMat.size = 1.35 + 0.75 * mix;
-    glowMat.opacity = 0.55 + 0.2 * mix;
     dustMat.opacity = 0.13 + 0.07 * mix;
   }
 
@@ -1147,9 +1095,6 @@ export function buildTown(quality: "high" | "low"): Town {
     // dust drifts slowly around the base
     dust.rotation.y = elapsed * 0.0045;
     dust.position.y = Math.sin(elapsed * 0.12) * 0.6;
-
-    // Earth turns imperceptibly
-    earth.rotation.y = elapsed * 0.008;
 
     // energy waves travel along the conduits (staggered pulse)
     const baseGlow = 0.55 + 0.85 * lastMix;
