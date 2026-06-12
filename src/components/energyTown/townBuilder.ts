@@ -31,14 +31,14 @@ function smoothstep(a: number, b: number, x: number) {
 
 /* ---------------- key sites (flattened ground, no craters) --------- */
 const SITES: [number, number][] = [
-  [95, 50], // PV array
-  [92, 16], // reactor
-  [70, 30], // BESS
-  [50, 8], // SST
-  [38, -16], // landing pad + charging
+  [76, 32], // PV array
+  [76, 4], // reactor
+  [54, 18], // BESS
+  [36, 2], // SST
+  [-42, -6], // landing pad + charging + vehicles (west side)
   [14, -36], // data centre
   [-20, 26], // HDU
-  [-32, -18], // comms tower
+  [24, 26], // comms tower
 ];
 
 function siteMask(x: number, z: number) {
@@ -139,8 +139,8 @@ export function terrainHeight(x: number, z: number) {
     }
   }
   h -= (r * r) / MOON_CURVE;
-  // steep circular limb → clean round horizon arc
-  h -= smoothstep(215, 245, r) * 60;
+  // steep circular limb → clean, well-rounded horizon arc
+  h -= smoothstep(202, 232, r) * 75;
   return h;
 }
 
@@ -400,7 +400,9 @@ export function buildTown(quality: "high" | "low"): Town {
     emissiveIntensity: 0.3,
   });
   const goldMat = std("#c9a86a", { roughness: 0.35, metalness: 0.6 });
-  const floorMat = std("#1a2230", { roughness: 0.8, metalness: 0.1 });
+  const floorMat = std("#1a2230", { roughness: 0.8, metalness: 0.1, flatShading: false });
+  const glowTex = track(makeGlowTexture());
+  const dotTex = track(makeDotTexture());
 
   /* ---------------- terrain ---------------- */
   const segs = quality === "high" ? 220 : 120;
@@ -563,58 +565,125 @@ export function buildTown(quality: "high" | "low"): Town {
     addTube(0, 0, n.x, n.z);
   }
 
-  /* ----- main dome interior: floor + holographic pedestal ----- */
+  /* ----- main dome interior: smooth stage + holographic replica -----
+     Everything in here is smooth-shaded (no faceted boxes); the stage
+     blends into the floor and a particle hologram floats above it,
+     echoing the WebGPU portal that takes over at the end. */
+  const interiorGlowMat = std("#10161f", {
+    roughness: 0.35,
+    flatShading: false,
+    emissive: new THREE.Color("#2ebcfe"),
+    emissiveIntensity: 0.8,
+  });
+  const stageMat = std("#33415c", { roughness: 0.35, metalness: 0.3, flatShading: false });
+  let holo: THREE.Points | null = null;
+  let holoBaseY = 0;
   {
     const gy = terrainHeight(0, 0);
-    const floor = new THREE.Mesh(track(new THREE.CircleGeometry(13.4, 40)), floorMat);
+    const floor = new THREE.Mesh(track(new THREE.CircleGeometry(13.4, 64)), floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(0, gy + 0.16, 0);
     group.add(floor);
-    // concentric floor light rings
-    for (const fr of [4.5, 8, 11.2]) {
+    // concentric floor light rings (smooth)
+    for (const fr of [5, 8.5, 11.4]) {
       const fring = new THREE.Mesh(
-        track(new THREE.TorusGeometry(fr, 0.07, 6, 48)),
-        conduitMat
+        track(new THREE.TorusGeometry(fr, 0.055, 12, 80)),
+        interiorGlowMat
       );
       fring.rotation.x = Math.PI / 2;
       fring.position.set(0, gy + 0.2, 0);
       group.add(fring);
     }
-    // central pedestal (the portal stage)
-    const ped = new THREE.Mesh(
-      track(new THREE.CylinderGeometry(2.4, 2.8, 0.8, 24)),
-      shellDarkMat
+    // smooth stage: low mound blended into the floor with a rounded lip
+    const stage = new THREE.Mesh(
+      track(new THREE.CylinderGeometry(2.7, 3.5, 0.85, 64)),
+      stageMat
     );
-    ped.position.set(0, gy + 0.6, 0);
-    group.add(ped);
-    const pedRing = new THREE.Mesh(
-      track(new THREE.TorusGeometry(2.0, 0.12, 8, 40)),
-      coreMat
+    stage.position.set(0, gy + 0.58, 0);
+    group.add(stage);
+    const lip = new THREE.Mesh(
+      track(new THREE.TorusGeometry(3.05, 0.28, 18, 72)),
+      stageMat
     );
-    pedRing.rotation.x = Math.PI / 2;
-    pedRing.position.set(0, gy + 1.04, 0);
-    group.add(pedRing);
-    // soft holographic light shaft rising from the pedestal
+    lip.rotation.x = Math.PI / 2;
+    lip.position.set(0, gy + 0.32, 0);
+    group.add(lip);
+    const stageRing = new THREE.Mesh(
+      track(new THREE.TorusGeometry(2.1, 0.09, 12, 72)),
+      interiorGlowMat
+    );
+    stageRing.rotation.x = Math.PI / 2;
+    stageRing.position.set(0, gy + 1.04, 0);
+    group.add(stageRing);
+    // soft light shaft
     const beamMat = track(
       new THREE.MeshBasicMaterial({
         color: "#2ebcfe",
         transparent: true,
-        opacity: 0.1,
+        opacity: 0.09,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         side: THREE.DoubleSide,
       })
     );
     const beam = new THREE.Mesh(
-      track(new THREE.CylinderGeometry(0.6, 1.9, 8.5, 20, 1, true)),
+      track(new THREE.CylinderGeometry(0.7, 2.0, 8.0, 32, 1, true)),
       beamMat
     );
-    beam.position.set(0, gy + 5.3, 0);
+    beam.position.set(0, gy + 5.1, 0);
     group.add(beam);
+
+    // particle hologram, in the spirit of the portal's WebGPU stage
+    const holoCount = quality === "high" ? 15000 : 7000;
+    const hp = new Float32Array(holoCount * 3);
+    for (let i = 0; i < holoCount; i++) {
+      // random direction on a sphere, mostly shell with a wispy core
+      const u = rand() * 2 - 1;
+      const a = rand() * Math.PI * 2;
+      const sq = Math.sqrt(1 - u * u);
+      let rr = 1.5 * (0.9 + rand() * 0.2);
+      if (rand() < 0.18) rr *= rand() * 0.6;
+      hp[i * 3] = sq * Math.cos(a) * rr;
+      hp[i * 3 + 1] = u * rr * 1.08;
+      hp[i * 3 + 2] = sq * Math.sin(a) * rr;
+    }
+    const holoGeo = track(new THREE.BufferGeometry());
+    holoGeo.setAttribute("position", new THREE.BufferAttribute(hp, 3));
+    const holoMat = track(
+      new THREE.PointsMaterial({
+        color: "#7fd4ff",
+        size: 0.05,
+        map: dotTex,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true,
+      })
+    );
+    holo = new THREE.Points(holoGeo, holoMat);
+    holoBaseY = gy + 3.5;
+    holo.position.set(0, holoBaseY, 0);
+    holo.frustumCulled = false;
+    group.add(holo);
+    const holoGlowMat = track(
+      new THREE.SpriteMaterial({
+        map: glowTex,
+        color: "#5fc6ff",
+        transparent: true,
+        opacity: 0.45,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    );
+    const holoGlow = new THREE.Sprite(holoGlowMat);
+    holoGlow.scale.setScalar(6.5);
+    holoGlow.position.set(0, holoBaseY, 0);
+    group.add(holoGlow);
   }
 
   /* ================== INPUTS: PV array + reactor =================== */
-  const solarCenter = { x: 95, z: 50 };
+  const solarCenter = { x: 76, z: 32 };
   const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
   const panelPlacements: THREE.Matrix4[] = [];
   const legPlacements: THREE.Matrix4[] = [];
@@ -655,7 +724,7 @@ export function buildTown(quality: "high" | "low"): Town {
   group.add(panelMesh, legMesh);
 
   /* ----- nuclear reactor (detailed) ----- */
-  const reactor = { x: 92, z: 16 };
+  const reactor = { x: 76, z: 4 };
   {
     const gy = terrainHeight(reactor.x, reactor.z);
     const X = reactor.x;
@@ -735,7 +804,7 @@ export function buildTown(quality: "high" | "low"): Town {
     emissive: new THREE.Color("#2ebcfe"),
     emissiveIntensity: 0.8,
   });
-  const bessCenter = { x: 70, z: 30 };
+  const bessCenter = { x: 54, z: 18 };
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 3; col++) {
       const bx = bessCenter.x - 6 + col * 6 + (row % 2) * 1.2;
@@ -758,7 +827,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ================== PROCESS: SST station ========================= */
-  const sstCenter = { x: 50, z: 8 };
+  const sstCenter = { x: 36, z: 2 };
   const sstRingMat = std("#1a1410", {
     roughness: 0.35,
     emissive: new THREE.Color("#ffc23f"),
@@ -807,7 +876,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ----- landing pad (level, never sunken) + detailed lander ----- */
-  const pad = { x: 38, z: -16 };
+  const pad = { x: -42, z: -6 };
   let padTop = 0;
   {
     // sample the rim so the pad always clears the local terrain
@@ -884,10 +953,10 @@ export function buildTown(quality: "high" | "low"): Town {
     }
     group.add(lander);
 
-    /* charging stations between the pad and the SST */
+    /* charging stations between the pad and the habitat ring */
     for (let i = 0; i < 3; i++) {
-      const cx = pad.x + 6 + i * 5.2;
-      const cz = pad.z + 9.5;
+      const cx = pad.x + 12.5;
+      const cz = pad.z - 7 + i * 5.5;
       const gy = terrainHeight(cx, cz);
       const pillar = new THREE.Mesh(track(new THREE.BoxGeometry(0.55, 1.9, 0.45)), shellMat);
       pillar.position.set(cx, gy + 0.95, cz + 2.4);
@@ -941,91 +1010,82 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ---------------- comms tower ---------------- */
+  const comms = { x: 24, z: 26 };
   {
-    const gy = terrainHeight(-32, -18);
+    const gy = terrainHeight(comms.x, comms.z);
     const mast = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.3, 13, 6)), shellDarkMat);
-    mast.position.set(-32, gy + 6.5, -18);
+    mast.position.set(comms.x, gy + 6.5, comms.z);
     mast.castShadow = shadows;
     const dish = new THREE.Mesh(track(new THREE.CircleGeometry(2.4, 18)), shellMat);
-    dish.position.set(-32, gy + 12.4, -18);
+    dish.position.set(comms.x, gy + 12.4, comms.z);
     dish.rotation.x = -Math.PI / 3;
     (dish.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
     const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.22, 8, 6)), coreMat);
-    tip.position.set(-32, gy + 13.2, -18);
+    tip.position.set(comms.x, gy + 13.2, comms.z);
     group.add(mast, dish, tip);
   }
 
-  /* ---------------- energy conduits + flowing dots ---------------- */
-  const pathDefs: [number, number][][] = [
-    // PV -> BESS
-    [
-      [90, 46],
-      [80, 38],
-      [73, 33],
-    ],
-    // reactor -> BESS
-    [
-      [89, 19],
-      [80, 25],
-      [73, 29],
-    ],
-    // BESS -> SST
-    [
-      [67, 27],
-      [58, 17],
-      [52, 11],
-    ],
-    // SST -> data centre
-    [
-      [46, 4],
-      [32, -14],
-      [20, -29],
-      [15, -34],
-    ],
-    // SST -> habitat ring
-    [
-      [45, 8],
-      [32, 5],
-      [20, 2],
-    ],
-    // SST -> charging / landing pad
-    [
-      [46, 2],
-      [43, -5],
-      [41, -10],
-    ],
-    // habitat ring loop
-    [
-      [18, 0],
-      [13, 13],
-      [0, 18],
-      [-13, 13],
-      [-18, 0],
-      [-13, -13],
-      [0, -18],
-      [13, -13],
-      [18, 0],
-    ],
-    // ring -> comms tower
-    [
-      [-17, -5],
-      [-25, -12],
-      [-31, -17],
-    ],
+  /* ---------------- conduits: two semantic networks ----------------
+     POWER (amber dots / warm ribbons): generation → storage → SST → loads
+     DATA  (blue dots / blue ribbons): habitat ring, comms, data centre  */
+  const conduitAmberMat = std("#1a1208", {
+    roughness: 0.4,
+    emissive: new THREE.Color("#ffb53f"),
+    emissiveIntensity: 0.5,
+  });
+
+  type PathDef = { kind: "power" | "data"; pts: [number, number][] };
+  const pathDefs: PathDef[] = [
+    // POWER — PV -> BESS
+    { kind: "power", pts: [[72, 30], [64, 24], [58, 20]] },
+    // POWER — reactor -> BESS
+    { kind: "power", pts: [[72, 6], [64, 11], [57, 15]] },
+    // POWER — BESS -> SST
+    { kind: "power", pts: [[50, 15], [43, 8], [38, 4]] },
+    // POWER — SST -> data centre
+    { kind: "power", pts: [[32, -3], [24, -18], [17, -30], [15, -34]] },
+    // POWER — SST -> habitat ring
+    { kind: "power", pts: [[31, 2], [26, 2], [20, 1]] },
+    // POWER — SST -> charging / landing pad (around the south of the ring)
+    { kind: "power", pts: [[31, -4], [12, -25], [-12, -26], [-30, -16], [-38, -9]] },
+    // DATA — habitat ring loop
+    {
+      kind: "data",
+      pts: [
+        [18, 0],
+        [13, 13],
+        [0, 18],
+        [-13, 13],
+        [-18, 0],
+        [-13, -13],
+        [0, -18],
+        [13, -13],
+        [18, 0],
+      ],
+    },
+    // DATA — ring -> comms tower
+    { kind: "data", pts: [[15, 9], [19, 18], [23, 24]] },
+    // DATA — data centre -> habitat ring
+    { kind: "data", pts: [[12, -32], [6, -26], [2, -21]] },
   ];
 
   type Flow = { samples: Float32Array; nSamples: number; count: number; speed: number };
   const flows: Flow[] = [];
-  const conduitPulses: { mat: THREE.MeshStandardMaterial; phase: number }[] = [];
+  const flowKinds: ("power" | "data")[] = [];
+  const conduitPulses: {
+    mat: THREE.MeshStandardMaterial;
+    phase: number;
+    kind: "power" | "data";
+  }[] = [];
   let totalDots = 0;
   let pathIndex = 0;
   for (const def of pathDefs) {
-    const pts = def.map(([x, z]) => new THREE.Vector3(x, terrainHeight(x, z) + 0.25, z));
+    const pts = def.pts.map(([x, z]) => new THREE.Vector3(x, terrainHeight(x, z) + 0.25, z));
     const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.35);
     const len = curve.getLength();
     const ribbon = track(makeRibbon(curve, 1.1, Math.max(28, Math.floor(len / 1.8)), 0.16));
-    const ribbonMat = track(conduitMat.clone());
-    conduitPulses.push({ mat: ribbonMat, phase: pathIndex * 1.35 });
+    const ribbonMat = track((def.kind === "power" ? conduitAmberMat : conduitMat).clone());
+    conduitPulses.push({ mat: ribbonMat, phase: pathIndex * 1.35, kind: def.kind });
     pathIndex++;
     const conduitMesh = new THREE.Mesh(ribbon, ribbonMat);
     group.add(conduitMesh);
@@ -1040,27 +1100,27 @@ export function buildTown(quality: "high" | "low"): Town {
     });
     const count = Math.max(5, Math.round(len / 3.2));
     flows.push({ samples, nSamples, count, speed: R(0.03, 0.05) });
+    flowKinds.push(def.kind);
     totalDots += count;
   }
 
   const dotPositions = new Float32Array(totalDots * 3);
   const dotColors = new Float32Array(totalDots * 3);
-  const cBlue = new THREE.Color("#2ebcfe");
-  const cAmber = new THREE.Color("#ffc23f");
+  const cBlue = new THREE.Color("#2ebcfe"); // information
+  const cAmber = new THREE.Color("#ffb53f"); // energy
   let di = 0;
-  for (const f of flows) {
+  flows.forEach((f, fi) => {
+    const c = flowKinds[fi] === "power" ? cAmber : cBlue;
     for (let i = 0; i < f.count; i++) {
-      const c = i % 3 === 2 ? cAmber : cBlue;
       dotColors[di * 3] = c.r;
       dotColors[di * 3 + 1] = c.g;
       dotColors[di * 3 + 2] = c.b;
       di++;
     }
-  }
+  });
   const dotGeo = track(new THREE.BufferGeometry());
   dotGeo.setAttribute("position", new THREE.BufferAttribute(dotPositions, 3));
   dotGeo.setAttribute("color", new THREE.BufferAttribute(dotColors, 3));
-  const dotTex = track(makeDotTexture());
   const dotMat = track(
     new THREE.PointsMaterial({
       size: 1.35,
@@ -1103,8 +1163,6 @@ export function buildTown(quality: "high" | "low"): Town {
   group.add(dust);
 
   /* ---------------- sky: stars + Milky Way ---------------- */
-  const glowTex = track(makeGlowTexture());
-
   const starCount = 1400;
   const starPos = new Float32Array(starCount * 3);
   for (let i = 0; i < starCount; i++) {
@@ -1209,7 +1267,7 @@ export function buildTown(quality: "high" | "low"): Town {
   );
   const beaconRed = new THREE.Sprite(beaconRedMat);
   beaconRed.scale.setScalar(3.2);
-  beaconRed.position.set(-32, terrainHeight(-32, -18) + 13.6, -18);
+  beaconRed.position.set(comms.x, terrainHeight(comms.x, comms.z) + 13.6, comms.z);
   group.add(beaconRed);
 
   const beaconBlueMat = track(
@@ -1245,10 +1303,12 @@ export function buildTown(quality: "high" | "low"): Town {
     for (const [material, d, n] of pairColors) {
       material.color.copy(d).lerp(n, mix);
     }
+    conduitAmberMat.color.copy(conduitMat.color);
     for (const p of conduitPulses) {
       p.mat.color.copy(conduitMat.color);
     }
     conduitMat.emissiveIntensity = 0.55 + 0.85 * mix;
+    conduitAmberMat.emissiveIntensity = 0.5 + 0.8 * mix;
     coreMat.emissiveIntensity = 0.9 + 0.7 * mix;
     stripMat.emissiveIntensity = 0.3 + 0.9 * mix;
     solarMat.emissiveIntensity = 0.1 + 0.45 * mix;
@@ -1267,13 +1327,24 @@ export function buildTown(quality: "high" | "low"): Town {
     dust.rotation.y = elapsed * 0.0045;
     dust.position.y = Math.sin(elapsed * 0.12) * 0.6;
 
-    const baseGlow = 0.55 + 0.85 * lastMix;
+    const baseBlue = 0.55 + 0.85 * lastMix;
+    const baseAmber = 0.5 + 0.8 * lastMix;
     for (const p of conduitPulses) {
       const w = 0.5 + 0.5 * Math.sin(elapsed * 1.7 + p.phase);
-      p.mat.emissiveIntensity = baseGlow * (0.75 + 0.45 * w);
+      p.mat.emissiveIntensity =
+        (p.kind === "power" ? baseAmber : baseBlue) * (0.75 + 0.45 * w);
     }
 
     sstRingMat.emissiveIntensity = (0.7 + 0.6 * lastMix) * (0.8 + 0.3 * Math.sin(elapsed * 2.1));
+    interiorGlowMat.emissiveIntensity = 0.8 + 0.5 * lastMix;
+
+    // hologram slowly spins, floats, and breathes above the stage
+    if (holo) {
+      holo.rotation.y = elapsed * 0.3;
+      holo.position.y = holoBaseY + Math.sin(elapsed * 0.9) * 0.12;
+      const sc = 1 + 0.035 * Math.sin(elapsed * 1.7);
+      holo.scale.setScalar(sc);
+    }
 
     const blink = Math.max(0, Math.sin(elapsed * 2.3));
     beaconRedMat.opacity = 0.15 + 0.75 * blink * blink * blink;

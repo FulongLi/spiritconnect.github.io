@@ -20,10 +20,10 @@ const PlaygroundCanvas = dynamic(
 const SECTIONS = 10; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
-const BLACKOUT_START = 0.79; // after we've seen the pedestal inside the dome…
-const BLACKOUT_END = 0.835; // …a brief dark beat…
-const PORTAL_FADE_START = 0.865; // …then the portal materializes on the stage
-const PORTAL_FADE_END = 0.925;
+// No black transition anymore: the camera settles in front of the dome's
+// hologram stage, and the real portal crossfades directly over it.
+const PORTAL_FADE_START = 0.85;
+const PORTAL_FADE_END = 0.92;
 
 type Chapter = {
   start: number;
@@ -46,8 +46,8 @@ const CHAPTERS: Chapter[] = [
     align: "center",
   },
   {
-    start: 0.115,
-    end: 0.235,
+    start: 0.11,
+    end: 0.22,
     kicker: "01 / SOLAR FIELD",
     title: "HARVEST THE SUN",
     sub: "Solar energy begins the loop.",
@@ -55,8 +55,8 @@ const CHAPTERS: Chapter[] = [
     align: "left",
   },
   {
-    start: 0.252,
-    end: 0.3,
+    start: 0.235,
+    end: 0.278,
     kicker: "02 / NUCLEAR POWER CORE",
     title: "POWER BEYOND THE SUN",
     sub: "Some missions cannot depend on sunlight alone.",
@@ -64,8 +64,8 @@ const CHAPTERS: Chapter[] = [
     align: "right",
   },
   {
-    start: 0.315,
-    end: 0.41,
+    start: 0.29,
+    end: 0.385,
     kicker: "03 / ENERGY STORAGE",
     title: "STORE THE LIGHT",
     sub: "Storage gives energy continuity.",
@@ -73,8 +73,8 @@ const CHAPTERS: Chapter[] = [
     align: "left",
   },
   {
-    start: 0.435,
-    end: 0.53,
+    start: 0.405,
+    end: 0.5,
     kicker: "04 / SOLID-STATE TRANSFORMER",
     title: "SHAPE THE GRID",
     sub: "Solid-state transformers form the backbone of advanced energy networks.",
@@ -82,8 +82,8 @@ const CHAPTERS: Chapter[] = [
     align: "right",
   },
   {
-    start: 0.555,
-    end: 0.645,
+    start: 0.515,
+    end: 0.61,
     kicker: "05 / DATA CENTRE",
     title: "TRAIN THE INTELLIGENCE",
     sub: "Inside the data centre, energy becomes computation.",
@@ -91,8 +91,8 @@ const CHAPTERS: Chapter[] = [
     align: "left",
   },
   {
-    start: 0.66,
-    end: 0.715,
+    start: 0.63,
+    end: 0.7,
     kicker: "06 / CLOSE THE LOOP",
     title: "ENERGY POWERS AI. AI DESIGNS BETTER ENERGY.",
     sub: "The loop closes inside the habitat.",
@@ -120,8 +120,6 @@ export default function JourneyExperience() {
   const hintRef = useRef<HTMLDivElement>(null);
   const portalWrapRef = useRef<HTMLDivElement>(null);
   const railDotRef = useRef<HTMLDivElement>(null);
-  const blackoutRef = useRef<HTMLDivElement>(null);
-  const captionRef = useRef<HTMLDivElement>(null);
   const [night, setNight] = useState(false);
   const [portalMounted, setPortalMounted] = useState(false);
   const portalMountedRef = useRef(false);
@@ -174,22 +172,6 @@ export default function JourneyExperience() {
       /* progress rail indicator */
       if (railDotRef.current) {
         railDotRef.current.style.top = `${(p * 100).toFixed(2)}%`;
-      }
-
-      /* fade to the portal's warm black before the handoff */
-      if (blackoutRef.current) {
-        const o = Math.min(
-          1,
-          Math.max(0, (p - BLACKOUT_START) / (BLACKOUT_END - BLACKOUT_START))
-        );
-        blackoutRef.current.style.opacity = o.toFixed(3);
-      }
-
-      /* bridge caption inside the black hold */
-      if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.802) / 0.022));
-        const outO = Math.min(1, Math.max(0, (0.868 - p) / 0.022));
-        captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
       /* portal mount + crossfade */
@@ -475,47 +457,6 @@ export default function JourneyExperience() {
         }}
       >
         SPIRIT CONNECT
-      </div>
-
-      {/* warm-black dip that matches the portal's background */}
-      <div
-        ref={blackoutRef}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9,
-          opacity: 0,
-          pointerEvents: "none",
-          background: "#0e0d0c",
-        }}
-      >
-        {/* a clean cinematic bridge: title only, fades in and out */}
-        <div
-          ref={captionRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: 0,
-            textAlign: "center",
-            padding: "0 24px",
-            pointerEvents: "none",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "var(--font-bebas), sans-serif",
-              fontSize: "clamp(30px, 4.2vw, 54px)",
-              letterSpacing: "0.08em",
-              lineHeight: 1,
-              color: "rgba(240, 246, 255, 0.94)",
-            }}
-          >
-            WELCOME TO SPIRIT CONNECT
-          </div>
-        </div>
       </div>
 
       {/* final destination: the existing hologram portal */}

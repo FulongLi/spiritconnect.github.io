@@ -28,39 +28,41 @@ type Props = {
 // landing pad / charging area beside it) → loads (data centre, habitat)
 // → into the main dome, ending at the holographic pedestal.
 const CAM_POSITIONS: [number, number, number][] = [
-  [0, 165, 250], // 0 opening: in dark space above the lunar surface
-  [80, 48, 120], // 1 descending toward the input zone
-  [112, 9, 64], // 2 arriving over the PV rows
-  [106, 7.5, 42], // 3 slow drift along the panels (PV dwell)
-  [104, 8, 24], // 4 the reactor beside the array (nuclear dwell)
-  [88, 7, 32], // 5 leaving the inputs, containers ahead
-  [76, 5.5, 24], // 6 alongside the battery banks (BESS dwell)
-  [62, 7, 18], // 7 turning toward the SST
-  [45, 5.5, -2], // 8 at the conversion hub (SST dwell, pad behind)
-  [34, 6, -26], // 9 passing the charging area toward the data centre
-  [10, 5, -44], // 10 along the server hall (DC dwell)
-  [-20, 8, 14], // 11 swinging around to face the main dome
-  [-10, 6, 13], // 12 final approach to the shell
-  [-3, 4.6, 6], // 13 crossing the hull into the interior
-  [0, 4.1, 1.6], // 14 settling in front of the pedestal
+  [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
+  [62, 46, 112], // 1 descending toward the input zone
+  [94, 9, 46], // 2 arriving over the PV rows
+  [88, 7.5, 26], // 3 slow drift along the panels (PV dwell)
+  [86, 8, 8], // 4 the reactor beside the array (nuclear dwell)
+  [70, 7, 20], // 5 leaving the inputs, containers ahead
+  [60, 5.5, 12], // 6 alongside the battery banks (BESS dwell)
+  [48, 7, 8], // 7 turning toward the SST
+  [31, 5.5, -8], // 8 at the conversion hub (SST dwell)
+  [24, 6, -26], // 9 down toward the data centre
+  [4, 5, -42], // 10 along the server hall (DC dwell)
+  [-34, 7, -22], // 11 sweeping past the pad, chargers and vehicles (west)
+  [-26, 7, 16], // 12 swinging around to face the main dome
+  [-11, 6, 13.5], // 13 final approach to the shell
+  [-3.5, 4.6, 6.5], // 14 crossing the hull into the interior
+  [0, 4.0, 2.0], // 15 settling in front of the hologram stage
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
-  [0, 85, -40], // mostly black sky, horizon low in frame
-  [95, 3, 52],
-  [96, 2, 50],
-  [95, 2, 46], // PV
-  [92, 5, 16], // reactor
-  [71, 2.5, 30],
-  [70, 2, 30], // BESS
-  [50, 4, 8],
-  [49, 3.5, 7], // SST
-  [15, 2.5, -36],
-  [14, 2, -35], // data centre
+  [0, 38, -20], // the Moon takes at least half the frame
+  [76, 3, 34],
+  [77, 2, 32],
+  [76, 2, 28], // PV
+  [76, 5, 4], // reactor
+  [55, 2.5, 18],
+  [54, 2, 18], // BESS
+  [36, 4, 2],
+  [35, 3.5, 1], // SST
+  [11, 2.5, -34],
+  [10, 2, -33], // data centre
+  [-42, 2, -6], // landing pad / charging / vehicles
   [0, 6, 0], // main dome
-  [0, 5, 0],
-  [0, 3.6, 0], // pedestal
-  [0, 3.2, -0.5],
+  [0, 4.5, 0],
+  [0, 3.5, 0], // hologram stage
+  [0, 3.5, -0.5],
 ];
 
 export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: Props) {
