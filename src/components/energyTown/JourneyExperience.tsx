@@ -30,65 +30,74 @@ type Chapter = {
   end: number;
   kicker: string;
   title: string;
+  sub?: string;
   body: string;
+  note?: string;
   align: "left" | "right" | "center";
 };
 
 const CHAPTERS: Chapter[] = [
   {
     start: 0.0,
-    end: 0.09,
-    kicker: "SPIRIT CONNECT",
-    title: "POWERING HUMANITY'S NEXT HOME",
-    body: "Energy helps humanity enter a Type I civilisation. Scroll to visit the outpost.",
+    end: 0.085,
+    kicker: "SPIRIT CONNECT AIPE LABS",
+    title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
+    sub: "Spirit Connect AIPE Labs builds AI-assisted power electronics tools for the next generation of intelligent energy systems.",
+    body: "A closed loop between power conversion, intelligent computation, and future energy infrastructure.",
     align: "center",
   },
   {
     start: 0.115,
     end: 0.225,
-    kicker: "01 / PV ARRAY",
-    title: "CAPTURE THE SUN",
-    body: "Fourteen days of unfiltered sunlight. Photovoltaic fields harvest every photon that falls on the regolith.",
+    kicker: "01 / SOLAR FIELD",
+    title: "HARVEST THE SUN",
+    sub: "Solar energy begins the loop.",
+    body: "Photovoltaic fields capture the first source of power for future habitats, data centres, and intelligent energy systems.",
     align: "left",
   },
   {
     start: 0.25,
     end: 0.345,
     kicker: "02 / ENERGY STORAGE",
-    title: "HOLD THE LIGHT",
-    body: "Battery banks store the lunar day, ready to carry the outpost through the two-week night.",
+    title: "STORE THE LIGHT",
+    sub: "Storage gives energy continuity.",
+    body: "Battery systems absorb fluctuation, bridge darkness, and turn intermittent generation into dependable power for mission-critical operation.",
     align: "right",
   },
   {
     start: 0.375,
     end: 0.47,
     kicker: "03 / SOLID-STATE TRANSFORMER",
-    title: "SHAPE THE POWER",
-    body: "An AI-designed solid-state transformer converts, regulates, and routes every watt — power electronics, the craft of Spirit Connect AIPE Labs.",
+    title: "SHAPE THE GRID",
+    sub: "Solid-state transformers form the backbone of advanced energy networks.",
+    body: "Wide-bandgap devices, high-frequency magnetics, control, protection, thermal design, and power routing are integrated into one intelligent conversion hub.",
     align: "left",
   },
   {
     start: 0.5,
     end: 0.59,
-    kicker: "04 / DATA CENTER",
-    title: "WHERE ENERGY BECOMES INTELLIGENCE",
-    body: "Clean power feeds the servers; the servers run the AI that designs the grid. The loop closes here.",
+    kicker: "04 / DATA CENTRE",
+    title: "TRAIN THE INTELLIGENCE",
+    sub: "Inside the data centre, energy becomes computation.",
+    body: "Digital twins, converter simulations, device databases, magnetic models, thermal behaviour, and AI design agents learn from the power system — then help design the next one.",
     align: "right",
   },
   {
     start: 0.605,
     end: 0.655,
-    kicker: "05 / THE CORE",
-    title: "POWER THAT NEVER SLEEPS",
-    body: "Beside the habitat, the reactor hums through the two-week night — the backbone behind the batteries.",
+    kicker: "05 / NUCLEAR POWER CORE",
+    title: "POWER BEYOND THE SUN",
+    sub: "Some missions cannot depend on sunlight alone.",
+    body: "Nuclear power cores provide long-duration, high-reliability energy for deep-space operation, shadowed regions, and always-on infrastructure.",
     align: "left",
   },
   {
     start: 0.67,
     end: 0.71,
-    kicker: "06 / ARRIVAL",
-    title: "ENTER THE HABITAT",
-    body: "Through the airlock. The heart of Spirit Connect awaits inside.",
+    kicker: "06 / CLOSE THE LOOP",
+    title: "ENERGY POWERS AI. AI DESIGNS BETTER ENERGY.",
+    sub: "The loop closes inside the habitat.",
+    body: "Spirit Connect AIPE Labs connects power electronics, intelligent modelling, and future energy infrastructure into a self-improving engineering loop.",
     align: "center",
   },
 ];
@@ -179,7 +188,9 @@ export default function JourneyExperience() {
       if (captionRef.current) {
         const inO = Math.min(1, Math.max(0, (p - 0.775) / 0.028));
         const outO = Math.min(1, Math.max(0, (0.885 - p) / 0.028));
-        captionRef.current.style.opacity = (inO * outO).toFixed(3);
+        const o = inO * outO;
+        captionRef.current.style.opacity = o.toFixed(3);
+        captionRef.current.style.pointerEvents = o > 0.5 ? "auto" : "none";
       }
 
       /* portal mount + crossfade */
@@ -364,6 +375,21 @@ export default function JourneyExperience() {
             >
               {c.title}
             </h2>
+            {c.sub && (
+              <p
+                style={{
+                  fontFamily: "var(--font-barlow), sans-serif",
+                  fontSize: "clamp(16px, 1.7vw, 21px)",
+                  fontWeight: 400,
+                  lineHeight: 1.4,
+                  letterSpacing: "0.04em",
+                  margin: "14px 0 0",
+                  color: "rgba(46, 188, 254, 0.92)",
+                }}
+              >
+                {c.sub}
+              </p>
+            )}
             <p
               style={{
                 fontFamily: "var(--font-barlow), sans-serif",
@@ -371,7 +397,7 @@ export default function JourneyExperience() {
                 fontWeight: 300,
                 lineHeight: 1.55,
                 letterSpacing: "0.03em",
-                margin: "16px 0 0",
+                margin: "12px 0 0",
                 opacity: 0.92,
               }}
             >
@@ -498,12 +524,57 @@ export default function JourneyExperience() {
           </div>
           <div
             style={{
-              width: 46,
-              height: 1,
-              background: "rgba(46, 188, 254, 0.6)",
-              marginTop: 4,
+              fontFamily: "var(--font-barlow), sans-serif",
+              fontSize: "clamp(15px, 1.6vw, 19px)",
+              letterSpacing: "0.04em",
+              color: "rgba(46, 188, 254, 0.92)",
+              maxWidth: 620,
             }}
-          />
+          >
+            AI-assisted converter design, modelling, and validation for
+            next-generation power systems.
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-barlow), sans-serif",
+              fontSize: "clamp(13px, 1.3vw, 16px)",
+              fontWeight: 300,
+              lineHeight: 1.55,
+              letterSpacing: "0.03em",
+              color: "rgba(240, 246, 255, 0.8)",
+              maxWidth: 620,
+            }}
+          >
+            We build tools and engineering workflows that connect power
+            electronics expertise, device data, magnetic components, thermal
+            behaviour, converter simulations, and AI-driven optimisation.
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              ["EXPLORE AIPE LABS", "https://fulongli.github.io/Spirit-Connect-AIPE-Labs/"],
+              ["VIEW SERVICES", "/branches/power-labs"],
+              ["CONTACT US", "mailto:info@spiritconnect.co.uk"],
+            ].map(([label, href]) => (
+              <a
+                key={label}
+                href={href}
+                target={href.startsWith("http") ? "_blank" : undefined}
+                rel="noreferrer"
+                style={{
+                  padding: "10px 18px",
+                  border: "1px solid rgba(46, 188, 254, 0.5)",
+                  color: "rgba(240, 246, 255, 0.92)",
+                  fontFamily: "var(--font-ibm-mono), monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.22em",
+                  textDecoration: "none",
+                  background: "rgba(46, 188, 254, 0.08)",
+                }}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 

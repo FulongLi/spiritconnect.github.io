@@ -24,7 +24,7 @@ type Props = {
 // linger there; the flight ends by diving INTO the main dome — the
 // hologram portal then reads as the dome's interior.
 const CAM_POSITIONS: [number, number, number][] = [
-  [0, 115, 185], // 0 aerial overview, Earth above the base
+  [0, 165, 250], // 0 opening: in dark space above the lunar surface
   [62, 44, 118], // 1 descending toward the energy district
   [86, 10, 66], // 2 arriving over the PV rows
   [82, 7.5, 46], // 3 slow drift along the panels (PV dwell)
@@ -42,7 +42,7 @@ const CAM_POSITIONS: [number, number, number][] = [
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
-  [0, 4, 0],
+  [0, 70, -30], // mostly black sky + Earth, horizon low in frame
   [70, 2, 44],
   [72, 1.5, 40],
   [70, 1.5, 34], // PV
