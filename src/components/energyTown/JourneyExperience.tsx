@@ -22,8 +22,8 @@ const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
 const BLACKOUT_START = 0.71; // dome hull fills the frame…
 const BLACKOUT_END = 0.76; // …dark as we cross inside…
-const PORTAL_FADE_START = 0.86; // …then the dome interior lights up: the portal
-const PORTAL_FADE_END = 0.95;
+const PORTAL_FADE_START = 0.875; // …then the dome interior lights up: the portal
+const PORTAL_FADE_END = 0.94;
 
 type Chapter = {
   start: number;
@@ -106,7 +106,9 @@ function fadeWindow(p: number, start: number, end: number) {
   const span = end - start;
   const fade = Math.min(0.035, span * 0.3);
   if (p < start || p > end) return 0;
-  if (p < start + fade) return (p - start) / fade;
+  // the hero chapter is fully visible at the top of the page and only
+  // fades out as the camera descends toward the surface
+  if (start > 0 && p < start + fade) return (p - start) / fade;
   if (p > end - fade) return (end - p) / fade;
   return 1;
 }
@@ -186,11 +188,9 @@ export default function JourneyExperience() {
 
       /* bridge caption inside the black hold */
       if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.775) / 0.028));
-        const outO = Math.min(1, Math.max(0, (0.885 - p) / 0.028));
-        const o = inO * outO;
-        captionRef.current.style.opacity = o.toFixed(3);
-        captionRef.current.style.pointerEvents = o > 0.5 ? "auto" : "none";
+        const inO = Math.min(1, Math.max(0, (p - 0.78) / 0.025));
+        const outO = Math.min(1, Math.max(0, (0.868 - p) / 0.025));
+        captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
       /* portal mount + crossfade */
@@ -486,94 +486,31 @@ export default function JourneyExperience() {
           background: "#0e0d0c",
         }}
       >
+        {/* a clean cinematic bridge: title only, fades in and out */}
         <div
           ref={captionRef}
           style={{
             position: "absolute",
             inset: 0,
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 14,
             opacity: 0,
             textAlign: "center",
             padding: "0 24px",
+            pointerEvents: "none",
           }}
         >
           <div
             style={{
-              fontFamily: "var(--font-ibm-mono), monospace",
-              fontSize: 10,
-              letterSpacing: "0.34em",
-              color: "rgba(46, 188, 254, 0.85)",
-            }}
-          >
-            AIRLOCK SEALED
-          </div>
-          <div
-            style={{
               fontFamily: "var(--font-bebas), sans-serif",
-              fontSize: "clamp(26px, 3.6vw, 44px)",
-              letterSpacing: "0.06em",
+              fontSize: "clamp(30px, 4.2vw, 54px)",
+              letterSpacing: "0.08em",
               lineHeight: 1,
-              color: "rgba(240, 246, 255, 0.92)",
+              color: "rgba(240, 246, 255, 0.94)",
             }}
           >
             WELCOME TO SPIRIT CONNECT
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-barlow), sans-serif",
-              fontSize: "clamp(15px, 1.6vw, 19px)",
-              letterSpacing: "0.04em",
-              color: "rgba(46, 188, 254, 0.92)",
-              maxWidth: 620,
-            }}
-          >
-            AI-assisted converter design, modelling, and validation for
-            next-generation power systems.
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-barlow), sans-serif",
-              fontSize: "clamp(13px, 1.3vw, 16px)",
-              fontWeight: 300,
-              lineHeight: 1.55,
-              letterSpacing: "0.03em",
-              color: "rgba(240, 246, 255, 0.8)",
-              maxWidth: 620,
-            }}
-          >
-            We build tools and engineering workflows that connect power
-            electronics expertise, device data, magnetic components, thermal
-            behaviour, converter simulations, and AI-driven optimisation.
-          </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap", justifyContent: "center" }}>
-            {[
-              ["EXPLORE AIPE LABS", "https://fulongli.github.io/Spirit-Connect-AIPE-Labs/"],
-              ["VIEW SERVICES", "/branches/power-labs"],
-              ["CONTACT US", "mailto:info@spiritconnect.co.uk"],
-            ].map(([label, href]) => (
-              <a
-                key={label}
-                href={href}
-                target={href.startsWith("http") ? "_blank" : undefined}
-                rel="noreferrer"
-                style={{
-                  padding: "10px 18px",
-                  border: "1px solid rgba(46, 188, 254, 0.5)",
-                  color: "rgba(240, 246, 255, 0.92)",
-                  fontFamily: "var(--font-ibm-mono), monospace",
-                  fontSize: 10,
-                  letterSpacing: "0.22em",
-                  textDecoration: "none",
-                  background: "rgba(46, 188, 254, 0.08)",
-                }}
-              >
-                {label}
-              </a>
-            ))}
           </div>
         </div>
       </div>

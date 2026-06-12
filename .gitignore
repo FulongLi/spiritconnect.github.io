@@ -38,3 +38,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# macOS/iCloud duplicate artifacts
+* 2.svg
+* 2.txt
+* 2.html
+static 3/

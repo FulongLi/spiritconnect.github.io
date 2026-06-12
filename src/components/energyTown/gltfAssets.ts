@@ -43,15 +43,8 @@ const SPECS: (GroundSpec | OrbitSpec)[] = [
   },
   // NASA Crawler — heavy transport, staged near the data center
   { kind: "ground", urls: ["/glb/crawler.glb"], x: 24, z: -34, rotY: 0.9, footprint: 11 },
-  // CYGNSS satellite — slow orbit overhead
-  {
-    kind: "orbit",
-    urls: ["/glb/cygnss.glb"],
-    footprint: 8,
-    radius: 165,
-    height: 100,
-    speed: 0.022,
-  },
+  // (CYGNSS satellite removed: it read as a strange object in the
+  //  opening dark-space shot. Asset kept in public/glb for future use.)
 ];
 
 const NIGHT_TINT = new THREE.Color("#5d6b85");
