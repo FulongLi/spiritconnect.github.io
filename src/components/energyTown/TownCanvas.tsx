@@ -27,42 +27,51 @@ type Props = {
 // inputs (PV + reactor) → storage (BESS) → processing (SST, with the
 // landing pad / charging area beside it) → loads (data centre, habitat)
 // → into the main dome, ending at the holographic pedestal.
+// Paired waypoints at every module make the camera linger there (slow,
+// steady dwell) instead of sweeping past. Targets barely move during a
+// dwell, which keeps the framing stable and avoids motion sickness.
 const CAM_POSITIONS: [number, number, number][] = [
   [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
-  [62, 46, 112], // 1 descending toward the input zone
-  [94, 9, 46], // 2 arriving over the PV rows
-  [88, 7.5, 26], // 3 slow drift along the panels (PV dwell)
-  [86, 8, 8], // 4 the reactor beside the array (nuclear dwell)
-  [70, 7, 20], // 5 leaving the inputs, containers ahead
-  [60, 5.5, 12], // 6 alongside the battery banks (BESS dwell)
-  [48, 7, 8], // 7 turning toward the SST
-  [31, 5.5, -8], // 8 at the conversion hub (SST dwell)
-  [24, 6, -26], // 9 down toward the data centre
-  [4, 5, -42], // 10 along the server hall (DC dwell)
-  [-34, 7, -22], // 11 sweeping past the pad, chargers and vehicles (west)
-  [-26, 7, 16], // 12 swinging around to face the main dome
-  [-11, 6, 13.5], // 13 final approach to the shell
-  [-3.5, 4.6, 6.5], // 14 crossing the hull into the interior
-  [0, 4.0, 2.0], // 15 settling in front of the hologram stage
+  [60, 48, 115], // 1 descending toward the input zone
+  [98, 9, 68], // 2 arriving over the PV rows
+  [93, 7.5, 52], // 3 PV dwell (slow drift)
+  [90, 7, 42], // 4 PV dwell end
+  [94, 8, 24], // 5 over to the reactor
+  [90, 7.5, 16], // 6 reactor dwell
+  [72, 6.5, 30], // 7 across to the battery banks
+  [64, 5.5, 24], // 8 BESS dwell
+  [48, 6.5, 10], // 9 toward the SST
+  [32, 5.5, -7], // 10 SST dwell
+  [26, 6, -28], // 11 down toward the data centre
+  [8, 5, -48], // 12 DC dwell
+  [-24, 7, -18], // 13 sweeping west toward the pad and vehicles
+  [-44, 6.5, 0], // 14 pad / charging dwell
+  [-30, 7, 22], // 15 swinging around to face the main dome
+  [-12, 6, 14], // 16 final approach to the shell
+  [-3.5, 4.8, 6.5], // 17 crossing the hull — dark inside
+  [0, 4.5, 2], // 18 inside the dome
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
   [0, 38, -20], // the Moon takes at least half the frame
-  [76, 3, 34],
-  [77, 2, 32],
-  [76, 2, 28], // PV
-  [76, 5, 4], // reactor
-  [55, 2.5, 18],
-  [54, 2, 18], // BESS
-  [36, 4, 2],
+  [88, 3, 54],
+  [89, 2, 52],
+  [88, 2, 50], // PV
+  [87, 2, 49],
+  [92, 4, 11],
+  [91, 4, 10], // reactor
+  [59, 2.5, 26],
+  [58, 2, 26], // BESS
+  [37, 3.5, 2],
   [35, 3.5, 1], // SST
-  [11, 2.5, -34],
-  [10, 2, -33], // data centre
-  [-42, 2, -6], // landing pad / charging / vehicles
+  [17, 2.5, -40],
+  [16, 2, -41], // data centre
+  [-50, 2.5, 14],
+  [-54, 2.5, 15], // pad / charging / vehicles
   [0, 6, 0], // main dome
-  [0, 4.5, 0],
-  [0, 3.5, 0], // hologram stage
-  [0, 3.5, -0.5],
+  [0, 5, 0],
+  [0, 4, 0],
+  [0, 4.5, -2],
 ];
 
 export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: Props) {
@@ -217,7 +226,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
 
       /* damped scroll progress */
       const target = Math.min(progressRef.current, 1);
-      smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 2.6);
+      smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 2.2);
 
       /* theme lerp toward target */
       const themeTarget = themeRef.current;
@@ -254,17 +263,17 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       const eased = t; // curve itself is smooth; damping adds the easing feel
       posCurve.getPoint(eased, camPos);
       tgtCurve.getPoint(eased, camTgt);
-      // gentle idle drift so the scene never feels frozen
-      camPos.x += Math.sin(elapsed * 0.23) * 0.6;
-      camPos.y += Math.sin(elapsed * 0.31) * 0.4;
+      // very gentle idle drift — kept tiny to avoid motion sickness
+      camPos.x += Math.sin(elapsed * 0.16) * 0.22;
+      camPos.y += Math.sin(elapsed * 0.21) * 0.14;
       camera.position.copy(camPos);
       camera.lookAt(camTgt);
 
       // parallax: shift in camera space after orientation is set
       smx += (mx - smx) * Math.min(1, dt * 2.2);
       smy += (my - smy) * Math.min(1, dt * 2.2);
-      camera.translateX(smx * 1.7);
-      camera.translateY(-smy * 0.95);
+      camera.translateX(smx * 0.8);
+      camera.translateY(-smy * 0.45);
 
       town.update(dt, elapsed);
       fleet.update(dt, elapsed);

@@ -17,13 +17,13 @@ const PlaygroundCanvas = dynamic(
 /* ------------------------------------------------------------------ */
 /* Scroll layout                                                       */
 /* ------------------------------------------------------------------ */
-const SECTIONS = 10; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
+const SECTIONS = 12; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
-// No black transition anymore: the camera settles in front of the dome's
-// hologram stage, and the real portal crossfades directly over it.
-const PORTAL_FADE_START = 0.85;
-const PORTAL_FADE_END = 0.92;
+const BLACKOUT_START = 0.755; // crossing the dome hull…
+const BLACKOUT_END = 0.8; // …dark inside…
+const PORTAL_FADE_START = 0.885; // …then the portal emerges
+const PORTAL_FADE_END = 0.945;
 
 type Chapter = {
   start: number;
@@ -46,8 +46,8 @@ const CHAPTERS: Chapter[] = [
     align: "center",
   },
   {
-    start: 0.11,
-    end: 0.22,
+    start: 0.1,
+    end: 0.21,
     kicker: "01 / SOLAR FIELD",
     title: "HARVEST THE SUN",
     sub: "Solar energy begins the loop.",
@@ -56,7 +56,7 @@ const CHAPTERS: Chapter[] = [
   },
   {
     start: 0.235,
-    end: 0.278,
+    end: 0.305,
     kicker: "02 / NUCLEAR POWER CORE",
     title: "POWER BEYOND THE SUN",
     sub: "Some missions cannot depend on sunlight alone.",
@@ -64,8 +64,8 @@ const CHAPTERS: Chapter[] = [
     align: "right",
   },
   {
-    start: 0.29,
-    end: 0.385,
+    start: 0.32,
+    end: 0.4,
     kicker: "03 / ENERGY STORAGE",
     title: "STORE THE LIGHT",
     sub: "Storage gives energy continuity.",
@@ -73,8 +73,8 @@ const CHAPTERS: Chapter[] = [
     align: "left",
   },
   {
-    start: 0.405,
-    end: 0.5,
+    start: 0.415,
+    end: 0.495,
     kicker: "04 / SOLID-STATE TRANSFORMER",
     title: "SHAPE THE GRID",
     sub: "Solid-state transformers form the backbone of advanced energy networks.",
@@ -82,8 +82,8 @@ const CHAPTERS: Chapter[] = [
     align: "right",
   },
   {
-    start: 0.515,
-    end: 0.61,
+    start: 0.505,
+    end: 0.585,
     kicker: "05 / DATA CENTRE",
     title: "TRAIN THE INTELLIGENCE",
     sub: "Inside the data centre, energy becomes computation.",
@@ -91,8 +91,8 @@ const CHAPTERS: Chapter[] = [
     align: "left",
   },
   {
-    start: 0.63,
-    end: 0.7,
+    start: 0.6,
+    end: 0.68,
     kicker: "06 / CLOSE THE LOOP",
     title: "ENERGY POWERS AI. AI DESIGNS BETTER ENERGY.",
     sub: "The loop closes inside the habitat.",
@@ -120,6 +120,8 @@ export default function JourneyExperience() {
   const hintRef = useRef<HTMLDivElement>(null);
   const portalWrapRef = useRef<HTMLDivElement>(null);
   const railDotRef = useRef<HTMLDivElement>(null);
+  const blackoutRef = useRef<HTMLDivElement>(null);
+  const captionRef = useRef<HTMLDivElement>(null);
   const [night, setNight] = useState(false);
   const [portalMounted, setPortalMounted] = useState(false);
   const portalMountedRef = useRef(false);
@@ -172,6 +174,22 @@ export default function JourneyExperience() {
       /* progress rail indicator */
       if (railDotRef.current) {
         railDotRef.current.style.top = `${(p * 100).toFixed(2)}%`;
+      }
+
+      /* dark beat while crossing the hull */
+      if (blackoutRef.current) {
+        const o = Math.min(
+          1,
+          Math.max(0, (p - BLACKOUT_START) / (BLACKOUT_END - BLACKOUT_START))
+        );
+        blackoutRef.current.style.opacity = o.toFixed(3);
+      }
+
+      /* WELCOME caption inside the dark beat */
+      if (captionRef.current) {
+        const inO = Math.min(1, Math.max(0, (p - 0.81) / 0.025));
+        const outO = Math.min(1, Math.max(0, (0.878 - p) / 0.025));
+        captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
       /* portal mount + crossfade */
@@ -457,6 +475,46 @@ export default function JourneyExperience() {
         }}
       >
         SPIRIT CONNECT
+      </div>
+
+      {/* dark beat + WELCOME caption */}
+      <div
+        ref={blackoutRef}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9,
+          opacity: 0,
+          pointerEvents: "none",
+          background: "#0e0d0c",
+        }}
+      >
+        <div
+          ref={captionRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: 0,
+            textAlign: "center",
+            padding: "0 24px",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-bebas), sans-serif",
+              fontSize: "clamp(30px, 4.2vw, 54px)",
+              letterSpacing: "0.08em",
+              lineHeight: 1,
+              color: "rgba(240, 246, 255, 0.94)",
+            }}
+          >
+            WELCOME TO SPIRIT CONNECT
+          </div>
+        </div>
       </div>
 
       {/* final destination: the existing hologram portal */}

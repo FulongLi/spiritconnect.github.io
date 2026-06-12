@@ -31,14 +31,14 @@ function smoothstep(a: number, b: number, x: number) {
 
 /* ---------------- key sites (flattened ground, no craters) --------- */
 const SITES: [number, number][] = [
-  [76, 32], // PV array
-  [76, 4], // reactor
-  [54, 18], // BESS
+  [88, 52], // PV array (lower right, away from storage/nuclear)
+  [92, 10], // reactor
+  [58, 26], // BESS
   [36, 2], // SST
-  [-42, -6], // landing pad + charging + vehicles (west side)
-  [14, -36], // data centre
-  [-20, 26], // HDU
-  [24, 26], // comms tower
+  [-56, 16], // landing pad + charging + vehicles (lower left, spaced out)
+  [16, -42], // data centre
+  [-26, 34], // HDU
+  [30, 32], // comms tower
 ];
 
 function siteMask(x: number, z: number) {
@@ -400,7 +400,6 @@ export function buildTown(quality: "high" | "low"): Town {
     emissiveIntensity: 0.3,
   });
   const goldMat = std("#c9a86a", { roughness: 0.35, metalness: 0.6 });
-  const floorMat = std("#1a2230", { roughness: 0.8, metalness: 0.1, flatShading: false });
   const glowTex = track(makeGlowTexture());
   const dotTex = track(makeDotTexture());
 
@@ -565,125 +564,11 @@ export function buildTown(quality: "high" | "low"): Town {
     addTube(0, 0, n.x, n.z);
   }
 
-  /* ----- main dome interior: smooth stage + holographic replica -----
-     Everything in here is smooth-shaded (no faceted boxes); the stage
-     blends into the floor and a particle hologram floats above it,
-     echoing the WebGPU portal that takes over at the end. */
-  const interiorGlowMat = std("#10161f", {
-    roughness: 0.35,
-    flatShading: false,
-    emissive: new THREE.Color("#2ebcfe"),
-    emissiveIntensity: 0.8,
-  });
-  const stageMat = std("#33415c", { roughness: 0.35, metalness: 0.3, flatShading: false });
-  let holo: THREE.Points | null = null;
-  let holoBaseY = 0;
-  {
-    const gy = terrainHeight(0, 0);
-    const floor = new THREE.Mesh(track(new THREE.CircleGeometry(13.4, 64)), floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, gy + 0.16, 0);
-    group.add(floor);
-    // concentric floor light rings (smooth)
-    for (const fr of [5, 8.5, 11.4]) {
-      const fring = new THREE.Mesh(
-        track(new THREE.TorusGeometry(fr, 0.055, 12, 80)),
-        interiorGlowMat
-      );
-      fring.rotation.x = Math.PI / 2;
-      fring.position.set(0, gy + 0.2, 0);
-      group.add(fring);
-    }
-    // smooth stage: low mound blended into the floor with a rounded lip
-    const stage = new THREE.Mesh(
-      track(new THREE.CylinderGeometry(2.7, 3.5, 0.85, 64)),
-      stageMat
-    );
-    stage.position.set(0, gy + 0.58, 0);
-    group.add(stage);
-    const lip = new THREE.Mesh(
-      track(new THREE.TorusGeometry(3.05, 0.28, 18, 72)),
-      stageMat
-    );
-    lip.rotation.x = Math.PI / 2;
-    lip.position.set(0, gy + 0.32, 0);
-    group.add(lip);
-    const stageRing = new THREE.Mesh(
-      track(new THREE.TorusGeometry(2.1, 0.09, 12, 72)),
-      interiorGlowMat
-    );
-    stageRing.rotation.x = Math.PI / 2;
-    stageRing.position.set(0, gy + 1.04, 0);
-    group.add(stageRing);
-    // soft light shaft
-    const beamMat = track(
-      new THREE.MeshBasicMaterial({
-        color: "#2ebcfe",
-        transparent: true,
-        opacity: 0.09,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      })
-    );
-    const beam = new THREE.Mesh(
-      track(new THREE.CylinderGeometry(0.7, 2.0, 8.0, 32, 1, true)),
-      beamMat
-    );
-    beam.position.set(0, gy + 5.1, 0);
-    group.add(beam);
-
-    // particle hologram, in the spirit of the portal's WebGPU stage
-    const holoCount = quality === "high" ? 15000 : 7000;
-    const hp = new Float32Array(holoCount * 3);
-    for (let i = 0; i < holoCount; i++) {
-      // random direction on a sphere, mostly shell with a wispy core
-      const u = rand() * 2 - 1;
-      const a = rand() * Math.PI * 2;
-      const sq = Math.sqrt(1 - u * u);
-      let rr = 1.5 * (0.9 + rand() * 0.2);
-      if (rand() < 0.18) rr *= rand() * 0.6;
-      hp[i * 3] = sq * Math.cos(a) * rr;
-      hp[i * 3 + 1] = u * rr * 1.08;
-      hp[i * 3 + 2] = sq * Math.sin(a) * rr;
-    }
-    const holoGeo = track(new THREE.BufferGeometry());
-    holoGeo.setAttribute("position", new THREE.BufferAttribute(hp, 3));
-    const holoMat = track(
-      new THREE.PointsMaterial({
-        color: "#7fd4ff",
-        size: 0.05,
-        map: dotTex,
-        transparent: true,
-        opacity: 0.85,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        sizeAttenuation: true,
-      })
-    );
-    holo = new THREE.Points(holoGeo, holoMat);
-    holoBaseY = gy + 3.5;
-    holo.position.set(0, holoBaseY, 0);
-    holo.frustumCulled = false;
-    group.add(holo);
-    const holoGlowMat = track(
-      new THREE.SpriteMaterial({
-        map: glowTex,
-        color: "#5fc6ff",
-        transparent: true,
-        opacity: 0.45,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      })
-    );
-    const holoGlow = new THREE.Sprite(holoGlowMat);
-    holoGlow.scale.setScalar(6.5);
-    holoGlow.position.set(0, holoBaseY, 0);
-    group.add(holoGlow);
-  }
+  /* (dome interior stage removed — the handoff to the portal happens
+     through a brief dark beat with the WELCOME caption instead) */
 
   /* ================== INPUTS: PV array + reactor =================== */
-  const solarCenter = { x: 76, z: 32 };
+  const solarCenter = { x: 88, z: 52 };
   const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
   const panelPlacements: THREE.Matrix4[] = [];
   const legPlacements: THREE.Matrix4[] = [];
@@ -724,7 +609,7 @@ export function buildTown(quality: "high" | "low"): Town {
   group.add(panelMesh, legMesh);
 
   /* ----- nuclear reactor (detailed) ----- */
-  const reactor = { x: 76, z: 4 };
+  const reactor = { x: 92, z: 10 };
   {
     const gy = terrainHeight(reactor.x, reactor.z);
     const X = reactor.x;
@@ -804,7 +689,7 @@ export function buildTown(quality: "high" | "low"): Town {
     emissive: new THREE.Color("#2ebcfe"),
     emissiveIntensity: 0.8,
   });
-  const bessCenter = { x: 54, z: 18 };
+  const bessCenter = { x: 58, z: 26 };
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 3; col++) {
       const bx = bessCenter.x - 6 + col * 6 + (row % 2) * 1.2;
@@ -876,7 +761,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ----- landing pad (level, never sunken) + detailed lander ----- */
-  const pad = { x: -42, z: -6 };
+  const pad = { x: -56, z: 16 };
   let padTop = 0;
   {
     // sample the rim so the pad always clears the local terrain
@@ -978,7 +863,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ================== LOAD: data centre ============================ */
-  const dcCenter = { x: 14, z: -36 };
+  const dcCenter = { x: 16, z: -42 };
   {
     const rot = 0.3;
     const gy = terrainHeight(dcCenter.x, dcCenter.z);
@@ -1010,7 +895,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ---------------- comms tower ---------------- */
-  const comms = { x: 24, z: 26 };
+  const comms = { x: 30, z: 32 };
   {
     const gy = terrainHeight(comms.x, comms.z);
     const mast = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.3, 13, 6)), shellDarkMat);
@@ -1037,17 +922,17 @@ export function buildTown(quality: "high" | "low"): Town {
   type PathDef = { kind: "power" | "data"; pts: [number, number][] };
   const pathDefs: PathDef[] = [
     // POWER — PV -> BESS
-    { kind: "power", pts: [[72, 30], [64, 24], [58, 20]] },
+    { kind: "power", pts: [[84, 48], [72, 38], [62, 30]] },
     // POWER — reactor -> BESS
-    { kind: "power", pts: [[72, 6], [64, 11], [57, 15]] },
+    { kind: "power", pts: [[88, 12], [74, 18], [63, 23]] },
     // POWER — BESS -> SST
-    { kind: "power", pts: [[50, 15], [43, 8], [38, 4]] },
+    { kind: "power", pts: [[54, 22], [45, 12], [39, 5]] },
     // POWER — SST -> data centre
-    { kind: "power", pts: [[32, -3], [24, -18], [17, -30], [15, -34]] },
+    { kind: "power", pts: [[32, -3], [25, -20], [19, -36], [17, -40]] },
     // POWER — SST -> habitat ring
     { kind: "power", pts: [[31, 2], [26, 2], [20, 1]] },
     // POWER — SST -> charging / landing pad (around the south of the ring)
-    { kind: "power", pts: [[31, -4], [12, -25], [-12, -26], [-30, -16], [-38, -9]] },
+    { kind: "power", pts: [[30, -3], [8, -24], [-18, -24], [-40, -8], [-50, 8], [-52, 12]] },
     // DATA — habitat ring loop
     {
       kind: "data",
@@ -1064,9 +949,9 @@ export function buildTown(quality: "high" | "low"): Town {
       ],
     },
     // DATA — ring -> comms tower
-    { kind: "data", pts: [[15, 9], [19, 18], [23, 24]] },
+    { kind: "data", pts: [[15, 9], [22, 22], [28, 29]] },
     // DATA — data centre -> habitat ring
-    { kind: "data", pts: [[12, -32], [6, -26], [2, -21]] },
+    { kind: "data", pts: [[14, -38], [7, -28], [2, -21]] },
   ];
 
   type Flow = { samples: Float32Array; nSamples: number; count: number; speed: number };
@@ -1293,7 +1178,6 @@ export function buildTown(quality: "high" | "low"): Town {
     [solarMat, "#ffffff", "#7088ad"],
     [conduitMat, "#10161f", "#0b1018"],
     [goldMat, "#c9a86a", "#5d5038"],
-    [floorMat, "#1a2230", "#10151f"],
   ];
   const pairColors = themePairs.map(
     ([mat, d, n]) => [mat, new THREE.Color(d), new THREE.Color(n)] as const
@@ -1336,15 +1220,6 @@ export function buildTown(quality: "high" | "low"): Town {
     }
 
     sstRingMat.emissiveIntensity = (0.7 + 0.6 * lastMix) * (0.8 + 0.3 * Math.sin(elapsed * 2.1));
-    interiorGlowMat.emissiveIntensity = 0.8 + 0.5 * lastMix;
-
-    // hologram slowly spins, floats, and breathes above the stage
-    if (holo) {
-      holo.rotation.y = elapsed * 0.3;
-      holo.position.y = holoBaseY + Math.sin(elapsed * 0.9) * 0.12;
-      const sc = 1 + 0.035 * Math.sin(elapsed * 1.7);
-      holo.scale.setScalar(sc);
-    }
 
     const blink = Math.max(0, Math.sin(elapsed * 2.3));
     beaconRedMat.opacity = 0.15 + 0.75 * blink * blink * blink;
