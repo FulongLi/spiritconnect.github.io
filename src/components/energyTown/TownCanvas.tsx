@@ -33,19 +33,22 @@ type Props = {
 // Simple, steady camera language: one continuous sweep with gentle turns
 // and NO direction reversals. The west leg flies past the pads and then
 // keeps moving forward (east) straight into the main dome.
+// One continuous north→south arc down the input fan (PV → reactor →
+// BESS), into the SST hub, on to the data centre, a west glide past the
+// pads, then straight ahead into the main dome. No direction reversals.
 const CAM_POSITIONS: [number, number, number][] = [
   [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
-  [60, 48, 115], // 1 descending toward the input zone
-  [98, 9, 68], // 2 arriving over the PV rows
-  [93, 7.5, 52], // 3 PV dwell (slow drift)
-  [90, 7, 42], // 4 PV dwell end
-  [96, 8, 26], // 5 over to the reactor
-  [91, 7.5, 17], // 6 reactor dwell
-  [74, 6.5, 32], // 7 across to the battery banks
-  [66, 5.5, 26], // 8 BESS dwell
-  [58, 6.5, 10], // 9 toward the SST
-  [43, 5.5, -12], // 10 SST dwell
-  [32, 6, -32], // 11 down toward the data centre
+  [56, 48, 112], // 1 descending toward the input fan
+  [94, 9, 60], // 2 arriving over the PV rows
+  [89, 7.5, 47], // 3 PV dwell (slow drift)
+  [87, 7, 40], // 4 PV dwell end
+  [103, 8, 16], // 5 down the fan to the reactor
+  [99, 7.5, 7], // 6 reactor dwell
+  [92, 6.5, -20], // 7 continuing down to the battery banks
+  [85, 5.5, -27], // 8 BESS dwell
+  [64, 6.5, -14], // 9 converging on the SST hub
+  [52, 5.5, -13], // 10 SST dwell
+  [34, 6, -34], // 11 on toward the data centre
   [12, 5, -50], // 12 DC dwell
   [-30, 7, -30], // 13 gliding west, pads coming into view
   [-66, 7.5, -10], // 14 pad / charging dwell (looking over the pads)
@@ -57,16 +60,16 @@ const CAM_POSITIONS: [number, number, number][] = [
 
 const CAM_TARGETS: [number, number, number][] = [
   [0, 38, -20], // the Moon takes at least half the frame
-  [88, 3, 54],
-  [89, 2, 52],
-  [88, 2, 50], // PV
-  [87, 2, 49],
-  [92, 4, 11],
-  [91, 4, 10], // reactor
-  [60, 2.5, 27],
-  [59, 2, 26], // BESS
-  [49, 3.5, -1],
-  [48, 3.5, -2], // SST
+  [76, 3, 40],
+  [77, 2, 38],
+  [76, 2, 36], // PV
+  [75, 2, 35],
+  [91, 4, 1],
+  [90, 4, 0], // reactor
+  [76, 2.5, -30],
+  [75, 2, -31], // BESS
+  [45, 3.5, 1],
+  [44, 3.5, 0], // SST hub
   [19, 2.5, -40],
   [17, 2, -42], // data centre
   [-46, 2.5, 4],

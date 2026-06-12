@@ -31,10 +31,10 @@ function smoothstep(a: number, b: number, x: number) {
 
 /* ---------------- key sites (flattened ground, no craters) --------- */
 const SITES: [number, number][] = [
-  [88, 52], // PV array (lower right, away from storage/nuclear)
-  [92, 10], // reactor
-  [58, 26], // BESS
-  [48, -2], // SST
+  [76, 38], // PV array (top of the fan)
+  [90, 0], // reactor (middle of the fan)
+  [74, -32], // BESS (bottom of the fan)
+  [44, 0], // SST — the hub the fan converges on
   [-58, 12], // landing pad A
   [-44, 28], // landing pad B
   [-38, 10], // charging stations + vehicles
@@ -571,7 +571,7 @@ export function buildTown(quality: "high" | "low"): Town {
      through a brief dark beat with the WELCOME caption instead) */
 
   /* ================== INPUTS: PV array + reactor =================== */
-  const solarCenter = { x: 88, z: 52 };
+  const solarCenter = { x: 76, z: 38 };
   const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
   const panelPlacements: THREE.Matrix4[] = [];
   const legPlacements: THREE.Matrix4[] = [];
@@ -612,7 +612,7 @@ export function buildTown(quality: "high" | "low"): Town {
   group.add(panelMesh, legMesh);
 
   /* ----- nuclear reactor (detailed) ----- */
-  const reactor = { x: 92, z: 10 };
+  const reactor = { x: 90, z: 0 };
   {
     const gy = terrainHeight(reactor.x, reactor.z);
     const X = reactor.x;
@@ -692,7 +692,7 @@ export function buildTown(quality: "high" | "low"): Town {
     emissive: new THREE.Color("#2ebcfe"),
     emissiveIntensity: 0.8,
   });
-  const bessCenter = { x: 58, z: 26 };
+  const bessCenter = { x: 74, z: -32 };
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 3; col++) {
       const bx = bessCenter.x - 6 + col * 6 + (row % 2) * 1.2;
@@ -715,7 +715,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ================== PROCESS: SST station ========================= */
-  const sstCenter = { x: 48, z: -2 };
+  const sstCenter = { x: 44, z: 0 };
   const sstRingMat = std("#1a1410", {
     roughness: 0.35,
     emissive: new THREE.Color("#ffc23f"),
@@ -935,40 +935,54 @@ export function buildTown(quality: "high" | "low"): Town {
     emissiveIntensity: 0.5,
   });
 
-  type PathDef = { kind: "power" | "data"; pts: [number, number][] };
-  const pathDefs: PathDef[] = [
-    // POWER — PV -> BESS
-    { kind: "power", pts: [[84, 48], [72, 38], [62, 30]] },
-    // POWER — reactor -> BESS
-    { kind: "power", pts: [[88, 12], [74, 18], [63, 23]] },
-    // POWER — BESS -> SST
-    { kind: "power", pts: [[54, 22], [50, 12], [49, 3]] },
-    // POWER — SST -> data centre
-    { kind: "power", pts: [[44, -7], [32, -22], [22, -36], [18, -41]] },
-    // POWER — SST -> habitat ring
-    { kind: "power", pts: [[42, -2], [32, 0], [20, 1]] },
-    // POWER — SST -> charging / landing pads (around the south of the ring)
-    { kind: "power", pts: [[42, -6], [16, -24], [-14, -24], [-40, -8], [-50, 4], [-54, 8]] },
-    // DATA — habitat ring loop
-    {
-      kind: "data",
-      pts: [
-        [18, 0],
-        [13, 13],
-        [0, 18],
-        [-13, 13],
-        [-18, 0],
-        [-13, -13],
-        [0, -18],
-        [13, -13],
-        [18, 0],
-      ],
-    },
-    // DATA — ring -> comms tower
-    { kind: "data", pts: [[15, 9], [22, 22], [28, 29]] },
-    // DATA — data centre -> habitat ring
-    { kind: "data", pts: [[14, -38], [7, -28], [2, -21]] },
+  /* Every link in the base carries a TWIN pair of lines:
+     an amber ENERGY line and, running beside it, a blue DATA line
+     (data dots flow in the opposite direction — information returns). */
+  const LINKS: [number, number][][] = [
+    // the fan: PV / reactor / BESS each feed the SST hub directly
+    [[72, 34], [60, 22], [50, 6]], // PV -> SST
+    [[85, 1], [70, 1], [52, 1]], // reactor -> SST
+    [[70, -28], [58, -16], [49, -5]], // BESS -> SST
+    // SST outputs
+    [[40, -7], [30, -24], [20, -38]], // SST -> data centre
+    [[39, 2], [30, 2], [20, 1]], // SST -> habitat ring
+    [[38, -4], [12, -24], [-16, -24], [-40, -8], [-50, 4], [-54, 8]], // SST -> pad A / chargers
+    [[-38, 12], [-41, 19], [-43, 25]], // chargers -> pad B
+    // habitat ring loop
+    [
+      [18, 0],
+      [13, 13],
+      [0, 18],
+      [-13, 13],
+      [-18, 0],
+      [-13, -13],
+      [0, -18],
+      [13, -13],
+      [18, 0],
+    ],
+    [[15, 9], [22, 22], [28, 29]], // ring -> comms tower
+    [[14, -38], [7, -28], [2, -21]], // data centre -> ring
+    [[-16, 12], [-21, 22], [-24, 30]], // ring -> HDU
   ];
+
+  /** shift a polyline sideways so the twin lines run in parallel */
+  function offsetPath(pts: [number, number][], d: number): [number, number][] {
+    const n = pts.length;
+    return pts.map((p, i) => {
+      const a = pts[Math.max(0, i - 1)];
+      const b = pts[Math.min(n - 1, i + 1)];
+      const dx = b[0] - a[0];
+      const dz = b[1] - a[1];
+      const L = Math.hypot(dx, dz) || 1;
+      return [p[0] - (dz / L) * d, p[1] + (dx / L) * d] as [number, number];
+    });
+  }
+
+  type PathDef = { kind: "power" | "data"; pts: [number, number][] };
+  const pathDefs: PathDef[] = LINKS.flatMap((pts) => [
+    { kind: "power" as const, pts: offsetPath(pts, 0.85) },
+    { kind: "data" as const, pts: offsetPath(pts, -0.85) },
+  ]);
 
   type Flow = { samples: Float32Array; nSamples: number; count: number; speed: number };
   const flows: Flow[] = [];
@@ -984,7 +998,7 @@ export function buildTown(quality: "high" | "low"): Town {
     const pts = def.pts.map(([x, z]) => new THREE.Vector3(x, terrainHeight(x, z) + 0.25, z));
     const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.35);
     const len = curve.getLength();
-    const ribbon = track(makeRibbon(curve, 1.1, Math.max(28, Math.floor(len / 1.8)), 0.16));
+    const ribbon = track(makeRibbon(curve, 0.85, Math.max(28, Math.floor(len / 1.8)), 0.16));
     const ribbonMat = track((def.kind === "power" ? conduitAmberMat : conduitMat).clone());
     conduitPulses.push({ mat: ribbonMat, phase: pathIndex * 1.35, kind: def.kind });
     pathIndex++;
@@ -1245,7 +1259,9 @@ export function buildTown(quality: "high" | "low"): Town {
     let idx = 0;
     for (let fi = 0; fi < flows.length; fi++) {
       const f = flows[fi];
-      flowOffsets[fi] = (flowOffsets[fi] + dt * f.speed) % 1;
+      // energy flows outward; data flows back the other way
+      const dir = flowKinds[fi] === "data" ? -1 : 1;
+      flowOffsets[fi] = (((flowOffsets[fi] + dt * f.speed * dir) % 1) + 1) % 1;
       for (let i = 0; i < f.count; i++) {
         const t = (i / f.count + flowOffsets[fi]) % 1;
         const fIdx = t * (f.nSamples - 1);
