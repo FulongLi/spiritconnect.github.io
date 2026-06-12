@@ -37,7 +37,7 @@ const SITES: [number, number][] = [
   [44, 0], // SST — the hub the fan converges on
   [-58, 12], // landing pad A
   [-44, 28], // landing pad B
-  [-38, 10], // charging stations + vehicles
+  [-42, 10], // charging stations + vehicles
   [16, -42], // data centre
   [-26, 34], // HDU
   [30, 32], // comms tower
@@ -429,27 +429,21 @@ export function buildTown(quality: "high" | "low"): Town {
   terrain.receiveShadow = shadows;
   group.add(terrain);
 
-  /* ================== LOADS: habitat ring (closed loop) =========== */
+  /* ================== LOADS: habitat — hexagon layout ==============
+     One central main dome, six SECONDARY DOMES at the vertices of a
+     regular hexagon, spokes from the centre to every dome, and
+     perimeter tubes closing the hexagon — exactly like the sketch. */
   type Dome = { x: number; z: number; r: number };
-  const RING_R = 21;
-  const ringNodes: { x: number; z: number; angle: number; isDome: boolean }[] = [];
-  const domeIdx = new Set([0, 3, 5, 8]);
-  for (let i = 0; i < 10; i++) {
-    const angle = (i / 10) * Math.PI * 2 + 0.18;
-    ringNodes.push({
-      x: Math.cos(angle) * RING_R,
-      z: Math.sin(angle) * RING_R,
-      angle,
-      isDome: domeIdx.has(i),
-    });
+  const HEX_R = 26;
+  const HEX_OFF = 0.18;
+  const hexNodes: { x: number; z: number; angle: number }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 + HEX_OFF;
+    hexNodes.push({ x: Math.cos(angle) * HEX_R, z: Math.sin(angle) * HEX_R, angle });
   }
   const domes: Dome[] = [
-    { x: 0, z: 0, r: 14 }, // main dome — the portal lives inside
-    ...ringNodes.filter((n) => n.isDome).map((n, i) => ({
-      x: n.x,
-      z: n.z,
-      r: [8.5, 7.5, 6.5, 6][i] ?? 6,
-    })),
+    { x: 0, z: 0, r: 14 }, // the central dome — the portal lives inside
+    ...hexNodes.map((n) => ({ x: n.x, z: n.z, r: 6.5 })),
   ];
 
   const seamMat = track(
@@ -490,8 +484,8 @@ export function buildTown(quality: "high" | "low"): Town {
     crown.rotation.x = Math.PI / 2;
     crown.position.set(d.x, gy + 0.1 + crownH, d.z);
     group.add(crown);
-    // warm window band partway up the larger domes
-    if (d.r >= 7) {
+    // warm window band partway up every habitat dome
+    if (d.r >= 6) {
       const band = new THREE.Mesh(
         track(new THREE.TorusGeometry(d.r * 0.9, 0.14, 8, 56)),
         stripMat
@@ -502,44 +496,7 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ----- capsule modules on the ring (tangent orientation) ----- */
-  type Module = { x: number; z: number; len: number; rot: number };
-  const modules: Module[] = ringNodes
-    .filter((n) => !n.isDome)
-    .map((n) => ({
-      x: n.x,
-      z: n.z,
-      len: R(7.5, 9.5),
-      rot: Math.PI / 2 - n.angle, // tangent to the ring
-    }));
-  const ribGeo = track(new THREE.TorusGeometry(1.58, 0.08, 6, 22));
-  for (const mod of modules) {
-    const gy = terrainHeight(mod.x, mod.z);
-    const capGeo = track(new THREE.CapsuleGeometry(1.5, mod.len, 4, 16));
-    const cap = new THREE.Mesh(capGeo, shellMat);
-    cap.rotation.z = Math.PI / 2;
-    cap.rotation.y = mod.rot;
-    cap.position.set(mod.x, gy + 1.5, mod.z);
-    cap.castShadow = shadows;
-    group.add(cap);
-    const axX = -Math.cos(mod.rot);
-    const axZ = Math.sin(mod.rot);
-    for (const f of [-0.32, 0, 0.32]) {
-      const rib = new THREE.Mesh(ribGeo, shellDarkMat);
-      rib.position.set(mod.x + axX * mod.len * f, gy + 1.5, mod.z + axZ * mod.len * f);
-      rib.rotation.y = mod.rot - Math.PI / 2;
-      group.add(rib);
-    }
-    for (const side of [-1, 1]) {
-      const stripGeo = track(new THREE.BoxGeometry(mod.len * 0.72, 0.28, 0.06));
-      const strip = new THREE.Mesh(stripGeo, stripMat);
-      const offX = Math.sin(mod.rot) * 1.52 * side;
-      const offZ = Math.cos(mod.rot) * 1.52 * side;
-      strip.position.set(mod.x + offX, gy + 1.8, mod.z + offZ);
-      strip.rotation.y = mod.rot;
-      group.add(strip);
-    }
-  }
+  /* (the six hexagon vertices are secondary domes — built above) */
 
   /* ----- tubes: consecutive ring nodes (closed loop) + spokes ----- */
   const tubeGeoUnit = track(new THREE.CylinderGeometry(0.8, 0.8, 1, 10));
@@ -557,13 +514,14 @@ export function buildTown(quality: "high" | "low"): Town {
     tube.castShadow = shadows;
     group.add(tube);
   };
-  for (let i = 0; i < ringNodes.length; i++) {
-    const a = ringNodes[i];
-    const b = ringNodes[(i + 1) % ringNodes.length];
+  // perimeter: each capsule connected to the next (closed hexagon)
+  for (let i = 0; i < hexNodes.length; i++) {
+    const a = hexNodes[i];
+    const b = hexNodes[(i + 1) % hexNodes.length];
     addTube(a.x, a.z, b.x, b.z);
   }
-  // spokes from the main dome to each ring dome
-  for (const n of ringNodes.filter((n) => n.isDome)) {
+  // spokes: the central dome connected to every capsule
+  for (const n of hexNodes) {
     addTube(0, 0, n.x, n.z);
   }
 
@@ -854,9 +812,9 @@ export function buildTown(quality: "high" | "low"): Town {
     }
     group.add(lander);
 
-    /* charging stations — set apart from the pads, toward the ring */
+    /* charging stations — set apart from the pads, toward the habitat */
     for (let i = 0; i < 3; i++) {
-      const cx = -38;
+      const cx = -42;
       const cz = 4 + i * 5.5;
       const gy = terrainHeight(cx, cz);
       const pillar = new THREE.Mesh(track(new THREE.BoxGeometry(0.55, 1.9, 0.45)), shellMat);
@@ -945,25 +903,23 @@ export function buildTown(quality: "high" | "low"): Town {
     [[70, -28], [58, -16], [49, -5]], // BESS -> SST
     // SST outputs
     [[40, -7], [30, -24], [20, -38]], // SST -> data centre
-    [[39, 2], [30, 2], [20, 1]], // SST -> habitat ring
-    [[38, -4], [12, -24], [-16, -24], [-40, -8], [-50, 4], [-54, 8]], // SST -> pad A / chargers
-    [[-38, 12], [-41, 19], [-43, 25]], // chargers -> pad B
+    [[39, 2], [30, 2], [24, 2]], // SST -> habitat hexagon
+    [[38, -4], [12, -26], [-16, -26], [-40, -8], [-50, 4], [-54, 8]], // SST -> pad A / chargers
+    [[-42, 14], [-43, 20], [-44, 25]], // chargers -> pad B
     [[-55, 15], [-50, 21], [-46, 25]], // pad A -> pad B
-    // habitat ring loop
+    // habitat loop following the hexagon perimeter
     [
-      [18, 0],
-      [13, 13],
-      [0, 18],
-      [-13, 13],
-      [-18, 0],
-      [-13, -13],
-      [0, -18],
-      [13, -13],
-      [18, 0],
+      [22.6, 4.1],
+      [7.8, 21.7],
+      [-14.9, 17.5],
+      [-22.6, -4.1],
+      [-7.8, -21.7],
+      [14.9, -17.5],
+      [22.6, 4.1],
     ],
-    [[15, 9], [22, 22], [28, 29]], // ring -> comms tower
-    [[14, -38], [7, -28], [2, -21]], // data centre -> ring
-    [[-16, 12], [-21, 22], [-24, 30]], // ring -> HDU
+    [[18, 12], [24, 24], [30, 31]], // hexagon -> comms tower
+    [[14, -38], [8, -30], [4, -24]], // data centre -> hexagon
+    [[-19, 14], [-23, 24], [-25, 31]], // hexagon -> HDU
   ];
 
   /** shift a polyline sideways so the twin lines run in parallel */
