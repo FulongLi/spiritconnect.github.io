@@ -30,25 +30,28 @@ type Props = {
 // Paired waypoints at every module make the camera linger there (slow,
 // steady dwell) instead of sweeping past. Targets barely move during a
 // dwell, which keeps the framing stable and avoids motion sickness.
+// Simple, steady camera language: one continuous sweep with gentle turns
+// and NO direction reversals. The west leg flies past the pads and then
+// keeps moving forward (east) straight into the main dome.
 const CAM_POSITIONS: [number, number, number][] = [
   [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
   [60, 48, 115], // 1 descending toward the input zone
   [98, 9, 68], // 2 arriving over the PV rows
   [93, 7.5, 52], // 3 PV dwell (slow drift)
   [90, 7, 42], // 4 PV dwell end
-  [94, 8, 24], // 5 over to the reactor
-  [90, 7.5, 16], // 6 reactor dwell
-  [72, 6.5, 30], // 7 across to the battery banks
-  [64, 5.5, 24], // 8 BESS dwell
-  [48, 6.5, 10], // 9 toward the SST
-  [32, 5.5, -7], // 10 SST dwell
-  [26, 6, -28], // 11 down toward the data centre
-  [8, 5, -48], // 12 DC dwell
-  [-24, 7, -18], // 13 sweeping west toward the pad and vehicles
-  [-44, 6.5, 0], // 14 pad / charging dwell
-  [-30, 7, 22], // 15 swinging around to face the main dome
-  [-12, 6, 14], // 16 final approach to the shell
-  [-3.5, 4.8, 6.5], // 17 crossing the hull — dark inside
+  [96, 8, 26], // 5 over to the reactor
+  [91, 7.5, 17], // 6 reactor dwell
+  [74, 6.5, 32], // 7 across to the battery banks
+  [66, 5.5, 26], // 8 BESS dwell
+  [58, 6.5, 10], // 9 toward the SST
+  [43, 5.5, -12], // 10 SST dwell
+  [32, 6, -32], // 11 down toward the data centre
+  [12, 5, -50], // 12 DC dwell
+  [-30, 7, -30], // 13 gliding west, pads coming into view
+  [-66, 7.5, -10], // 14 pad / charging dwell (looking over the pads)
+  [-44, 6.5, 4], // 15 moving forward — the dome straight ahead
+  [-14, 6, 10], // 16 final approach to the shell
+  [-4, 4.8, 5.5], // 17 crossing the hull — dark inside
   [0, 4.5, 2], // 18 inside the dome
 ];
 
@@ -60,15 +63,15 @@ const CAM_TARGETS: [number, number, number][] = [
   [87, 2, 49],
   [92, 4, 11],
   [91, 4, 10], // reactor
-  [59, 2.5, 26],
-  [58, 2, 26], // BESS
-  [37, 3.5, 2],
-  [35, 3.5, 1], // SST
-  [17, 2.5, -40],
-  [16, 2, -41], // data centre
-  [-50, 2.5, 14],
-  [-54, 2.5, 15], // pad / charging / vehicles
-  [0, 6, 0], // main dome
+  [60, 2.5, 27],
+  [59, 2, 26], // BESS
+  [49, 3.5, -1],
+  [48, 3.5, -2], // SST
+  [19, 2.5, -40],
+  [17, 2, -42], // data centre
+  [-46, 2.5, 4],
+  [-50, 2, 16], // pads / chargers / vehicles
+  [-12, 4.5, 2], // dome ahead, same forward direction
   [0, 5, 0],
   [0, 4, 0],
   [0, 4.5, -2],

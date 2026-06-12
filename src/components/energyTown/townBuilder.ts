@@ -34,8 +34,10 @@ const SITES: [number, number][] = [
   [88, 52], // PV array (lower right, away from storage/nuclear)
   [92, 10], // reactor
   [58, 26], // BESS
-  [36, 2], // SST
-  [-56, 16], // landing pad + charging + vehicles (lower left, spaced out)
+  [48, -2], // SST
+  [-58, 12], // landing pad A
+  [-44, 28], // landing pad B
+  [-38, 10], // charging stations + vehicles
   [16, -42], // data centre
   [-26, 34], // HDU
   [30, 32], // comms tower
@@ -140,7 +142,8 @@ export function terrainHeight(x: number, z: number) {
   }
   h -= (r * r) / MOON_CURVE;
   // steep circular limb → clean, well-rounded horizon arc
-  h -= smoothstep(202, 232, r) * 75;
+  // (larger radius = wider, better-proportioned moon disc)
+  h -= smoothstep(245, 278, r) * 85;
   return h;
 }
 
@@ -404,8 +407,8 @@ export function buildTown(quality: "high" | "low"): Town {
   const dotTex = track(makeDotTexture());
 
   /* ---------------- terrain ---------------- */
-  const segs = quality === "high" ? 220 : 120;
-  const terrainGeo = track(new THREE.PlaneGeometry(480, 480, segs, segs));
+  const segs = quality === "high" ? 240 : 130;
+  const terrainGeo = track(new THREE.PlaneGeometry(580, 580, segs, segs));
   terrainGeo.rotateX(-Math.PI / 2);
   const pos = terrainGeo.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
@@ -712,7 +715,7 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   /* ================== PROCESS: SST station ========================= */
-  const sstCenter = { x: 36, z: 2 };
+  const sstCenter = { x: 48, z: -2 };
   const sstRingMat = std("#1a1410", {
     roughness: 0.35,
     emissive: new THREE.Color("#ffc23f"),
@@ -760,39 +763,52 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ----- landing pad (level, never sunken) + detailed lander ----- */
-  const pad = { x: -56, z: 16 };
+  /* ----- two landing pads (low-profile, never sunken) + lander ----- */
+  const pads = [
+    { x: -58, z: 12, r: 8.5 }, // pad A — the lander sits here
+    { x: -44, z: 28, r: 8.5 }, // pad B — kept clear
+  ];
   let padTop = 0;
-  {
+  for (let pi = 0; pi < pads.length; pi++) {
+    const pd = pads[pi];
     // sample the rim so the pad always clears the local terrain
     let maxEdge = -1e9;
     let minEdge = 1e9;
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
-      const h = terrainHeight(pad.x + Math.cos(a) * 11, pad.z + Math.sin(a) * 11);
+      const h = terrainHeight(pd.x + Math.cos(a) * pd.r, pd.z + Math.sin(a) * pd.r);
       maxEdge = Math.max(maxEdge, h);
       minEdge = Math.min(minEdge, h);
     }
-    padTop = maxEdge + 0.4;
-    const baseH = padTop - (minEdge - 1.2);
+    const top = maxEdge + 0.22; // low profile
+    if (pi === 0) padTop = top;
+    const baseH = top - (minEdge - 0.8);
     const padMesh = new THREE.Mesh(
-      track(new THREE.CylinderGeometry(11, 11.8, baseH, 28)),
+      track(new THREE.CylinderGeometry(pd.r, pd.r + 0.6, baseH, 28)),
       shellDarkMat
     );
-    padMesh.position.set(pad.x, padTop - baseH / 2, pad.z);
+    padMesh.position.set(pd.x, top - baseH / 2, pd.z);
     padMesh.receiveShadow = shadows;
     group.add(padMesh);
-    const padRing = new THREE.Mesh(track(new THREE.TorusGeometry(9.6, 0.18, 8, 64)), conduitMat);
+    const padRing = new THREE.Mesh(
+      track(new THREE.TorusGeometry(pd.r * 0.86, 0.15, 8, 64)),
+      conduitMat
+    );
     padRing.rotation.x = Math.PI / 2;
-    padRing.position.set(pad.x, padTop + 0.06, pad.z);
-    const padMark = new THREE.Mesh(track(new THREE.TorusGeometry(5.6, 0.1, 6, 48)), shellDarkMat);
+    padRing.position.set(pd.x, top + 0.05, pd.z);
+    const padMark = new THREE.Mesh(
+      track(new THREE.TorusGeometry(pd.r * 0.48, 0.08, 6, 48)),
+      shellDarkMat
+    );
     padMark.rotation.x = Math.PI / 2;
-    padMark.position.set(pad.x, padTop + 0.04, pad.z);
+    padMark.position.set(pd.x, top + 0.04, pd.z);
     group.add(padRing, padMark);
-
-    /* detailed lander on the pad */
-    const lx = pad.x + 2.5;
-    const lz = pad.z - 1.5;
+  }
+  {
+    const pad = pads[0];
+    /* detailed lander on pad A */
+    const lx = pad.x + 1.5;
+    const lz = pad.z - 1.0;
     const lander = new THREE.Group();
     lander.position.set(lx, padTop, lz);
     lander.rotation.y = 0.6;
@@ -838,10 +854,10 @@ export function buildTown(quality: "high" | "low"): Town {
     }
     group.add(lander);
 
-    /* charging stations between the pad and the habitat ring */
+    /* charging stations — set apart from the pads, toward the ring */
     for (let i = 0; i < 3; i++) {
-      const cx = pad.x + 12.5;
-      const cz = pad.z - 7 + i * 5.5;
+      const cx = -38;
+      const cz = 4 + i * 5.5;
       const gy = terrainHeight(cx, cz);
       const pillar = new THREE.Mesh(track(new THREE.BoxGeometry(0.55, 1.9, 0.45)), shellMat);
       pillar.position.set(cx, gy + 0.95, cz + 2.4);
@@ -926,13 +942,13 @@ export function buildTown(quality: "high" | "low"): Town {
     // POWER — reactor -> BESS
     { kind: "power", pts: [[88, 12], [74, 18], [63, 23]] },
     // POWER — BESS -> SST
-    { kind: "power", pts: [[54, 22], [45, 12], [39, 5]] },
+    { kind: "power", pts: [[54, 22], [50, 12], [49, 3]] },
     // POWER — SST -> data centre
-    { kind: "power", pts: [[32, -3], [25, -20], [19, -36], [17, -40]] },
+    { kind: "power", pts: [[44, -7], [32, -22], [22, -36], [18, -41]] },
     // POWER — SST -> habitat ring
-    { kind: "power", pts: [[31, 2], [26, 2], [20, 1]] },
-    // POWER — SST -> charging / landing pad (around the south of the ring)
-    { kind: "power", pts: [[30, -3], [8, -24], [-18, -24], [-40, -8], [-50, 8], [-52, 12]] },
+    { kind: "power", pts: [[42, -2], [32, 0], [20, 1]] },
+    // POWER — SST -> charging / landing pads (around the south of the ring)
+    { kind: "power", pts: [[42, -6], [16, -24], [-14, -24], [-40, -8], [-50, 4], [-54, 8]] },
     // DATA — habitat ring loop
     {
       kind: "data",
