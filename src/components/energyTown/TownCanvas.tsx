@@ -8,6 +8,7 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { buildTown, DAY, NIGHT } from "./townBuilder";
+import { loadGltfFleet } from "./gltfAssets";
 
 type Props = {
   /** scroll progress target, 0..1 — written by the page, read every frame */
@@ -133,6 +134,10 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     const town = buildTown(quality);
     scene.add(town.group);
 
+    /* NASA models (SEV rover, HDU habitat, crawler, CYGNSS satellite) */
+    const fleet = loadGltfFleet(quality === "high");
+    scene.add(fleet.group);
+
     /* post-processing: bloom gives the emissive conduits a real glow */
     const dpr = Math.min(window.devicePixelRatio, compact ? 1.5 : 2);
     const rt = new THREE.WebGLRenderTarget(
@@ -216,6 +221,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       }
       if (themeMix !== lastThemeApplied) {
         town.applyTheme(themeMix);
+        fleet.applyTheme(themeMix);
         bg.copy(dayBg).lerp(nightBg, themeMix);
         scene.background = bg;
         const fog = scene.fog as THREE.Fog;
@@ -255,6 +261,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       camera.translateY(-smy * 0.95);
 
       town.update(dt, elapsed);
+      fleet.update(dt, elapsed);
       composer.render();
     }
     raf = requestAnimationFrame(frame);
@@ -274,6 +281,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
       town.dispose();
+      fleet.dispose();
       composer.dispose();
       rt.dispose();
       pmrem.dispose();

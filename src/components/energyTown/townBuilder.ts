@@ -628,45 +628,7 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ---------------- lunar rover (parked by the pad) ---------------- */
-  {
-    const rx = pad.x + 14;
-    const rz = pad.z - 4;
-    const rot = -0.5;
-    const gy = terrainHeight(rx, rz);
-    const rover = new THREE.Group();
-    rover.position.set(rx, gy, rz);
-    rover.rotation.y = rot;
-    const body = new THREE.Mesh(track(new THREE.BoxGeometry(2.7, 0.85, 1.7)), shellMat);
-    body.position.y = 1.05;
-    body.castShadow = shadows;
-    rover.add(body);
-    // rooftop solar panel
-    const roof = new THREE.Mesh(track(new THREE.BoxGeometry(2.3, 0.08, 1.4)), solarMat);
-    roof.position.y = 1.55;
-    rover.add(roof);
-    // six wheels
-    const tireMat = std("#1d242e", { roughness: 0.95 });
-    const wheelGeo = track(new THREE.CylinderGeometry(0.45, 0.45, 0.34, 12));
-    for (const wx of [-1.05, 0, 1.05]) {
-      for (const wz of [-1.0, 1.0]) {
-        const wheel = new THREE.Mesh(wheelGeo, tireMat);
-        wheel.rotation.x = Math.PI / 2;
-        wheel.position.set(wx, 0.45, wz);
-        wheel.castShadow = shadows;
-        rover.add(wheel);
-      }
-    }
-    // camera mast
-    const mast = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.07, 1.0, 6)), shellDarkMat);
-    mast.position.set(1.0, 2.0, 0.3);
-    const head = new THREE.Mesh(track(new THREE.BoxGeometry(0.42, 0.22, 0.2)), shellDarkMat);
-    head.position.set(1.0, 2.55, 0.3);
-    const eye = new THREE.Mesh(track(new THREE.SphereGeometry(0.06, 8, 6)), coreMat);
-    eye.position.set(1.18, 2.55, 0.3);
-    rover.add(mast, head, eye);
-    group.add(rover);
-  }
+  /* (lunar rover: replaced by the NASA SEV model, loaded in gltfAssets) */
 
   /* ---------------- solar farm ---------------- */
   const solarCenter = { x: 72, z: 42 };
