@@ -40,9 +40,9 @@ type Props = {
 const CAM_POSITIONS: [number, number, number][] = [
   [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
   [42, 62, 138], // 1 descending toward the input fan
-  [82, 32, 118], // 2 arriving over the expanded PV rows
-  [102, 30, 103], // 3 PV dwell, pulled back enough to see the 9x9 field
-  [114, 22, 70], // 4 leaving PV in the same southbound sweep
+  [78, 26, 112], // 2 arriving over the PV rows
+  [91, 24, 96], // 3 PV dwell, pulled back enough to see the whole field
+  [103, 19, 68], // 4 leaving PV in the same southbound sweep
   [108, 14, 24], // 5 down the fan to the reactor
   [104, 12, 10], // 6 reactor dwell
   [99, 12, -12], // 7 continuing down to the battery banks
@@ -64,9 +64,9 @@ const CAM_POSITIONS: [number, number, number][] = [
 const CAM_TARGETS: [number, number, number][] = [
   [0, 38, -20], // the Moon takes at least half the frame
   [70, 4, 42],
-  [82, 3, 35],
-  [96, 2.5, 23], // PV
-  [100, 2.8, 12],
+  [76, 3, 40],
+  [76, 2.5, 38], // PV
+  [82, 2.8, 22],
   [90, 4, 0],
   [90, 4, 0], // reactor
   [78, 2.7, -25],
