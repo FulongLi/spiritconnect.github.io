@@ -51,12 +51,14 @@ const CAM_POSITIONS: [number, number, number][] = [
   [56, 10, -11], // 10 SST dwell
   [38, 10, -32], // 11 on toward the data centre
   [19, 8, -51], // 12 DC dwell
-  [-24, 12, -48], // 13 gliding west, pads coming into view
-  [-64, 20, -34], // 14 pad / charging dwell, higher to read the branch layout
-  [-58, 10, -3], // 15 moving forward with the dome straight ahead
-  [-25, 7, 8], // 16 final approach to the shell
-  [-7, 5.4, 6], // 17 crossing the hull, softened by the mist transition
-  [0, 4.8, 2], // 18 inside the dome
+  [-20, 13, -56], // 13 gliding west, pads coming into view
+  [-84, 22, -82], // 14 pad / charging dwell, higher to read the branch layout
+  [-58, 16, -32], // 15 leaving the pad branch, beginning the climb
+  [-22, 34, -18], // 16 rising above the habitat ring
+  [0, 58, 3], // 17 top-down dome view
+  [0, 34, 3], // 18 descending from the overhead view
+  [-5, 8, 6], // 19 crossing the hull, softened by the mist transition
+  [0, 4.8, 2], // 20 inside the dome
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
@@ -73,10 +75,12 @@ const CAM_TARGETS: [number, number, number][] = [
   [44, 3.5, 0], // SST hub
   [22, 2.7, -36],
   [16, 2.2, -42], // data centre
-  [-38, 2.7, -12],
-  [-44, 2.4, 7], // pads / chargers / vehicles
-  [-18, 4.2, 3], // dome ahead, same forward direction
-  [0, 5, 0],
+  [-48, 2.7, -32],
+  [-58, 2.4, -38], // pads / chargers / vehicles
+  [-20, 4.5, -6], // dome ahead, same forward direction
+  [0, 6, 0],
+  [0, 1.2, 0], // straight down at the crown of the central dome
+  [0, 3.5, 0],
   [0, 4, 0],
   [0, 4.5, -2],
 ];

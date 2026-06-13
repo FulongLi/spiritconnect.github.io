@@ -31,7 +31,7 @@ type OrbitSpec = {
 
 const SPECS: (GroundSpec | OrbitSpec)[] = [
   // NASA Space Exploration Vehicle — near the chargers, clear of the pads
-  { kind: "ground", urls: ["/glb/sev.glb"], x: -49, z: -4, rotY: -0.25, footprint: 5.5 },
+  { kind: "ground", urls: ["/glb/sev.glb"], x: -50, z: -35, rotY: -0.75, footprint: 5.5 },
   // NASA Habitat Demonstration Unit (two parts, kept in relative position)
   {
     kind: "ground",

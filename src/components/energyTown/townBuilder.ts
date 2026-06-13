@@ -35,12 +35,13 @@ const SITES: [number, number][] = [
   [90, 0], // reactor (middle of the fan)
   [74, -32], // BESS (bottom of the fan)
   [44, 0], // SST — the hub the fan converges on
-  [-58, 8], // left landing pad node
-  [-38, 18], // central landing pad node
-  [-22, 34], // upper landing pad
-  [-40, -12], // lower landing pad
-  [-68, 0], // left charging branch
-  [-30, -32], // lower charging branch
+  [-26, -6], // habitat-side landing pad node
+  [-42, -22], // approach landing pad node
+  [-58, -38], // charger branch junction pad
+  [-76, -42], // left terminal landing pad
+  [-58, -58], // lower terminal landing pad
+  [-102, -47], // left charging branch
+  [-34, -60], // lower charging branch
   [16, -42], // data centre
   [-26, 34], // HDU
   [30, 32], // comms tower
@@ -726,10 +727,11 @@ export function buildTown(quality: "high" | "low"): Town {
 
   /* ----- landing pads + charging posts, laid out like the hand sketch ----- */
   const pads = [
-    { x: -58, z: 8, r: 5.2 }, // left branch node
-    { x: -38, z: 18, r: 7.2 }, // central node
-    { x: -22, z: 34, r: 7.8 }, // upper-right terminal pad
-    { x: -40, z: -12, r: 7.4 }, // lower branch terminal pad
+    { x: -26, z: -6, r: 5.2 }, // node attached to the habitat ring
+    { x: -42, z: -22, r: 5.4 }, // diagonal approach node
+    { x: -58, z: -38, r: 6.4 }, // charger branch junction
+    { x: -76, z: -42, r: 5.8 }, // left terminal pad beside chargers
+    { x: -58, z: -58, r: 5.8 }, // lower terminal pad beside chargers
   ];
   const padTops: number[] = [];
   for (let pi = 0; pi < pads.length; pi++) {
@@ -768,13 +770,13 @@ export function buildTown(quality: "high" | "low"): Town {
     group.add(padRing, padMark);
   }
   {
-    const pad = pads[2];
-    /* detailed lander on the upper-right terminal pad */
-    const lx = pad.x + 1.2;
-    const lz = pad.z - 1.0;
+    const pad = pads[3];
+    /* detailed lander on the left terminal pad */
+    const lx = pad.x + 0.8;
+    const lz = pad.z - 0.7;
     const lander = new THREE.Group();
-    lander.position.set(lx, padTops[2], lz);
-    lander.rotation.y = -0.35;
+    lander.position.set(lx, padTops[3], lz);
+    lander.rotation.y = 0.2;
     // descent stage: octagonal, gold-foil skirt
     const descent = new THREE.Mesh(track(new THREE.CylinderGeometry(1.6, 1.7, 1.0, 8)), goldMat);
     descent.position.y = 1.35;
@@ -824,13 +826,13 @@ export function buildTown(quality: "high" | "low"): Town {
     const spotGeo = track(new THREE.PlaneGeometry(4.0, 3.2));
     const chargers = [
       // three square charger posts on the left branch
-      { x: -78, z: -7.5, rot: -0.92 },
-      { x: -70, z: -2.5, rot: -0.92 },
-      { x: -62, z: 2.8, rot: -0.92 },
+      { x: -92, z: -45, rot: -1.48 },
+      { x: -102, z: -47, rot: -1.48 },
+      { x: -112, z: -49, rot: -1.48 },
       // three square charger posts on the lower branch
-      { x: -34, z: -26, rot: 0.16 },
-      { x: -31, z: -34, rot: 0.16 },
-      { x: -28, z: -42, rot: 0.16 },
+      { x: -46, z: -60, rot: -0.06 },
+      { x: -34, z: -60.5, rot: -0.06 },
+      { x: -22, z: -61, rot: -0.06 },
     ];
     for (const station of chargers) {
       const gy = terrainHeight(station.x, station.z);
@@ -934,11 +936,9 @@ export function buildTown(quality: "high" | "low"): Town {
     // SST outputs
     [[40, -7], [30, -24], [20, -38]], // SST -> data centre
     [[39, 2], [30, 2], [24, 2]], // SST -> habitat hexagon
-    [[38, -4], [12, -24], [-12, -18], [-30, 4], [-38, 18]], // SST -> pad / charger hub
-    [[-38, 18], [-48, 13], [-58, 8], [-68, 0], [-78, -7.5]], // hub -> left pad + charger branch
-    [[-38, 18], [-30, 26], [-22, 34]], // hub -> upper terminal pad
-    [[-38, 18], [-39, 3], [-40, -12]], // hub -> lower terminal pad
-    [[-40, -12], [-36, -23], [-31, -34], [-28, -42]], // lower pad -> lower charger branch
+    [[39, 2], [24, 0], [-25, -5], [-42, -22], [-58, -38]], // habitat edge -> charger branch junction
+    [[-58, -38], [-67, -40], [-76, -42], [-92, -45], [-112, -49]], // junction -> left pad + charger branch
+    [[-58, -38], [-58, -48], [-58, -58], [-46, -60], [-22, -61]], // junction -> lower pad + charger branch
     // habitat loop following the hexagon perimeter
     [
       [22.6, 4.1],
