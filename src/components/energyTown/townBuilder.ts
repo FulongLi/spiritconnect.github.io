@@ -42,6 +42,13 @@ const SITES: [number, number][] = [
   [-58, -58], // lower terminal landing pad
   [-102, -47], // left charging branch
   [-34, -60], // lower charging branch
+  [-36, 20], // second habitat-side landing pad node
+  [-58, 40], // second approach landing pad node
+  [-80, 60], // second charger branch junction pad
+  [-100, 64], // second left terminal landing pad
+  [-80, 82], // second lower terminal landing pad
+  [-118, 68], // second left charging branch
+  [-56, 86], // second lower charging branch
   [16, -42], // data centre
   [-26, 34], // HDU
   [30, 32], // comms tower
@@ -732,6 +739,11 @@ export function buildTown(quality: "high" | "low"): Town {
     { x: -58, z: -38, r: 6.4 }, // charger branch junction
     { x: -76, z: -42, r: 5.8 }, // left terminal pad beside chargers
     { x: -58, z: -58, r: 5.8 }, // lower terminal pad beside chargers
+    { x: -36, z: 20, r: 5.2 }, // second node attached to the habitat ring
+    { x: -58, z: 40, r: 5.4 }, // second diagonal approach node
+    { x: -80, z: 60, r: 6.4 }, // second charger branch junction
+    { x: -100, z: 64, r: 5.8 }, // second left terminal pad beside chargers
+    { x: -80, z: 82, r: 5.8 }, // second lower terminal pad beside chargers
   ];
   const padTops: number[] = [];
   for (let pi = 0; pi < pads.length; pi++) {
@@ -833,6 +845,14 @@ export function buildTown(quality: "high" | "low"): Town {
       { x: -46, z: -60, rot: -0.06 },
       { x: -34, z: -60.5, rot: -0.06 },
       { x: -22, z: -61, rot: -0.06 },
+      // three square charger posts on the second left branch
+      { x: -108, z: 66, rot: -1.38 },
+      { x: -118, z: 68, rot: -1.38 },
+      { x: -128, z: 70, rot: -1.38 },
+      // three square charger posts on the second lower branch
+      { x: -68, z: 84, rot: 0.12 },
+      { x: -56, z: 86, rot: 0.12 },
+      { x: -44, z: 88, rot: 0.12 },
     ];
     for (const station of chargers) {
       const gy = terrainHeight(station.x, station.z);
@@ -939,6 +959,9 @@ export function buildTown(quality: "high" | "low"): Town {
     [[39, 2], [24, 0], [-25, -5], [-42, -22], [-58, -38]], // habitat edge -> charger branch junction
     [[-58, -38], [-67, -40], [-76, -42], [-92, -45], [-112, -49]], // junction -> left pad + charger branch
     [[-58, -38], [-58, -48], [-58, -58], [-46, -60], [-22, -61]], // junction -> lower pad + charger branch
+    [[-19, 14], [-36, 20], [-58, 40], [-80, 60]], // second habitat edge -> charger branch junction
+    [[-80, 60], [-90, 62], [-100, 64], [-108, 66], [-128, 70]], // second junction -> left pad + charger branch
+    [[-80, 60], [-80, 72], [-80, 82], [-68, 84], [-44, 88]], // second junction -> lower pad + charger branch
     // habitat loop following the hexagon perimeter
     [
       [22.6, 4.1],

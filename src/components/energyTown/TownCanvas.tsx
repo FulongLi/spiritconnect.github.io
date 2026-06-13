@@ -52,7 +52,7 @@ const CAM_POSITIONS: [number, number, number][] = [
   [38, 10, -32], // 11 on toward the data centre
   [19, 8, -51], // 12 DC dwell
   [-20, 13, -56], // 13 gliding west, pads coming into view
-  [-84, 22, -82], // 14 pad / charging dwell, higher to read the branch layout
+  [-108, 34, -96], // 14 pad / charging dwell, high enough to read both branch layouts
   [-58, 16, -32], // 15 leaving the pad branch, beginning the climb
   [-22, 34, -18], // 16 rising above the habitat ring
   [0, 58, 3], // 17 top-down dome view
@@ -76,7 +76,7 @@ const CAM_TARGETS: [number, number, number][] = [
   [22, 2.7, -36],
   [16, 2.2, -42], // data centre
   [-48, 2.7, -32],
-  [-58, 2.4, -38], // pads / chargers / vehicles
+  [-66, 2.4, 6], // pads / chargers / vehicles
   [-20, 4.5, -6], // dome ahead, same forward direction
   [0, 6, 0],
   [0, 1.2, 0], // straight down at the crown of the central dome
