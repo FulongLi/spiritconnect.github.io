@@ -736,12 +736,12 @@ export function buildTown(quality: "high" | "low"): Town {
   type PadNode = { x: number; z: number; r: number; kind?: "pad" | "dome" };
   const pads: PadNode[] = [
     { x: -26, z: -6, r: 5.2 }, // node attached to the habitat ring
-    { x: -42, z: -22, r: 6.4, kind: "dome" }, // small dome at the approach node
+    { x: -46, z: -26, r: 6.4, kind: "dome" }, // small dome at the approach node (pulled down the chain for clearance)
     { x: -58, z: -38, r: 5.8 }, // landing pad at the charger branch junction
     { x: -76, z: -42, r: 5.8 }, // left terminal pad beside chargers
     { x: -58, z: -58, r: 5.8 }, // lower terminal pad beside chargers
     { x: -36, z: 20, r: 5.2 }, // second node attached to the habitat ring
-    { x: -58, z: 40, r: 6.4, kind: "dome" }, // small dome at the second approach node
+    { x: -62, z: 43, r: 6.4, kind: "dome" }, // small dome at the second approach node (pulled out the chain for clearance)
     { x: -80, z: 60, r: 5.8 }, // second landing pad at the charger branch junction
     { x: -100, z: 64, r: 5.8 }, // second left terminal pad beside chargers
     { x: -80, z: 82, r: 5.8 }, // second lower terminal pad beside chargers
@@ -793,7 +793,7 @@ export function buildTown(quality: "high" | "low"): Town {
       // glowing base ring (brand blue) — shares the emissive material that
       // brightens at night, exactly like the central + secondary domes
       const baseRing = new THREE.Mesh(
-        track(new THREE.TorusGeometry(domeRadius * 1.04, 0.15, 8, 48)),
+        track(new THREE.TorusGeometry(domeRadius * 1.04, 0.2, 8, 48)),
         conduitMat
       );
       baseRing.rotation.x = Math.PI / 2;
@@ -804,7 +804,7 @@ export function buildTown(quality: "high" | "low"): Town {
       const crownH = domeRadius * 0.78;
       const crownR = Math.sqrt(Math.max(0.05, domeRadius * domeRadius - crownH * crownH));
       const crown = new THREE.Mesh(
-        track(new THREE.TorusGeometry(crownR * 1.02, 0.12, 8, 40)),
+        track(new THREE.TorusGeometry(crownR * 1.02, 0.14, 8, 48)),
         conduitMat
       );
       crown.rotation.x = Math.PI / 2;
@@ -813,7 +813,7 @@ export function buildTown(quality: "high" | "low"): Town {
 
       // warm window band partway up the dome
       const band = new THREE.Mesh(
-        track(new THREE.TorusGeometry(domeRadius * 0.86, 0.1, 8, 42)),
+        track(new THREE.TorusGeometry(domeRadius * 0.9, 0.14, 8, 56)),
         stripMat
       );
       band.rotation.x = Math.PI / 2;
@@ -1011,10 +1011,10 @@ export function buildTown(quality: "high" | "low"): Town {
     // SST outputs
     [[40, -7], [30, -24], [20, -38]], // SST -> data centre
     [[39, 2], [30, 2], [24, 2]], // SST -> habitat hexagon
-    [[39, 2], [24, 0], [-25, -5], [-42, -22], [-58, -38]], // habitat edge -> charger branch junction
+    [[39, 2], [24, 0], [-25, -5], [-46, -26], [-58, -38]], // habitat edge -> charger branch junction
     [[-58, -38], [-67, -40], [-76, -42], [-92, -45], [-112, -49]], // junction -> left pad + charger branch
     [[-58, -38], [-58, -48], [-58, -58], [-46, -60], [-22, -61]], // junction -> lower pad + charger branch
-    [[-19, 14], [-36, 20], [-58, 40], [-80, 60]], // second habitat edge -> charger branch junction
+    [[-19, 14], [-36, 20], [-62, 43], [-80, 60]], // second habitat edge -> charger branch junction
     [[-80, 60], [-90, 62], [-100, 64], [-108, 66], [-128, 70]], // second junction -> left pad + charger branch
     [[-80, 60], [-80, 72], [-80, 82], [-68, 84], [-44, 88]], // second junction -> lower pad + charger branch
     // habitat loop following the hexagon perimeter
