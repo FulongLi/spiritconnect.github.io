@@ -20,13 +20,16 @@ const PlaygroundCanvas = dynamic(
 const SECTIONS = 12; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
-const BLACKOUT_START = 0.8; // crossing the dome hull...
-const BLACKOUT_END = 0.855; // ...dark inside...
-const MIST_START = 0.765; // veil the dome shell before the dark beat
-const MIST_PEAK = 0.845;
-const MIST_END = 0.94;
-const PORTAL_FADE_START = 0.91; // ...then the portal emerges
-const PORTAL_FADE_END = 0.965;
+const BLACKOUT_START = 0.835; // after the fog has swallowed the dome interior
+const BLACKOUT_END = 0.875;
+const MIST_START = 0.755; // fog rises as soon as the camera reaches the dome shell
+const MIST_FILL = 0.815;
+const MIST_WELCOME_CLEAR = 0.865;
+const MIST_SECOND_RISE = 0.895;
+const MIST_SECOND_PEAK = 0.945;
+const MIST_END = 0.99;
+const PORTAL_FADE_START = 0.925; // portal emerges behind the second fog wave
+const PORTAL_FADE_END = 0.975;
 
 type Chapter = {
   start: number;
@@ -115,6 +118,10 @@ function fadeWindow(p: number, start: number, end: number) {
   return 1;
 }
 
+function clamp01(n: number) {
+  return Math.min(1, Math.max(0, n));
+}
+
 export default function JourneyExperience() {
   const progressRef = useRef(0);
   const themeRef = useRef(0);
@@ -191,18 +198,21 @@ export default function JourneyExperience() {
 
       /* mist veil between the dome shell and the portal */
       if (mistRef.current) {
-        const rise = Math.min(1, Math.max(0, (p - MIST_START) / (MIST_PEAK - MIST_START)));
-        const fall = Math.min(1, Math.max(0, (MIST_END - p) / (MIST_END - MIST_PEAK)));
-        const o = Math.max(0, Math.min(1, rise * fall));
-        mistRef.current.style.opacity = (o * 0.82).toFixed(3);
-        mistRef.current.style.transform = `translate3d(${((p - MIST_START) * 120).toFixed(1)}px, ${((MIST_PEAK - p) * 44).toFixed(1)}px, 0) scale(${(1 + o * 0.08).toFixed(3)})`;
-        mistRef.current.style.visibility = o <= 0.001 ? "hidden" : "visible";
+        const firstRise = clamp01((p - MIST_START) / (MIST_FILL - MIST_START));
+        const firstClear = clamp01((MIST_WELCOME_CLEAR - p) / (MIST_WELCOME_CLEAR - MIST_FILL));
+        const secondRise = clamp01((p - MIST_SECOND_RISE) / (MIST_SECOND_PEAK - MIST_SECOND_RISE));
+        const secondClear = clamp01((MIST_END - p) / (MIST_END - MIST_SECOND_PEAK));
+        const cover = Math.max(firstRise * firstClear, secondRise * secondClear);
+        const density = Math.min(1, 0.14 + cover * 0.9);
+        mistRef.current.style.opacity = cover <= 0.001 ? "0" : density.toFixed(3);
+        mistRef.current.style.transform = `translate3d(0, ${((1 - cover) * 34).toFixed(1)}vh, 0) scale(${(1.08 + cover * 0.1).toFixed(3)})`;
+        mistRef.current.style.visibility = cover <= 0.001 ? "hidden" : "visible";
       }
 
       /* WELCOME caption inside the dark beat */
       if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.845) / 0.025));
-        const outO = Math.min(1, Math.max(0, (0.905 - p) / 0.025));
+        const inO = Math.min(1, Math.max(0, (p - 0.865) / 0.022));
+        const outO = Math.min(1, Math.max(0, (0.922 - p) / 0.022));
         captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
@@ -491,7 +501,7 @@ export default function JourneyExperience() {
         SPIRIT CONNECT
       </div>
 
-      {/* dark beat + WELCOME caption */}
+      {/* dark beat after the first fog wave swallows the dome interior */}
       <div
         ref={blackoutRef}
         style={{
@@ -502,32 +512,36 @@ export default function JourneyExperience() {
           pointerEvents: "none",
           background: "#0e0d0c",
         }}
+      />
+
+      {/* WELCOME caption sits above the fog so it can emerge from the haze */}
+      <div
+        ref={captionRef}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 12,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity: 0,
+          textAlign: "center",
+          padding: "0 24px",
+          pointerEvents: "none",
+        }}
       >
         <div
-          ref={captionRef}
           style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: 0,
-            textAlign: "center",
-            padding: "0 24px",
-            pointerEvents: "none",
+            fontFamily: "var(--font-bebas), sans-serif",
+            fontSize: "clamp(30px, 4.2vw, 54px)",
+            letterSpacing: "0.08em",
+            lineHeight: 1,
+            color: "rgba(240, 246, 255, 0.96)",
+            textShadow:
+              "0 0 22px rgba(46, 188, 254, 0.34), 0 0 48px rgba(240, 246, 255, 0.2)",
           }}
         >
-          <div
-            style={{
-              fontFamily: "var(--font-bebas), sans-serif",
-              fontSize: "clamp(30px, 4.2vw, 54px)",
-              letterSpacing: "0.08em",
-              lineHeight: 1,
-              color: "rgba(240, 246, 255, 0.94)",
-            }}
-          >
-            WELCOME TO SPIRIT CONNECT
-          </div>
+          WELCOME TO SPIRIT CONNECT
         </div>
       </div>
 
@@ -541,10 +555,10 @@ export default function JourneyExperience() {
           opacity: 0,
           visibility: "hidden",
           pointerEvents: "none",
-          filter: "blur(18px)",
-          mixBlendMode: "screen",
+          filter: "blur(22px) saturate(1.2)",
+          mixBlendMode: "normal",
           background:
-            "radial-gradient(circle at 32% 48%, rgba(158, 220, 255, 0.42) 0%, rgba(46, 188, 254, 0.18) 24%, transparent 50%), radial-gradient(circle at 68% 44%, rgba(255, 255, 255, 0.34) 0%, rgba(170, 210, 255, 0.16) 22%, transparent 54%), radial-gradient(circle at 50% 70%, rgba(120, 170, 255, 0.26) 0%, transparent 48%), linear-gradient(100deg, transparent 0%, rgba(230, 246, 255, 0.12) 42%, transparent 74%)",
+            "linear-gradient(0deg, rgba(226, 242, 252, 0.98) 0%, rgba(198, 224, 240, 0.94) 28%, rgba(129, 169, 198, 0.78) 54%, rgba(57, 82, 111, 0.46) 76%, rgba(8, 13, 22, 0.16) 100%), radial-gradient(circle at 30% 78%, rgba(255, 255, 255, 0.95) 0%, rgba(196, 226, 247, 0.58) 30%, transparent 58%), radial-gradient(circle at 70% 82%, rgba(234, 247, 255, 0.88) 0%, rgba(96, 147, 190, 0.48) 34%, transparent 62%)",
         }}
       >
         <div
@@ -554,11 +568,24 @@ export default function JourneyExperience() {
             opacity: 0.45,
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.018 0.034' numOctaves='4' seed='7'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.72 0'/%3E%3C/filter%3E%3Crect width='360' height='360' filter='url(%23f)'/%3E%3C/svg%3E\")",
-            backgroundSize: "42vmax 42vmax",
-            animation: "mistDrift 10s ease-in-out infinite alternate",
+            backgroundSize: "34vmax 34vmax",
+            animation: "mistDrift 8s ease-in-out infinite alternate",
           }}
         />
-        <style>{`@keyframes mistDrift { from { transform: translate3d(-4%, 2%, 0) rotate(-1deg); } to { transform: translate3d(5%, -3%, 0) rotate(1.5deg); } }`}</style>
+        <div
+          style={{
+            position: "absolute",
+            left: "-8%",
+            right: "-8%",
+            bottom: "-10%",
+            height: "72%",
+            opacity: 0.86,
+            background:
+              "radial-gradient(ellipse at 18% 78%, rgba(255, 255, 255, 0.96) 0%, rgba(215, 237, 250, 0.82) 28%, transparent 56%), radial-gradient(ellipse at 50% 88%, rgba(235, 248, 255, 0.98) 0%, rgba(178, 214, 238, 0.8) 34%, transparent 66%), radial-gradient(ellipse at 82% 76%, rgba(248, 253, 255, 0.92) 0%, rgba(172, 210, 238, 0.7) 30%, transparent 60%)",
+            animation: "mistBillow 6.5s ease-in-out infinite alternate",
+          }}
+        />
+        <style>{`@keyframes mistDrift { from { transform: translate3d(-4%, 7%, 0) rotate(-1deg); } to { transform: translate3d(5%, -5%, 0) rotate(1.5deg); } } @keyframes mistBillow { from { transform: translate3d(-3%, 9%, 0) scale(1.04); } to { transform: translate3d(4%, -6%, 0) scale(1.13); } }`}</style>
       </div>
 
       {/* final destination: the existing hologram portal */}
