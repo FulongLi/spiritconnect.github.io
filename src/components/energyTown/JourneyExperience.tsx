@@ -103,7 +103,7 @@ const CHAPTERS: Chapter[] = [
     title: "POWER ON THE MOVE",
     sub: "Every vehicle docks into the same grid.",
     body: "Landing pads and charging stations extend the micro-grid to rovers, landers, and future mobility — energy delivered wherever the mission goes.",
-    align: "center",
+    align: "left",
   },
 ];
 

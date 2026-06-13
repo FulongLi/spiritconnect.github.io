@@ -35,9 +35,12 @@ const SITES: [number, number][] = [
   [90, 0], // reactor (middle of the fan)
   [74, -32], // BESS (bottom of the fan)
   [44, 0], // SST — the hub the fan converges on
-  [-58, 12], // landing pad A
-  [-44, 28], // landing pad B
-  [-42, 10], // charging stations + vehicles
+  [-58, 8], // left landing pad node
+  [-38, 18], // central landing pad node
+  [-22, 34], // upper landing pad
+  [-40, -12], // lower landing pad
+  [-68, 0], // left charging branch
+  [-30, -32], // lower charging branch
   [16, -42], // data centre
   [-26, 34], // HDU
   [30, 32], // comms tower
@@ -721,12 +724,14 @@ export function buildTown(quality: "high" | "low"): Town {
     }
   }
 
-  /* ----- two landing pads (low-profile, never sunken) + lander ----- */
+  /* ----- landing pads + charging posts, laid out like the hand sketch ----- */
   const pads = [
-    { x: -58, z: 12, r: 8.5 }, // pad A — the lander sits here
-    { x: -44, z: 28, r: 8.5 }, // pad B — kept clear
+    { x: -58, z: 8, r: 5.2 }, // left branch node
+    { x: -38, z: 18, r: 7.2 }, // central node
+    { x: -22, z: 34, r: 7.8 }, // upper-right terminal pad
+    { x: -40, z: -12, r: 7.4 }, // lower branch terminal pad
   ];
-  let padTop = 0;
+  const padTops: number[] = [];
   for (let pi = 0; pi < pads.length; pi++) {
     const pd = pads[pi];
     // sample the rim so the pad always clears the local terrain
@@ -739,7 +744,7 @@ export function buildTown(quality: "high" | "low"): Town {
       minEdge = Math.min(minEdge, h);
     }
     const top = maxEdge + 0.22; // low profile
-    if (pi === 0) padTop = top;
+    padTops[pi] = top;
     const baseH = top - (minEdge - 0.8);
     const padMesh = new THREE.Mesh(
       track(new THREE.CylinderGeometry(pd.r, pd.r + 0.6, baseH, 28)),
@@ -763,13 +768,13 @@ export function buildTown(quality: "high" | "low"): Town {
     group.add(padRing, padMark);
   }
   {
-    const pad = pads[0];
-    /* detailed lander on pad A */
-    const lx = pad.x + 1.5;
+    const pad = pads[2];
+    /* detailed lander on the upper-right terminal pad */
+    const lx = pad.x + 1.2;
     const lz = pad.z - 1.0;
     const lander = new THREE.Group();
-    lander.position.set(lx, padTop, lz);
-    lander.rotation.y = 0.6;
+    lander.position.set(lx, padTops[2], lz);
+    lander.rotation.y = -0.35;
     // descent stage: octagonal, gold-foil skirt
     const descent = new THREE.Mesh(track(new THREE.CylinderGeometry(1.6, 1.7, 1.0, 8)), goldMat);
     descent.position.y = 1.35;
@@ -812,27 +817,52 @@ export function buildTown(quality: "high" | "low"): Town {
     }
     group.add(lander);
 
-    /* charging stations — set apart from the pads, toward the habitat */
-    for (let i = 0; i < 3; i++) {
-      const cx = -42;
-      const cz = 4 + i * 5.5;
-      const gy = terrainHeight(cx, cz);
-      const pillar = new THREE.Mesh(track(new THREE.BoxGeometry(0.55, 1.9, 0.45)), shellMat);
-      pillar.position.set(cx, gy + 0.95, cz + 2.4);
+    const chargerGeo = track(new THREE.BoxGeometry(1.4, 2.4, 0.85));
+    const chargerBaseGeo = track(new THREE.BoxGeometry(3.6, 0.16, 3.0));
+    const screenGeo = track(new THREE.BoxGeometry(0.82, 0.5, 0.08));
+    const armGeo = track(new THREE.CylinderGeometry(0.06, 0.06, 1.55, 6));
+    const spotGeo = track(new THREE.PlaneGeometry(4.0, 3.2));
+    const chargers = [
+      // three square charger posts on the left branch
+      { x: -78, z: -7.5, rot: -0.92 },
+      { x: -70, z: -2.5, rot: -0.92 },
+      { x: -62, z: 2.8, rot: -0.92 },
+      // three square charger posts on the lower branch
+      { x: -34, z: -26, rot: 0.16 },
+      { x: -31, z: -34, rot: 0.16 },
+      { x: -28, z: -42, rot: 0.16 },
+    ];
+    for (const station of chargers) {
+      const gy = terrainHeight(station.x, station.z);
+      const charger = new THREE.Group();
+      charger.position.set(station.x, gy, station.z);
+      charger.rotation.y = station.rot;
+
+      const base = new THREE.Mesh(chargerBaseGeo, shellDarkMat);
+      base.position.y = 0.08;
+      base.receiveShadow = shadows;
+      charger.add(base);
+
+      const pillar = new THREE.Mesh(chargerGeo, shellMat);
+      pillar.position.set(0, 1.35, 0);
       pillar.castShadow = shadows;
-      group.add(pillar);
-      const screen = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.5, 0.05)), bessLightMat);
-      screen.position.set(cx, gy + 1.35, cz + 2.16);
-      group.add(screen);
-      const arm = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.05, 1.4, 6)), shellDarkMat);
+      charger.add(pillar);
+
+      const screen = new THREE.Mesh(screenGeo, bessLightMat);
+      screen.position.set(0, 1.65, -0.47);
+      charger.add(screen);
+
+      const arm = new THREE.Mesh(armGeo, shellDarkMat);
       arm.rotation.x = Math.PI / 2.6;
-      arm.position.set(cx, gy + 1.85, cz + 1.8);
-      group.add(arm);
-      // glowing charging spot on the ground
-      const spot = new THREE.Mesh(track(new THREE.PlaneGeometry(3.6, 3.6)), conduitMat);
+      arm.position.set(0, 2.22, -0.72);
+      charger.add(arm);
+
+      const spot = new THREE.Mesh(spotGeo, conduitMat);
       spot.rotation.x = -Math.PI / 2;
-      spot.position.set(cx, gy + 0.12, cz - 0.6);
-      group.add(spot);
+      spot.position.set(0, 0.14, -2.35);
+      charger.add(spot);
+
+      group.add(charger);
     }
   }
 
@@ -904,9 +934,11 @@ export function buildTown(quality: "high" | "low"): Town {
     // SST outputs
     [[40, -7], [30, -24], [20, -38]], // SST -> data centre
     [[39, 2], [30, 2], [24, 2]], // SST -> habitat hexagon
-    [[38, -4], [12, -26], [-16, -26], [-40, -8], [-50, 4], [-54, 8]], // SST -> pad A / chargers
-    [[-42, 14], [-43, 20], [-44, 25]], // chargers -> pad B
-    [[-55, 15], [-50, 21], [-46, 25]], // pad A -> pad B
+    [[38, -4], [12, -24], [-12, -18], [-30, 4], [-38, 18]], // SST -> pad / charger hub
+    [[-38, 18], [-48, 13], [-58, 8], [-68, 0], [-78, -7.5]], // hub -> left pad + charger branch
+    [[-38, 18], [-30, 26], [-22, 34]], // hub -> upper terminal pad
+    [[-38, 18], [-39, 3], [-40, -12]], // hub -> lower terminal pad
+    [[-40, -12], [-36, -23], [-31, -34], [-28, -42]], // lower pad -> lower charger branch
     // habitat loop following the hexagon perimeter
     [
       [22.6, 4.1],
