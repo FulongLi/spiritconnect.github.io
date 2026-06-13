@@ -735,13 +735,13 @@ export function buildTown(quality: "high" | "low"): Town {
   /* ----- landing pads + charging posts, laid out like the hand sketch ----- */
   type PadNode = { x: number; z: number; r: number; kind?: "pad" | "dome" };
   const pads: PadNode[] = [
-    { x: -26, z: -6, r: 5.2 }, // node attached to the habitat ring
-    { x: -46, z: -26, r: 6.4, kind: "dome" }, // small dome at the approach node (pulled down the chain for clearance)
-    { x: -58, z: -38, r: 5.8 }, // landing pad at the charger branch junction
-    { x: -76, z: -42, r: 5.8 }, // left terminal pad beside chargers
-    { x: -58, z: -58, r: 5.8 }, // lower terminal pad beside chargers
+    { x: -42, z: -8, r: 5.2 }, // node #0 — chain pushed west along the red arrow
+    { x: -58, z: -12, r: 6.4, kind: "dome" }, // small dome #1 (moved up +12)
+    { x: -74, z: -16, r: 5.8 }, // landing pad #2 — on the straight line through #0 and #1
+    { x: -92, z: -20, r: 5.8 }, // left terminal pad beside chargers (follows #2)
+    { x: -94, z: 4, r: 5.8 }, // terminal pad #4 — flipped up, moved a big step left (-X)
     { x: -36, z: 20, r: 5.2 }, // second node attached to the habitat ring
-    { x: -62, z: 43, r: 6.4, kind: "dome" }, // small dome at the second approach node (pulled out the chain for clearance)
+    { x: -58, z: 40, r: 6.4, kind: "dome" }, // small dome at the second approach node
     { x: -80, z: 60, r: 5.8 }, // second landing pad at the charger branch junction
     { x: -100, z: 64, r: 5.8 }, // second left terminal pad beside chargers
     { x: -80, z: 82, r: 5.8 }, // second lower terminal pad beside chargers
@@ -893,13 +893,13 @@ export function buildTown(quality: "high" | "low"): Town {
     const spotGeo = track(new THREE.PlaneGeometry(4.0, 3.2));
     const chargers = [
       // three square charger posts on the left branch
-      { x: -92, z: -45, rot: -1.48 },
-      { x: -102, z: -47, rot: -1.48 },
-      { x: -112, z: -49, rot: -1.48 },
-      // three square charger posts on the lower branch
-      { x: -46, z: -60, rot: -0.06 },
-      { x: -34, z: -60.5, rot: -0.06 },
-      { x: -22, z: -61, rot: -0.06 },
+      { x: -108, z: -23, rot: -1.48 },
+      { x: -118, z: -25, rot: -1.48 },
+      { x: -128, z: -27, rot: -1.48 },
+      // three square charger posts on the upper branch (flipped up, moved left of #4)
+      { x: -104, z: 5, rot: -0.06 },
+      { x: -116, z: 6, rot: -0.06 },
+      { x: -128, z: 7, rot: -0.06 },
       // three square charger posts on the second left branch
       { x: -108, z: 66, rot: -1.38 },
       { x: -118, z: 68, rot: -1.38 },
@@ -1011,10 +1011,10 @@ export function buildTown(quality: "high" | "low"): Town {
     // SST outputs
     [[40, -7], [30, -24], [20, -38]], // SST -> data centre
     [[39, 2], [30, 2], [24, 2]], // SST -> habitat hexagon
-    [[39, 2], [24, 0], [-25, -5], [-46, -26], [-58, -38]], // habitat edge -> charger branch junction
-    [[-58, -38], [-67, -40], [-76, -42], [-92, -45], [-112, -49]], // junction -> left pad + charger branch
-    [[-58, -38], [-58, -48], [-58, -58], [-46, -60], [-22, -61]], // junction -> lower pad + charger branch
-    [[-19, 14], [-36, 20], [-62, 43], [-80, 60]], // second habitat edge -> charger branch junction
+    [[39, 2], [24, 0], [-42, -8], [-58, -12], [-74, -16]], // habitat edge -> charger branch junction
+    [[-74, -16], [-83, -18], [-92, -20], [-108, -23], [-128, -27]], // junction -> left pad + charger branch
+    [[-74, -16], [-84, -6], [-94, 4], [-111, 5.5], [-128, 7]], // junction -> upper pad + charger branch (flipped, left)
+    [[-19, 14], [-36, 20], [-58, 40], [-80, 60]], // second habitat edge -> charger branch junction
     [[-80, 60], [-90, 62], [-100, 64], [-108, 66], [-128, 70]], // second junction -> left pad + charger branch
     [[-80, 60], [-80, 72], [-80, 82], [-68, 84], [-44, 88]], // second junction -> lower pad + charger branch
     // habitat loop following the hexagon perimeter
