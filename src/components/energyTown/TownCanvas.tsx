@@ -33,48 +33,49 @@ type Props = {
 // Simple, steady camera language: one continuous sweep with gentle turns
 // and NO direction reversals. The west leg flies past the pads and then
 // keeps moving forward (east) straight into the main dome.
-// One continuous north→south arc down the input fan (PV → reactor →
-// BESS), into the SST hub, on to the data centre, a west glide past the
-// pads, then straight ahead into the main dome. No direction reversals.
+// One continuous north-to-south arc down the input fan (PV -> reactor ->
+// BESS), then a broad S-curve through SST, data centre, pads, and into
+// the main dome. Waypoints stay a little farther back so each subject
+// reads as a complete installation beside the chapter copy.
 const CAM_POSITIONS: [number, number, number][] = [
   [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
-  [56, 48, 112], // 1 descending toward the input fan
-  [94, 9, 60], // 2 arriving over the PV rows
-  [89, 7.5, 47], // 3 PV dwell (slow drift)
-  [87, 7, 40], // 4 PV dwell end
-  [103, 8, 16], // 5 down the fan to the reactor
-  [99, 7.5, 7], // 6 reactor dwell
-  [92, 6.5, -20], // 7 continuing down to the battery banks
-  [85, 5.5, -27], // 8 BESS dwell
-  [64, 6.5, -14], // 9 converging on the SST hub
-  [52, 5.5, -13], // 10 SST dwell
-  [34, 6, -34], // 11 on toward the data centre
-  [12, 5, -50], // 12 DC dwell
-  [-30, 7, -30], // 13 gliding west, pads coming into view
-  [-66, 7.5, -10], // 14 pad / charging dwell (looking over the pads)
-  [-44, 6.5, 4], // 15 moving forward — the dome straight ahead
-  [-14, 6, 10], // 16 final approach to the shell
-  [-4, 4.8, 5.5], // 17 crossing the hull — dark inside
-  [0, 4.5, 2], // 18 inside the dome
+  [42, 62, 138], // 1 descending toward the input fan
+  [78, 26, 112], // 2 arriving over the PV rows
+  [91, 24, 96], // 3 PV dwell, pulled back enough to see the whole field
+  [103, 19, 68], // 4 leaving PV in the same southbound sweep
+  [108, 14, 24], // 5 down the fan to the reactor
+  [104, 12, 10], // 6 reactor dwell
+  [99, 12, -12], // 7 continuing down to the battery banks
+  [87, 10, -29], // 8 BESS dwell
+  [68, 11, -22], // 9 broad turn toward the SST hub
+  [56, 10, -11], // 10 SST dwell
+  [38, 10, -32], // 11 on toward the data centre
+  [19, 8, -51], // 12 DC dwell
+  [-16, 10, -40], // 13 gliding west, pads coming into view
+  [-50, 9, -19], // 14 pad / charging dwell (whole pad group in frame)
+  [-55, 8, -1], // 15 moving forward with the dome straight ahead
+  [-25, 7, 8], // 16 final approach to the shell
+  [-7, 5.4, 6], // 17 crossing the hull, softened by the mist transition
+  [0, 4.8, 2], // 18 inside the dome
 ];
 
 const CAM_TARGETS: [number, number, number][] = [
   [0, 38, -20], // the Moon takes at least half the frame
+  [70, 4, 42],
   [76, 3, 40],
-  [77, 2, 38],
-  [76, 2, 36], // PV
-  [75, 2, 35],
-  [91, 4, 1],
+  [76, 2.5, 38], // PV
+  [82, 2.8, 22],
+  [90, 4, 0],
   [90, 4, 0], // reactor
-  [76, 2.5, -30],
-  [75, 2, -31], // BESS
-  [45, 3.5, 1],
+  [78, 2.7, -25],
+  [74, 2.3, -32], // BESS
+  [50, 3.8, -4],
   [44, 3.5, 0], // SST hub
-  [19, 2.5, -40],
-  [17, 2, -42], // data centre
-  [-46, 2.5, 4],
-  [-50, 2, 16], // pads / chargers / vehicles
-  [-12, 4.5, 2], // dome ahead, same forward direction
+  [22, 2.7, -36],
+  [16, 2.2, -42], // data centre
+  [-37, 2.7, -2],
+  [-50, 2.4, 14], // pads / chargers / vehicles
+  [-18, 4.2, 3], // dome ahead, same forward direction
   [0, 5, 0],
   [0, 4, 0],
   [0, 4.5, -2],
@@ -120,7 +121,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     scene.environmentIntensity = 0.32;
 
     const camera = new THREE.PerspectiveCamera(
-      52,
+      60,
       window.innerWidth / window.innerHeight,
       0.5,
       900
@@ -183,14 +184,12 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
     const posCurve = new THREE.CatmullRomCurve3(
       CAM_POSITIONS.map((p) => new THREE.Vector3(...p)),
       false,
-      "catmullrom",
-      0.4
+      "centripetal"
     );
     const tgtCurve = new THREE.CatmullRomCurve3(
       CAM_TARGETS.map((p) => new THREE.Vector3(...p)),
       false,
-      "catmullrom",
-      0.4
+      "centripetal"
     );
     const camPos = new THREE.Vector3();
     const camTgt = new THREE.Vector3();
@@ -232,7 +231,7 @@ export default function TownCanvas({ progressRef, themeRef, flightEnd = 0.84 }: 
 
       /* damped scroll progress */
       const target = Math.min(progressRef.current, 1);
-      smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 2.2);
+      smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 1.65);
 
       /* theme lerp toward target */
       const themeTarget = themeRef.current;

@@ -20,10 +20,13 @@ const PlaygroundCanvas = dynamic(
 const SECTIONS = 12; // total scroll length = SECTIONS * 100vh (longer = calmer pace)
 const FLIGHT_END = 0.84; // camera flight occupies progress 0 .. FLIGHT_END
 const PORTAL_MOUNT = 0.66; // mount the hologram portal early so it preloads
-const BLACKOUT_START = 0.755; // crossing the dome hull…
-const BLACKOUT_END = 0.8; // …dark inside…
-const PORTAL_FADE_START = 0.885; // …then the portal emerges
-const PORTAL_FADE_END = 0.945;
+const BLACKOUT_START = 0.8; // crossing the dome hull...
+const BLACKOUT_END = 0.855; // ...dark inside...
+const MIST_START = 0.765; // veil the dome shell before the dark beat
+const MIST_PEAK = 0.845;
+const MIST_END = 0.94;
+const PORTAL_FADE_START = 0.91; // ...then the portal emerges
+const PORTAL_FADE_END = 0.965;
 
 type Chapter = {
   start: number;
@@ -79,7 +82,7 @@ const CHAPTERS: Chapter[] = [
     title: "SHAPE THE GRID",
     sub: "Solid-state transformers form the backbone of advanced energy networks.",
     body: "Wide-bandgap devices, high-frequency magnetics, control, protection, thermal design, and power routing are integrated into one intelligent conversion hub.",
-    align: "right",
+    align: "left",
   },
   {
     start: 0.505,
@@ -121,6 +124,7 @@ export default function JourneyExperience() {
   const portalWrapRef = useRef<HTMLDivElement>(null);
   const railDotRef = useRef<HTMLDivElement>(null);
   const blackoutRef = useRef<HTMLDivElement>(null);
+  const mistRef = useRef<HTMLDivElement>(null);
   const captionRef = useRef<HTMLDivElement>(null);
   const [night, setNight] = useState(false);
   const [portalMounted, setPortalMounted] = useState(false);
@@ -185,10 +189,20 @@ export default function JourneyExperience() {
         blackoutRef.current.style.opacity = o.toFixed(3);
       }
 
+      /* mist veil between the dome shell and the portal */
+      if (mistRef.current) {
+        const rise = Math.min(1, Math.max(0, (p - MIST_START) / (MIST_PEAK - MIST_START)));
+        const fall = Math.min(1, Math.max(0, (MIST_END - p) / (MIST_END - MIST_PEAK)));
+        const o = Math.max(0, Math.min(1, rise * fall));
+        mistRef.current.style.opacity = (o * 0.82).toFixed(3);
+        mistRef.current.style.transform = `translate3d(${((p - MIST_START) * 120).toFixed(1)}px, ${((MIST_PEAK - p) * 44).toFixed(1)}px, 0) scale(${(1 + o * 0.08).toFixed(3)})`;
+        mistRef.current.style.visibility = o <= 0.001 ? "hidden" : "visible";
+      }
+
       /* WELCOME caption inside the dark beat */
       if (captionRef.current) {
-        const inO = Math.min(1, Math.max(0, (p - 0.81) / 0.025));
-        const outO = Math.min(1, Math.max(0, (0.878 - p) / 0.025));
+        const inO = Math.min(1, Math.max(0, (p - 0.845) / 0.025));
+        const outO = Math.min(1, Math.max(0, (0.905 - p) / 0.025));
         captionRef.current.style.opacity = (inO * outO).toFixed(3);
       }
 
@@ -515,6 +529,36 @@ export default function JourneyExperience() {
             WELCOME TO SPIRIT CONNECT
           </div>
         </div>
+      </div>
+
+      {/* mist veil for the dome-to-portal transition */}
+      <div
+        ref={mistRef}
+        style={{
+          position: "fixed",
+          inset: "-12vh -12vw",
+          zIndex: 11,
+          opacity: 0,
+          visibility: "hidden",
+          pointerEvents: "none",
+          filter: "blur(18px)",
+          mixBlendMode: "screen",
+          background:
+            "radial-gradient(circle at 32% 48%, rgba(158, 220, 255, 0.42) 0%, rgba(46, 188, 254, 0.18) 24%, transparent 50%), radial-gradient(circle at 68% 44%, rgba(255, 255, 255, 0.34) 0%, rgba(170, 210, 255, 0.16) 22%, transparent 54%), radial-gradient(circle at 50% 70%, rgba(120, 170, 255, 0.26) 0%, transparent 48%), linear-gradient(100deg, transparent 0%, rgba(230, 246, 255, 0.12) 42%, transparent 74%)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: 0.45,
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='360'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.018 0.034' numOctaves='4' seed='7'/%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.72 0'/%3E%3C/filter%3E%3Crect width='360' height='360' filter='url(%23f)'/%3E%3C/svg%3E\")",
+            backgroundSize: "42vmax 42vmax",
+            animation: "mistDrift 10s ease-in-out infinite alternate",
+          }}
+        />
+        <style>{`@keyframes mistDrift { from { transform: translate3d(-4%, 2%, 0) rotate(-1deg); } to { transform: translate3d(5%, -3%, 0) rotate(1.5deg); } }`}</style>
       </div>
 
       {/* final destination: the existing hologram portal */}
