@@ -32,6 +32,8 @@ function smoothstep(a: number, b: number, x: number) {
 /* ---------------- key sites (flattened ground, no craters) --------- */
 const SITES: [number, number][] = [
   [76, 38], // PV array (top of the fan)
+  [96, 24], // PV array lower-right extent
+  [72, 58], // PV array upper-left extent
   [90, 0], // reactor (middle of the fan)
   [74, -32], // BESS (bottom of the fan)
   [44, 0], // SST — the hub the fan converges on
@@ -546,18 +548,32 @@ export function buildTown(quality: "high" | "low"): Town {
   const legPlacements: THREE.Matrix4[] = [];
   const panelYaw = Math.atan2(150 - solarCenter.x, 90 - solarCenter.z);
   const panelTilt = 0.55;
+  const panelRows = 9;
+  const panelCols = 9;
+  const panelSpacingX = 7.0;
+  const panelSpacingZ = 6.2;
   const cosY = Math.cos(panelYaw);
   const sinY = Math.sin(panelYaw);
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 6; col++) {
-      const px = solarCenter.x - 19 + col * 7.6 + R(-0.2, 0.2);
-      const pz = solarCenter.z - 14 + row * 7.0 + R(-0.2, 0.2);
+  const startX = solarCenter.x - 8.5;
+  const startZ = solarCenter.z + 5.5;
+  for (let row = 0; row < panelRows; row++) {
+    for (let col = 0; col < panelCols; col++) {
+      const px =
+        startX +
+        col * panelSpacingX +
+        row * 1.15 +
+        R(-0.16, 0.16);
+      const pz =
+        startZ -
+        row * panelSpacingZ -
+        col * 0.72 +
+        R(-0.16, 0.16);
       const gy = terrainHeight(px, pz);
       const mm = new THREE.Matrix4();
       mm.compose(
         new THREE.Vector3(px, gy + 1.5, pz),
         new THREE.Quaternion().setFromEuler(new THREE.Euler(panelTilt, panelYaw, 0, "YXZ")),
-        new THREE.Vector3(6.6, 0.18, 5.0)
+        new THREE.Vector3(5.9, 0.18, 4.45)
       );
       panelPlacements.push(mm);
       for (const lx of [-2.4, 2.4]) {
@@ -950,7 +966,7 @@ export function buildTown(quality: "high" | "low"): Town {
      (data dots flow in the opposite direction — information returns). */
   const LINKS: [number, number][][] = [
     // the fan: PV / reactor / BESS each feed the SST hub directly
-    [[72, 34], [60, 22], [50, 6]], // PV -> SST
+    [[95, 12], [76, 12], [58, 8], [50, 6]], // PV -> SST
     [[85, 1], [70, 1], [52, 1]], // reactor -> SST
     [[70, -28], [58, -16], [49, -5]], // BESS -> SST
     // SST outputs
