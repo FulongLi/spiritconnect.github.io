@@ -736,7 +736,7 @@ export function buildTown(quality: "high" | "low"): Town {
   type PadNode = { x: number; z: number; r: number; kind?: "pad" | "dome" };
   const pads: PadNode[] = [
     { x: -26, z: -6, r: 5.2 }, // node attached to the habitat ring
-    { x: -42, z: -22, r: 5.4 }, // diagonal approach node
+    { x: -42, z: -22, r: 6.4, kind: "dome" }, // small dome at the approach node
     { x: -58, z: -38, r: 6.4, kind: "dome" }, // small dome at the charger branch junction
     { x: -76, z: -42, r: 5.8 }, // left terminal pad beside chargers
     { x: -58, z: -58, r: 5.8 }, // lower terminal pad beside chargers
@@ -760,42 +760,7 @@ export function buildTown(quality: "high" | "low"): Town {
     }
     const top = maxEdge + 0.22; // low profile
     padTops[pi] = top;
-    if (pd.kind === "dome") {
-      const gy = terrainHeight(pd.x, pd.z);
-      const domeRadius = pd.r * 0.92;
-      const domeGeo = track(
-        new THREE.SphereGeometry(domeRadius, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2)
-      );
-      const dome = new THREE.Mesh(domeGeo, shellMat);
-      dome.position.set(pd.x, gy + 0.1, pd.z);
-      dome.castShadow = shadows;
-      group.add(dome);
-
-      const seamSrc = track(
-        new THREE.SphereGeometry(domeRadius * 1.004, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)
-      );
-      const seamGeo = track(new THREE.WireframeGeometry(seamSrc));
-      const seams = new THREE.LineSegments(seamGeo, seamMat);
-      seams.position.set(pd.x, gy + 0.1, pd.z);
-      group.add(seams);
-
-      const baseRing = new THREE.Mesh(
-        track(new THREE.TorusGeometry(domeRadius * 1.04, 0.15, 8, 48)),
-        conduitMat
-      );
-      baseRing.rotation.x = Math.PI / 2;
-      baseRing.position.set(pd.x, gy + 0.28, pd.z);
-      group.add(baseRing);
-
-      const band = new THREE.Mesh(
-        track(new THREE.TorusGeometry(domeRadius * 0.86, 0.1, 8, 42)),
-        stripMat
-      );
-      band.rotation.x = Math.PI / 2;
-      band.position.set(pd.x, gy + domeRadius * 0.42, pd.z);
-      group.add(band);
-      continue;
-    }
+    // every node sits on a raised disc platform that clears the local terrain
     const baseH = top - (minEdge - 0.8);
     const padMesh = new THREE.Mesh(
       track(new THREE.CylinderGeometry(pd.r, pd.r + 0.6, baseH, 28)),
@@ -804,6 +769,59 @@ export function buildTown(quality: "high" | "low"): Town {
     padMesh.position.set(pd.x, top - baseH / 2, pd.z);
     padMesh.receiveShadow = shadows;
     group.add(padMesh);
+
+    if (pd.kind === "dome") {
+      // small habitat dome resting ON the platform (not sunk into the terrain),
+      // built with the same elements as the main habitat domes
+      const domeRadius = pd.r * 0.92;
+      const domeGeo = track(
+        new THREE.SphereGeometry(domeRadius, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2)
+      );
+      const dome = new THREE.Mesh(domeGeo, shellMat);
+      dome.position.set(pd.x, top + 0.05, pd.z);
+      dome.castShadow = shadows;
+      group.add(dome);
+
+      const seamSrc = track(
+        new THREE.SphereGeometry(domeRadius * 1.004, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)
+      );
+      const seamGeo = track(new THREE.WireframeGeometry(seamSrc));
+      const seams = new THREE.LineSegments(seamGeo, seamMat);
+      seams.position.set(pd.x, top + 0.05, pd.z);
+      group.add(seams);
+
+      // glowing base ring (brand blue) — shares the emissive material that
+      // brightens at night, exactly like the central + secondary domes
+      const baseRing = new THREE.Mesh(
+        track(new THREE.TorusGeometry(domeRadius * 1.04, 0.15, 8, 48)),
+        conduitMat
+      );
+      baseRing.rotation.x = Math.PI / 2;
+      baseRing.position.set(pd.x, top + 0.23, pd.z);
+      group.add(baseRing);
+
+      // brand-blue crown ring near the apex (matches the main habitat domes)
+      const crownH = domeRadius * 0.78;
+      const crownR = Math.sqrt(Math.max(0.05, domeRadius * domeRadius - crownH * crownH));
+      const crown = new THREE.Mesh(
+        track(new THREE.TorusGeometry(crownR * 1.02, 0.12, 8, 40)),
+        conduitMat
+      );
+      crown.rotation.x = Math.PI / 2;
+      crown.position.set(pd.x, top + 0.05 + crownH, pd.z);
+      group.add(crown);
+
+      // warm window band partway up the dome
+      const band = new THREE.Mesh(
+        track(new THREE.TorusGeometry(domeRadius * 0.86, 0.1, 8, 42)),
+        stripMat
+      );
+      band.rotation.x = Math.PI / 2;
+      band.position.set(pd.x, top + domeRadius * 0.42, pd.z);
+      group.add(band);
+      continue;
+    }
+
     const padRing = new THREE.Mesh(
       track(new THREE.TorusGeometry(pd.r * 0.86, 0.15, 8, 64)),
       conduitMat
