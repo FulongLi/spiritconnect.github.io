@@ -737,12 +737,12 @@ export function buildTown(quality: "high" | "low"): Town {
   const pads: PadNode[] = [
     { x: -26, z: -6, r: 5.2 }, // node attached to the habitat ring
     { x: -42, z: -22, r: 6.4, kind: "dome" }, // small dome at the approach node
-    { x: -58, z: -38, r: 6.4, kind: "dome" }, // small dome at the charger branch junction
+    { x: -58, z: -38, r: 5.8 }, // landing pad at the charger branch junction
     { x: -76, z: -42, r: 5.8 }, // left terminal pad beside chargers
     { x: -58, z: -58, r: 5.8 }, // lower terminal pad beside chargers
     { x: -36, z: 20, r: 5.2 }, // second node attached to the habitat ring
-    { x: -58, z: 40, r: 5.4 }, // second diagonal approach node
-    { x: -80, z: 60, r: 6.4, kind: "dome" }, // second small dome at the charger branch junction
+    { x: -58, z: 40, r: 6.4, kind: "dome" }, // small dome at the second approach node
+    { x: -80, z: 60, r: 5.8 }, // second landing pad at the charger branch junction
     { x: -100, z: 64, r: 5.8 }, // second left terminal pad beside chargers
     { x: -80, z: 82, r: 5.8 }, // second lower terminal pad beside chargers
   ];
