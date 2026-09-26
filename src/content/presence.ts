@@ -194,13 +194,3 @@ export const PRESENCE_MEDIA: Record<"heroAnimation" | "demoVideo" | "hardwareCon
     assetHint: "public/presence/presence-hardware-concept.png, then list it in src/content/presence.ts → PRESENCE_MEDIA.hardwareConcept",
   },
 };
-
-/** interior stage copy (end of the lunar journey) */
-export const PRESENCE_STAGE = {
-  eyebrow: "INSIDE SPIRIT CONNECT",
-  title: "PRESENCE",
-  tagline: "AI, WITH A PRESENCE.",
-  body: "The interface between people and intelligent systems.",
-  cta: "Explore Presence",
-  secondaryCta: "Join the Founding 100",
-} as const;

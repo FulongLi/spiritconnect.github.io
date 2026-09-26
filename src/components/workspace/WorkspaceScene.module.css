@@ -1,0 +1,59 @@
+.root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0e0d0c;
+  touch-action: pan-y;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.root[data-ready="true"] .canvas {
+  opacity: 1;
+}
+
+/* links projected over the monitor screens (positioned by the engine) */
+.hotspot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 1;
+  border-radius: 0.6%;
+  cursor: pointer;
+  outline: none;
+  visibility: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hotspot[data-placed="true"] {
+  visibility: visible;
+}
+
+.secondary {
+  z-index: 2;
+  border-radius: 6px;
+}
+
+/* the drawn link is small on phones: extend its touch target */
+.secondary::after {
+  content: "";
+  position: absolute;
+  inset: -17px -10px;
+}
+
+.hotspot:focus-visible {
+  box-shadow:
+    0 0 0 1px rgba(236, 238, 242, 0.9),
+    0 0 0 6px rgba(236, 238, 242, 0.14);
+}
+
+.root[data-revealed="false"] .hotspot {
+  pointer-events: none;
+}

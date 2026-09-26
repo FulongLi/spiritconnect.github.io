@@ -1,0 +1,112 @@
+.room {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, #3c3b39 0%, #1d1d1e 55%, #0e0e0f 100%);
+  color: #eef0f3;
+}
+
+.monitors {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  display: flex;
+  gap: 10px;
+  width: min(900px, 76vw);
+  transform: translateX(-50%);
+}
+
+.monitor {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  aspect-ratio: 16 / 10;
+  padding: clamp(14px, 3vw, 36px);
+  border: 1px solid #9ea2a8;
+  border-radius: 6px;
+  background: #0a0b0d;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.25s ease;
+}
+
+.monitor:hover,
+.monitor:focus-visible {
+  background: #14161a;
+}
+
+.eyebrow,
+.cta {
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: rgba(226, 229, 234, 0.6);
+}
+
+.title {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-size: clamp(28px, 5vw, 64px);
+  letter-spacing: 0.08em;
+}
+
+.line {
+  font-size: clamp(11px, 1.3vw, 15px);
+  color: rgba(226, 229, 234, 0.8);
+}
+
+.cta {
+  margin-top: auto;
+  color: #eef0f3;
+}
+
+.device {
+  position: absolute;
+  left: max(4vw, calc(50% - min(450px, 38vw) - 150px));
+  bottom: 13%;
+  width: clamp(70px, 9vw, 120px);
+}
+
+.chamber {
+  aspect-ratio: 1 / 1.4;
+  border: 1px solid rgba(236, 238, 242, 0.28);
+  border-top: 12px solid #1b1c1f;
+  border-radius: 10px 10px 2px 2px;
+}
+
+.speaker {
+  height: 34px;
+  border-radius: 0 0 6px 6px;
+  background: radial-gradient(circle, #050506 1.4px, #1b1c1f 1.6px) 0 0 / 7px 7px;
+}
+
+.desk {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: 0;
+  height: 13%;
+  border-top: 2px solid #b8bbc0;
+  border-radius: 50% 50% 0 0 / 18% 18% 0 0;
+  background: linear-gradient(#232427, #121315);
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: rgba(230, 228, 223, 0.5);
+}
+
+@media (max-width: 720px) {
+  .monitors {
+    top: 16%;
+    flex-direction: column;
+    width: 86vw;
+  }
+
+  .device {
+    left: 7vw;
+    bottom: 14%;
+  }
+}

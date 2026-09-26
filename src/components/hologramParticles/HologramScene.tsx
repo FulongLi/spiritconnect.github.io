@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import type { ParticlesHologramProps } from "./types";
 import type { HologramBackendOverride } from "@/lib/debugFlags";
 import { STAGE_LAYOUT } from "./utils/presets";
+import { detectGpuBackend as detectBackend, hasWebGL2 } from "@/lib/render/backend";
 
 const ParticlesHologram = dynamic(() => import("./ParticlesHologram"), { ssr: false });
 
@@ -24,28 +25,6 @@ type Props = ParticlesHologramProps & {
   backendOverride?: HologramBackendOverride;
   onBackendChange?: (backend: HologramBackend) => void;
 };
-
-async function detectBackend(): Promise<Exclude<HologramBackend, "checking">> {
-  const gpu = (navigator as Navigator & {
-    gpu?: { requestAdapter?: () => Promise<unknown> };
-  }).gpu;
-  if (gpu?.requestAdapter) {
-    try {
-      if (await gpu.requestAdapter()) return "webgpu";
-    } catch {
-      /* fall through to WebGL */
-    }
-  }
-  return hasWebGL2() ? "webgl" : "fallback";
-}
-
-function hasWebGL2() {
-  try {
-    return !!document.createElement("canvas").getContext("webgl2");
-  } catch {
-    return false;
-  }
-}
 
 export default function HologramScene({
   fallback,

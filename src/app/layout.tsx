@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { COMPANY } from "@/content/site";
+import { BRAND, COMPANY } from "@/content/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(COMPANY.url),
@@ -11,9 +11,12 @@ export const metadata: Metadata = {
   description:
     "Energy powers AI. AI designs energy. A journey across a lunar micro-grid into the Spirit Connect interior — home of Presence, AI with a presence — with AIPE, the Spirit Connect engineering division.",
   icons: {
-    icon: "/assets/spirit-connect-logo.svg",
-    shortcut: "/assets/spirit-connect-logo.svg",
-    apple: "/assets/spirit-connect-logo.png",
+    icon: [
+      { url: BRAND.favicon, type: "image/svg+xml" },
+      { url: BRAND.faviconPng, type: "image/png", sizes: "32x32" },
+    ],
+    shortcut: BRAND.faviconPng,
+    apple: BRAND.appleTouchIcon,
   },
   openGraph: {
     siteName: COMPANY.name,

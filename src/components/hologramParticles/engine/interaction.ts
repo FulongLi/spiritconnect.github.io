@@ -18,6 +18,15 @@ export type InteractionOptions = {
   params: () => HologramParams;
   initialModelScale: number;
   enableZoom: boolean;
+  /**
+   * Camera rest pose for the parallax. Defaults to the stage camera: its
+   * current position, aimed at the origin.
+   */
+  cameraRig?: { position: Vector3; target: Vector3 };
+  /** where pointer events are read (defaults to `container`) */
+  eventTarget?: HTMLElement;
+  /** pointer-downs on these targets (e.g. links) are left to the browser */
+  ignorePointerDown?: (e: PointerEvent) => boolean;
 };
 
 export function createInteraction({
@@ -29,6 +38,9 @@ export function createInteraction({
   params,
   initialModelScale,
   enableZoom,
+  cameraRig = { position: camera.position.clone(), target: new Vector3() },
+  eventTarget = container,
+  ignorePointerDown,
 }: InteractionOptions) {
   const raycaster = new Raycaster();
   const mouseNDC = new Vector2();
@@ -55,7 +67,6 @@ export function createInteraction({
   const pointerPositions = new Map<number, { x: number; y: number; type: string }>();
   let touchInfluence = 0;
   let targetTouchInfluence = 0;
-  const CAM_RADIUS = camera.position.z;
   let camX = 0;
   let camY = 0;
   let camVelX = 0;
@@ -80,11 +91,8 @@ export function createInteraction({
     );
     raycaster.setFromCamera(mouseNDC, camera);
     if (raycaster.ray.intersectPlane(mousePlane, mouseHit)) {
-      const localPos = mouseHit
-        .clone()
-        .sub(posGroup.position)
-        .divideScalar(Math.max(modelScale, 0.001))
-        .applyQuaternion(rotGroup.quaternion.clone().invert());
+      // into the particles' model space (handles any parent transform)
+      const localPos = rotGroup.worldToLocal(mouseHit.clone());
       targetMousePos.copy(localPos);
       if (!mouseEverMoved) {
         smoothMousePos.copy(localPos);
@@ -103,10 +111,11 @@ export function createInteraction({
   };
 
   const onPointerDown = (e: PointerEvent) => {
+    if (ignorePointerDown?.(e)) return;
     if (e.cancelable) e.preventDefault();
     pointerPositions.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
     activePointerId = e.pointerId;
-    container.setPointerCapture?.(e.pointerId);
+    eventTarget.setPointerCapture?.(e.pointerId);
     const touches = touchPointers();
     if (touches.length >= 2) {
       mouseMoving = false;
@@ -152,8 +161,8 @@ export function createInteraction({
     pointerPositions.delete(e.pointerId);
     mouseMoving = false;
     targetTouchInfluence = 0;
-    if (container.hasPointerCapture?.(e.pointerId)) {
-      container.releasePointerCapture(e.pointerId);
+    if (eventTarget.hasPointerCapture?.(e.pointerId)) {
+      eventTarget.releasePointerCapture(e.pointerId);
     }
     const remainingTouches = touchPointers();
     if (remainingTouches.length >= 2) {
@@ -167,12 +176,12 @@ export function createInteraction({
     }
   };
 
-  if (enableZoom) container.addEventListener("wheel", onWheel, { passive: false });
-  container.addEventListener("pointerdown", onPointerDown, { passive: false });
-  container.addEventListener("pointermove", onPointerMove, { passive: false });
-  container.addEventListener("pointerup", endPointer);
-  container.addEventListener("pointercancel", endPointer);
-  container.addEventListener("pointerleave", endPointer);
+  if (enableZoom) eventTarget.addEventListener("wheel", onWheel, { passive: false });
+  eventTarget.addEventListener("pointerdown", onPointerDown, { passive: false });
+  eventTarget.addEventListener("pointermove", onPointerMove, { passive: false });
+  eventTarget.addEventListener("pointerup", endPointer);
+  eventTarget.addEventListener("pointercancel", endPointer);
+  eventTarget.addEventListener("pointerleave", endPointer);
 
   function update(delta: number) {
     const p = params();
@@ -252,9 +261,10 @@ export function createInteraction({
       camVelY += ((targetY - camY) * ck - camVelY * cc) * delta;
       camX += camVelX * delta;
       camY += camVelY * delta;
-      camera.position.set(camX, camY, CAM_RADIUS);
-      // always aimed at the stage centre (roll-free)
-      camera.lookAt(0, 0, 0);
+      const rest = cameraRig.position;
+      camera.position.set(rest.x + camX, rest.y + camY, rest.z);
+      // always aimed at the rig target (roll-free)
+      camera.lookAt(cameraRig.target);
     }
   }
 
@@ -264,12 +274,12 @@ export function createInteraction({
       return mouseEverMoved;
     },
     dispose() {
-      container.removeEventListener("wheel", onWheel);
-      container.removeEventListener("pointerdown", onPointerDown);
-      container.removeEventListener("pointermove", onPointerMove);
-      container.removeEventListener("pointerup", endPointer);
-      container.removeEventListener("pointercancel", endPointer);
-      container.removeEventListener("pointerleave", endPointer);
+      eventTarget.removeEventListener("wheel", onWheel);
+      eventTarget.removeEventListener("pointerdown", onPointerDown);
+      eventTarget.removeEventListener("pointermove", onPointerMove);
+      eventTarget.removeEventListener("pointerup", endPointer);
+      eventTarget.removeEventListener("pointercancel", endPointer);
+      eventTarget.removeEventListener("pointerleave", endPointer);
     },
   };
 }

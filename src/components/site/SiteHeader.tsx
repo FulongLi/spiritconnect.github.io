@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { COMPANY, MAIN_NAV, type NavItem } from "@/content/site";
+import BrandMark from "./BrandMark";
 import styles from "./SiteHeader.module.css";
 
 type Props = {
@@ -71,6 +72,7 @@ export default function SiteHeader({ current, onNavigate, actions, variant = "pa
   return (
     <header className={`${styles.header} ${styles[variant]}`}>
       <Link className={styles.wordmark} href="/" aria-label={`${COMPANY.name} — home`}>
+        <BrandMark size={17} />
         SPIRIT CONNECT
       </Link>
 

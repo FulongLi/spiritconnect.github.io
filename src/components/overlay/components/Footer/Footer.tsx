@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { COMPANY, MAIN_NAV } from "@/content/site";
+import BrandMark from "@/components/site/BrandMark";
 
 type Props = {
   /** "fixed": thin bar over the immersive journey. "page": in-flow footer on content pages. */
@@ -23,7 +24,10 @@ const Footer = ({ variant = "fixed" }: Props) => {
     <footer className="relative border-t border-white/10 bg-[#030509] px-[clamp(16px,6vw,96px)] py-10 font-[family-name:var(--font-ibm-mono)] text-[10px] uppercase tracking-[0.2em] text-[#e8f2ff]/55">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="text-[#e8f2ff]/85 tracking-[0.26em]">SPIRIT CONNECT</div>
+          <div className="flex items-center gap-[10px] text-[#e8f2ff]/85 tracking-[0.26em]">
+            <BrandMark size={15} />
+            SPIRIT CONNECT
+          </div>
           <div className="mt-2 normal-case tracking-[0.12em]">{COMPANY.vision}</div>
         </div>
         <nav aria-label="Footer">

@@ -5,12 +5,13 @@ import { bloom } from "three/addons/tsl/display/BloomNode.js";
 import { chromaticAberration } from "three/addons/tsl/display/ChromaticAberrationNode.js";
 import type { HologramParams } from "../types";
 
-/** scene → bloom → chromatic aberration */
+/** scene → bloom → chromatic aberration (optional) */
 export function createPostProcessing(
   renderer: WebGPURenderer,
   scene: Scene,
   camera: Camera,
   p: HologramParams,
+  { chromatic = true }: { chromatic?: boolean } = {},
 ) {
   const pp = new PostProcessing(renderer);
   const scenePass = pass(scene, camera);
@@ -20,7 +21,9 @@ export function createPostProcessing(
 
   const caStrength = uniform(p.chromaticStr);
   const combined = sceneColor.add(bloomPass);
-  pp.outputNode = chromaticAberration(combined, caStrength, new Vector2(0.5, 0.5));
+  pp.outputNode = chromatic
+    ? chromaticAberration(combined, caStrength, new Vector2(0.5, 0.5))
+    : combined;
 
   return {
     render: () => pp.render(),

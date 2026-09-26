@@ -22,6 +22,21 @@ export const COMPANY = {
 } as const;
 
 /**
+ * Canonical brand assets. Reference the logo and favicons from here only.
+ * The logo is a single-colour mark (black); on dark surfaces use it as a
+ * CSS mask (see components/site/BrandMark) so it takes the text colour.
+ */
+export const BRAND = {
+  logo: "/assets/SC_black.svg",
+  /** adaptive favicon: black mark, white in dark browser themes */
+  favicon: "/assets/brand/favicon.svg",
+  faviconPng: "/assets/brand/favicon-32.png",
+  appleTouchIcon: "/assets/brand/apple-touch-icon.png",
+  /** intrinsic proportions of the mark */
+  aspect: 44 / 36,
+} as const;
+
+/**
  * The self-improving loop at the centre of Spirit Connect.
  * Rendered as the loop diagram on the About page.
  */
