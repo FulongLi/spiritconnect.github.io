@@ -29,7 +29,7 @@ export default function WorkspaceFallback({ tabIndex }: { tabIndex?: number }) {
         >
           <span className={styles.eyebrow}>ENERGY / ENGINEERING</span>
           <span className={styles.title}>{AIPE_SCREEN.title}</span>
-          <span className={styles.line}>{AIPE_SCREEN.headline}</span>
+          <span className={styles.line}>{AIPE_SCREEN.headline.join(" ")}</span>
           <span className={styles.cta}>
             {AIPE_SCREEN.cta} <span aria-hidden="true">↗</span>
             <span className="sr-only"> (opens external site)</span>

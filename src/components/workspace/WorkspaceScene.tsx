@@ -29,7 +29,6 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed }:
   const rootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const presenceRef = useRef<HTMLAnchorElement>(null);
-  const foundingRef = useRef<HTMLAnchorElement>(null);
   const aipeRef = useRef<HTMLAnchorElement>(null);
   const engineRef = useRef<WorkspaceEngine | null>(null);
 
@@ -77,13 +76,10 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed }:
     });
     engineRef.current = engine;
     const bindings = [
-      { el: presenceRef.current, screen: "presence", part: "primary" },
-      { el: foundingRef.current, screen: "presence", part: "secondary" },
-      { el: aipeRef.current, screen: "aipe", part: "primary" },
+      { el: presenceRef.current, screen: "presence" },
+      { el: aipeRef.current, screen: "aipe" },
     ] as const;
-    engine.bindHotspots(
-      bindings.flatMap((b) => (b.el ? [{ el: b.el, screen: b.screen, part: b.part }] : [])),
-    );
+    engine.bindHotspots(bindings.flatMap((b) => (b.el ? [{ el: b.el, screen: b.screen }] : [])));
     return () => {
       engineRef.current = null;
       setReady(false);
@@ -141,13 +137,6 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed }:
             aria-label={PRESENCE_SCREEN.linkLabel}
             tabIndex={tabIndex}
             {...hoverProps("presence")}
-          />
-          <Link
-            ref={foundingRef}
-            className={`${styles.hotspot} ${styles.secondary}`}
-            href={PRESENCE_SCREEN.secondaryHref}
-            aria-label={PRESENCE_SCREEN.secondaryCta}
-            tabIndex={tabIndex}
           />
           <a
             ref={aipeRef}

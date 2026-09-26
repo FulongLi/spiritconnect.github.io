@@ -8,6 +8,7 @@ import {
   LatheGeometry,
   Mesh,
   PlaneGeometry,
+  PointLight,
   TorusGeometry,
   Vector2,
   type BufferGeometry,
@@ -25,6 +26,7 @@ import { roundedRectShape } from "./workspaceMonitor";
 /*   chamber    clear glass cylinder — the particle entity lives here   */
 /*   speaker    graphite body, perforated grille band                   */
 /*   tray       integrated charging base with a thin warm light line    */
+/*   glow       a soft neutral light from the entity onto the surface    */
 /*                                                                     */
 /* Metres, at scale 1. `entityMount` receives the particle entity: its  */
 /* model space (a 0.9-radius sphere centred at y = 1.05) is scaled to   */
@@ -154,6 +156,18 @@ export function createPresenceDevice(materials: WorkspaceMaterials, compact: boo
   glassBack.renderOrder = 1;
   glassFront.renderOrder = 2;
   const glassMats = [glassBack.material, glassFront.material];
+
+  // ── Soft Presence glow: a little light on the surface around the device ──
+  // (skipped on compact devices: one light fewer in every shader)
+  if (!compact) {
+    const glow = new PointLight("#eef1f5", 0.14, 1.1, 2);
+    glow.position.y = SPEAKER_TOP + CHAMBER_HEIGHT / 2;
+    body.add(glow);
+  }
+  const pool = new Mesh(add(new PlaneGeometry(TRAY.width * 3, TRAY.depth * 2.4)), materials.screenGlow);
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.y = 0.0016;
+  group.add(pool);
 
   return {
     group,

@@ -113,24 +113,28 @@ export function createWorkspaceMaterials({ compact }: { compact: boolean }) {
 
   const m = {
     /** desk top: dark graphite, satin */
-    deskTop: new MeshStandardMaterial({ color: "#26272a", roughness: 0.3, metalness: 0.5 }),
+    deskTop: new MeshStandardMaterial({ color: "#313236", roughness: 0.34, metalness: 0.45 }),
     /** satin graphite for device housings, keyboard keys, monitor backs */
     graphite: new MeshStandardMaterial({ color: "#2b2c30", roughness: 0.36, metalness: 0.6 }),
     graphiteMatte: new MeshStandardMaterial({ color: "#121315", roughness: 0.72, metalness: 0.2 }),
-    /** satin / brushed silver for stands, edges, keyboard frame */
+    /** satin / brushed silver for edges, fins and seams */
     silver: new MeshStandardMaterial({ color: "#c3c6cb", roughness: 0.3, metalness: 1 }),
+    /** satin anodised aluminium: display bodies + stands, keyboard, mouse base */
+    aluminium: new MeshStandardMaterial({ color: "#c9ccd0", roughness: 0.42, metalness: 0.7 }),
+    /** low-profile keycaps: dark, soft satin */
+    keycap: new MeshStandardMaterial({ color: "#1d1e21", roughness: 0.55, metalness: 0.15 }),
+    /** mouse top shell: smooth light satin */
+    mouseShell: new MeshStandardMaterial({ color: "#b9bcc1", roughness: 0.3, metalness: 0.35 }),
     /** black glass bezel */
     bezel: new MeshStandardMaterial({ color: "#060607", roughness: 0.16, metalness: 0.3 }),
     grille: new MeshStandardMaterial({ map: grille, roughness: 0.55, metalness: 0.4 }),
     /** thin warm light line on the device's charging tray */
     trayLight: new MeshBasicMaterial({ color: new Color("#f4e9da").multiplyScalar(1.4) }),
-    /** pale stone floor: the dark desk reads against it */
-    floor: new MeshStandardMaterial({ color: "#4d4b48", roughness: 0.62, metalness: 0.05 }),
     contactShadow: new MeshBasicMaterial({
       color: "#000000",
       alphaMap: softSpot,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.3,
       depthWrite: false,
       polygonOffset: true,
       polygonOffsetFactor: -2,

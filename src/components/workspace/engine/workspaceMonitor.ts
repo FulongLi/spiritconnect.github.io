@@ -1,4 +1,5 @@
 import {
+  AdditiveBlending,
   BoxGeometry,
   CanvasTexture,
   ExtrudeGeometry,
@@ -9,23 +10,20 @@ import {
   PlaneGeometry,
   SRGBColorSpace,
   Shape,
+  ShapeGeometry,
   Vector3,
   type BufferGeometry,
 } from "three";
-import { DESK, MONITOR } from "./layout";
+import { DESK, MONITOR, RISER_TOP } from "./layout";
 import type { WorkspaceMaterials } from "./materials";
-import type {
-  CanvasFonts,
-  ScreenHotspots,
-  ScreenPainter,
-  ScreenRect,
-} from "../screens/canvasKit";
+import type { CanvasFonts, ScreenPainter } from "../screens/canvasKit";
 
 /* ------------------------------------------------------------------ */
-/* A physical monitor: thin black-glass bezel with a satin silver edge, */
-/* a graphite rear housing, a silver stand, and a screen whose content  */
-/* is painted into a canvas texture. Geometry is shared by both          */
-/* monitors (identical panels = equal visual weight).                  */
+/* A studio-class display: one thin satin-aluminium slab, a black glass */
+/* front with a slim even border, and a folded aluminium stand (foot +  */
+/* inclined upright). The screen is painted into a canvas texture.      */
+/* Geometry is shared by both monitors: identical hardware for Presence */
+/* and AIPE.                                                            */
 /* ------------------------------------------------------------------ */
 
 export function roundedRectShape(w: number, h: number, r: number) {
@@ -44,53 +42,50 @@ export function roundedRectShape(w: number, h: number, r: number) {
   return s;
 }
 
+const STAND = { width: 0.17, foot: 0.17, plate: 0.007 };
+
 /** geometry shared by every monitor */
 export function createMonitorKit(compact: boolean) {
-  const W = MONITOR.screenWidth;
-  const H = MONITOR.screenHeight;
-  const b = MONITOR.bezel;
-  const curve = compact ? 3 : 6;
+  const W = MONITOR.bodyWidth;
+  const H = MONITOR.bodyHeight;
+  const D = MONITOR.depth;
+  const curve = compact ? 4 : 8;
 
-  const housing = new ExtrudeGeometry(roundedRectShape(W + b * 2, H + b * 2, 0.007), {
-    depth: MONITOR.depth,
-    bevelEnabled: true,
-    bevelThickness: 0.0015,
-    bevelSize: 0.0015,
-    bevelSegments: 2,
-    curveSegments: curve,
-  });
-  housing.translate(0, 0, -MONITOR.depth);
-  const rear = new ExtrudeGeometry(roundedRectShape(W * 0.62, H * 0.56, 0.03), {
-    depth: 0.022,
-    bevelEnabled: true,
-    bevelThickness: 0.006,
-    bevelSize: 0.006,
-    bevelSegments: 2,
-    curveSegments: curve,
-  });
-  rear.translate(0, -H * 0.06, -MONITOR.depth - 0.024);
-  const screen = new PlaneGeometry(W, H);
-  const neck = new BoxGeometry(0.038, 1, 0.012);
-  const base = new ExtrudeGeometry(roundedRectShape(0.24, 0.16, 0.03), {
-    depth: 0.006,
+  // the slab: front face at z = 0
+  const body = new ExtrudeGeometry(roundedRectShape(W - 0.004, H - 0.004, 0.011), {
+    depth: D - 0.004,
     bevelEnabled: true,
     bevelThickness: 0.002,
     bevelSize: 0.002,
+    bevelSegments: 3,
+    curveSegments: curve,
+  });
+  body.translate(0, 0, -D + 0.002);
+  const glass = new ShapeGeometry(roundedRectShape(W - 0.003, H - 0.003, 0.0105), curve);
+  const screen = new PlaneGeometry(MONITOR.screenWidth, MONITOR.screenHeight);
+  const halo = new PlaneGeometry(W * 1.28, H * 1.5);
+  const plate = new BoxGeometry(STAND.width, 1, STAND.plate);
+  const foot = new ExtrudeGeometry(roundedRectShape(STAND.width, STAND.foot, 0.012), {
+    depth: STAND.plate - 0.002,
+    bevelEnabled: true,
+    bevelThickness: 0.001,
+    bevelSize: 0.001,
     bevelSegments: 2,
     curveSegments: curve,
   });
-  base.rotateX(-Math.PI / 2);
-  const shadow = new PlaneGeometry(1, 1);
-  shadow.rotateX(-Math.PI / 2);
+  foot.rotateX(-Math.PI / 2);
+  const flat = new PlaneGeometry(1, 1);
+  flat.rotateX(-Math.PI / 2);
 
-  const all: BufferGeometry[] = [housing, rear, screen, neck, base, shadow];
+  const all: BufferGeometry[] = [body, glass, screen, halo, plate, foot, flat];
   return {
-    housing,
-    rear,
+    body,
+    glass,
     screen,
-    neck,
-    base,
-    shadow,
+    halo,
+    plate,
+    foot,
+    flat,
     dispose() {
       for (const g of all) g.dispose();
     },
@@ -118,17 +113,17 @@ export function createWorkspaceMonitor({
   logo: HTMLImageElement | null;
   compact: boolean;
   maxAnisotropy: number;
-  /** "desk": own stand on the desk. "arm": clamps to a shared pole (stacked layout) */
+  /** "desk": own stand on the riser. "arm": clamps to a shared pole (stacked layout) */
   stand: "desk" | "arm";
 }) {
   const group = new Group();
   const W = MONITOR.screenWidth;
   const H = MONITOR.screenHeight;
 
-  // housing: black glass front, satin silver edge
-  const housing = new Mesh(kit.housing, [materials.bezel, materials.silver]);
-  group.add(housing);
-  group.add(new Mesh(kit.rear, materials.graphite));
+  group.add(new Mesh(kit.body, materials.aluminium));
+  const glass = new Mesh(kit.glass, materials.bezel);
+  glass.position.z = 0.0004;
+  group.add(glass);
 
   // ── Screen ────────────────────────────────────────────────────────────────
   const cw = compact ? MONITOR.canvasWidthCompact : MONITOR.canvasWidth;
@@ -142,12 +137,11 @@ export function createWorkspaceMonitor({
   texture.anisotropy = Math.min(8, maxAnisotropy);
   texture.minFilter = LinearMipmapLinearFilter;
 
-  let hotspots: ScreenHotspots = { primary: [0, 0, 1, 1] };
   let hover = false;
   const paint = () => {
     ctx.save();
     ctx.clearRect(0, 0, cw, ch);
-    hotspots = painter(ctx, cw, ch, { fonts, logo, hover, compact });
+    painter(ctx, cw, ch, { fonts, logo, hover });
     ctx.restore();
     texture.needsUpdate = true;
   };
@@ -155,13 +149,26 @@ export function createWorkspaceMonitor({
 
   const screenMat = new MeshBasicMaterial({ map: texture, toneMapped: false });
   const screen = new Mesh(kit.screen, screenMat);
-  screen.position.z = 0.0022; // just proud of the bezel face (z = bevel)
+  screen.position.z = 0.0009;
   group.add(screen);
 
   // glass sheen (shared material)
   const sheen = new Mesh(kit.screen, materials.sheen);
-  sheen.position.z = 0.003;
+  sheen.position.z = 0.0014;
   group.add(sheen);
+
+  // soft bias-light halo behind the panel: wakes on hover / focus
+  const haloMat = new MeshBasicMaterial({
+    color: "#e9edf3",
+    alphaMap: materials.softSpot,
+    transparent: true,
+    opacity: 0,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  });
+  const halo = new Mesh(kit.halo, haloMat);
+  halo.position.z = -MONITOR.depth - 0.02;
+  group.add(halo);
 
   // ── Stand ────────────────────────────────────────────────────────────────
   const standParts = new Group();
@@ -169,31 +176,34 @@ export function createWorkspaceMonitor({
   function placeStand() {
     standParts.clear();
     if (stand === "arm") {
-      const arm = new Mesh(kit.neck, materials.silver);
-      arm.scale.set(1, 0.07, 3.2);
-      arm.position.set(0, 0, -MONITOR.depth - 0.045);
+      const arm = new Mesh(kit.plate, materials.aluminium);
+      arm.scale.set(0.35, 0.05, 8);
+      arm.position.set(0, 0, -MONITOR.depth - 0.03);
       standParts.add(arm);
       return;
     }
-    // neck from the base up to the back of the panel
-    const deskLocalY = DESK.height - group.position.y;
-    const neckLen = -deskLocalY + 0.02;
-    const neck = new Mesh(kit.neck, materials.silver);
-    neck.scale.y = neckLen;
-    neck.position.set(0, deskLocalY + neckLen / 2, -MONITOR.depth - 0.05);
-    neck.rotation.x = -0.05;
-    standParts.add(neck);
-    const base = new Mesh(kit.base, materials.silver);
-    base.position.set(0, deskLocalY + 0.002, -0.07);
-    standParts.add(base);
-    const shadow = new Mesh(kit.shadow, materials.contactShadow);
-    shadow.scale.set(0.36, 1, 0.24);
-    shadow.position.set(0, deskLocalY + 0.0015, -0.07);
+    // folded plate: a foot on the riser, an inclined upright to a hinge
+    // behind the display centre
+    const surfaceY = RISER_TOP - group.position.y;
+    const footZ = -0.03;
+    const foot = new Mesh(kit.foot, materials.aluminium);
+    foot.position.set(0, surfaceY + 0.001, footZ);
+    standParts.add(foot);
+    const a = new Vector3(0, surfaceY + STAND.plate, footZ - STAND.foot / 2 + STAND.plate);
+    const b = new Vector3(0, -0.04, -MONITOR.depth - 0.012);
+    const upright = new Mesh(kit.plate, materials.aluminium);
+    upright.scale.y = a.distanceTo(b);
+    upright.position.copy(a).add(b).multiplyScalar(0.5);
+    upright.rotation.x = Math.atan2(b.z - a.z, b.y - a.y);
+    standParts.add(upright);
+    const shadow = new Mesh(kit.flat, materials.contactShadow);
+    shadow.scale.set(0.3, 1, 0.26);
+    shadow.position.set(0, surfaceY + 0.0012, footZ);
     standParts.add(shadow);
-    // light spill from the panel onto the desk
-    const spill = new Mesh(kit.shadow, materials.screenGlow);
-    spill.scale.set(W * 1.5, 1, 0.5);
-    spill.position.set(0, deskLocalY + 0.0018, 0.24);
+    // light spill from the panel onto the main surface below
+    const spill = new Mesh(kit.flat, materials.screenGlow);
+    spill.scale.set(W * 1.4, 1, 0.42);
+    spill.position.set(0, DESK.height - group.position.y + 0.0018, 0.4);
     standParts.add(spill);
   }
 
@@ -201,21 +211,15 @@ export function createWorkspaceMonitor({
   let hoverAmount = 0;
   let power = 1;
   let powerDelay = 0;
-  let powerTarget = 1;
-
-  const tmp = new Vector3();
 
   return {
     group,
     screen,
-    /** place in the room (x, y = screen centre, z) and re-seat the stand */
+    /** place in the room (x, y = display centre, z) and re-seat the stand */
     place(position: Vector3, yaw: number) {
       group.position.copy(position);
       group.rotation.set(0, yaw, 0);
       placeStand();
-    },
-    get hotspots() {
-      return hotspots;
     },
     setHover(next: boolean) {
       if (next === hover) return;
@@ -226,30 +230,27 @@ export function createWorkspaceMonitor({
     powerOn(delay: number) {
       power = 0;
       powerDelay = delay;
-      powerTarget = 1;
     },
     update(delta: number) {
       if (powerDelay > 0) powerDelay -= delta;
-      else power += (powerTarget - power) * (1 - Math.exp(-3.2 * delta));
-      hoverAmount += ((hover ? 1 : 0) - hoverAmount) * (1 - Math.exp(-10 * delta));
-      screenMat.color.setScalar(power * (0.9 + hoverAmount * 0.1));
+      else power += (1 - power) * (1 - Math.exp(-3.2 * delta));
+      hoverAmount += ((hover ? 1 : 0) - hoverAmount) * (1 - Math.exp(-9 * delta));
+      screenMat.color.setScalar(power * (0.86 + hoverAmount * 0.14));
+      haloMat.opacity = power * hoverAmount * 0.12;
     },
-    /** world position of a point on the screen, given (u, v) with v from the top */
-    screenPoint(u: number, v: number, target = tmp) {
-      target.set((u - 0.5) * W, (0.5 - v) * H, 0);
-      return screen.localToWorld(target);
-    },
-    rectCorners(rect: ScreenRect, out: Vector3[]) {
-      const [u0, v0, u1, v1] = rect;
-      this.screenPoint(u0, v0, out[0]);
-      this.screenPoint(u1, v0, out[1]);
-      this.screenPoint(u1, v1, out[2]);
-      this.screenPoint(u0, v1, out[3]);
+    /** world-space corners of the screen (top-left, top-right, bottom-right, bottom-left) */
+    screenCorners(out: Vector3[]) {
+      out[0].set(-W / 2, H / 2, 0);
+      out[1].set(W / 2, H / 2, 0);
+      out[2].set(W / 2, -H / 2, 0);
+      out[3].set(-W / 2, -H / 2, 0);
+      for (const c of out) screen.localToWorld(c);
       return out;
     },
     dispose() {
       texture.dispose();
       screenMat.dispose();
+      haloMat.dispose();
     },
   };
 }

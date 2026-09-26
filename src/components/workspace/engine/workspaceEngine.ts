@@ -10,7 +10,8 @@ import { createParticleField } from "@/components/hologramParticles/engine/scene
 import { createTransitionController } from "@/components/hologramParticles/engine/transition";
 import { createRenderLoop } from "@/lib/render/renderLoop";
 import { loadImage, readCanvasFonts } from "../screens/canvasKit";
-import { createDeskEnvironment } from "./deskEnvironment";
+import { createDesk } from "./desk";
+import { createDome } from "./dome";
 import { entityParams, type EntityQuality } from "./entity";
 import { createLayout, layoutModeFor, type WorkspaceLayout } from "./layout";
 import { createWorkspaceMaterials } from "./materials";
@@ -31,7 +32,6 @@ import { createWorkstation, type Workstation } from "./workstation";
 export type HotspotBinding = {
   el: HTMLElement;
   screen: WorkspaceScreenId;
-  part: "primary" | "secondary";
 };
 
 export type WorkspaceEngineOptions = {
@@ -86,7 +86,8 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     camera: PerspectiveCamera;
     layout: WorkspaceLayout;
     rig: { position: Vector3; target: Vector3 };
-    env: ReturnType<typeof createDeskEnvironment>;
+    dome: ReturnType<typeof createDome>;
+    desk: ReturnType<typeof createDesk>;
     materials: ReturnType<typeof createWorkspaceMaterials>;
     monitorKit: ReturnType<typeof createMonitorKit>;
     workstation: Workstation;
@@ -115,10 +116,7 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     const w = container.clientWidth;
     const h = container.clientHeight;
     for (const binding of hotspots) {
-      const monitor = workstation.monitors[binding.screen];
-      const rect = binding.part === "primary" ? monitor.hotspots.primary : monitor.hotspots.secondary;
-      if (!rect) continue;
-      monitor.rectCorners(rect, corners);
+      workstation.monitors[binding.screen].screenCorners(corners);
       let x0 = Infinity;
       let y0 = Infinity;
       let x1 = -Infinity;
@@ -198,8 +196,10 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     scene.environment = materials.environment;
     scene.environmentIntensity = 0.85;
 
-    const env = createDeskEnvironment({ scene, materials, fonts, loop: WORKSPACE.loop, logo, compact });
-    env.setNight(night);
+    const dome = createDome({ scene, materials, compact });
+    dome.setNight(night);
+    const desk = createDesk({ materials, fonts, loop: WORKSPACE.loop, logo, compact });
+    scene.add(desk.group);
 
     const aspect = container.clientWidth / Math.max(1, container.clientHeight) || 16 / 9;
     let layout = createLayout(aspect);
@@ -262,7 +262,8 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
       camera,
       layout,
       rig,
-      env,
+      dome,
+      desk,
       materials,
       monitorKit,
       workstation,
@@ -317,7 +318,7 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     },
     setNight(next) {
       night = next;
-      world?.env.setNight(next);
+      world?.dome.setNight(next);
     },
     setHover(screen) {
       hovered = screen;
@@ -347,7 +348,8 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
         world.workstation.dispose();
         world.monitorKit.dispose();
         world.field.dispose();
-        world.env.dispose();
+        world.desk.dispose();
+        world.dome.dispose();
         world.materials.dispose();
         world.post.dispose();
         world = null;

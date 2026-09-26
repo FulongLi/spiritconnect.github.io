@@ -36,18 +36,6 @@
   visibility: visible;
 }
 
-.secondary {
-  z-index: 2;
-  border-radius: 6px;
-}
-
-/* the drawn link is small on phones: extend its touch target */
-.secondary::after {
-  content: "";
-  position: absolute;
-  inset: -17px -10px;
-}
-
 .hotspot:focus-visible {
   box-shadow:
     0 0 0 1px rgba(236, 238, 242, 0.9),
