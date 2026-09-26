@@ -38,6 +38,12 @@ jobs:
 
       - name: Build static site
         run: npm run build
+        env:
+          # Register Your Interest backend (optional). Set the repository
+          # variable PRESENCE_INTEREST_ENDPOINT (Settings → Secrets and
+          # variables → Actions → Variables). While unset, the form states
+          # that registration isn't open yet and sends nothing.
+          NEXT_PUBLIC_INTEREST_ENDPOINT: ${{ vars.PRESENCE_INTEREST_ENDPOINT }}
 
       - name: Disable Jekyll
         run: touch out/.nojekyll

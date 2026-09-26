@@ -1,4 +1,5 @@
-import type { PresetId, HologramPreset } from "../types";
+import type { PresetId, HologramPreset, HologramParams } from "../types";
+import { MODEL_URLS } from "../engine/geometry";
 
 export type { PresetId, HologramPreset };
 
@@ -46,3 +47,67 @@ export const PRESETS: Record<PresetId, HologramPreset> = {
     bgColorEdge: "#000000",
   },
 };
+
+/** brand blue used for every model shown on the stage */
+export const STAGE_MODEL_COLOR = "#2ebcfe";
+
+/** layout / device adjustments for the central stage */
+export const STAGE_LAYOUT = {
+  modelYDesktop: -0.9,
+  modelYCompact: -0.78,
+  /** shift the stage right on wide screens where the interior title sits left */
+  modelXWide: 0.32,
+  wideQuery: "(min-width: 1100px)",
+  compactMaxParticles: 36000,
+  /** smaller stage rig on phones so the halo rings clear the copy */
+  compactModelScale: 0.5,
+  /** the WebGL 2 fallback backend gets a lighter particle budget */
+  webglMaxParticles: 30000,
+} as const;
+
+type Tuning = Partial<HologramParams>;
+
+/** Per-shape tuning (formerly inlined in the branch playground). */
+export const MODEL_TUNING = {
+  /** the Presence entity */
+  sphere: {
+    breathAmp: 0.065,
+    floatAmp: 0.025,
+    maskContrast: 2.2,
+    noiseAmp: 0.12,
+    noiseScale: 1.15,
+  },
+  terrain: {
+    breathAmp: 0,
+    floatAmp: 0.006,
+    maskContrast: 1.8,
+    noiseAmp: 0.035,
+    noiseScale: 0.85,
+  },
+  logo: {
+    breathAmp: 0,
+    floatAmp: 0.008,
+    maskContrast: 2.3,
+    noiseAmp: 0.018,
+    noiseScale: 0.95,
+    bloomStrength: 0.54,
+    ringBrightness: 4.4,
+  },
+  generic: { breathAmp: 0 },
+} satisfies Record<string, Tuning>;
+
+/**
+ * Models reachable from the debug lab (?debug=1). Only the Presence sphere
+ * is shown to visitors; the rest are kept for development and future use.
+ */
+export const LAB_MODELS: { label: string; url: string; tuning: Tuning }[] = [
+  { label: "Presence sphere", url: MODEL_URLS.sphere, tuning: MODEL_TUNING.sphere },
+  { label: "Spirit Connect logo", url: MODEL_URLS.spiritLogo, tuning: MODEL_TUNING.logo },
+  { label: "AIPE logo", url: MODEL_URLS.powerLabsLogo, tuning: MODEL_TUNING.logo },
+  { label: "Terrain", url: MODEL_URLS.terrain, tuning: MODEL_TUNING.terrain },
+  { label: "Brush (Fantasy)", url: MODEL_URLS.brush, tuning: MODEL_TUNING.generic },
+  { label: "Crystal", url: MODEL_URLS.crystal, tuning: MODEL_TUNING.generic },
+  { label: "Pyramid", url: MODEL_URLS.pyramid, tuning: MODEL_TUNING.generic },
+  { label: "Boat", url: MODEL_URLS.boat, tuning: MODEL_TUNING.generic },
+  { label: "Gamepad", url: MODEL_URLS.gamepad, tuning: MODEL_TUNING.generic },
+];

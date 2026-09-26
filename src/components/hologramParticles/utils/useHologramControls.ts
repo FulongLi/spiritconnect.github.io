@@ -1,18 +1,19 @@
 "use client";
 
 import { useControls, folder, button } from "leva";
+import { HOLOGRAM_DEFAULTS } from "./hologramDefaults";
 
 /**
- * Stable Leva controls — values that do NOT change between presets.
- * Preset-sensitive controls (Material, Lights, colors) live in
- * useHologramPresetControls so they can reinitialize when the preset changes.
+ * Leva debug controls for the hologram. Only imported by the debug panel,
+ * which is loaded on demand — see debug/HologramDebugPanel.tsx.
+ * Default values live in ./hologramDefaults.ts.
  */
 export function useHologramControls(onReplay: () => void) {
   return useControls("Hologram", {
     Geometry: folder(
       {
         particleCount: {
-          value: 60000,
+          value: HOLOGRAM_DEFAULTS.particleCount,
           min: 1000,
           max: 150000,
           step: 1000,
@@ -23,12 +24,12 @@ export function useHologramControls(onReplay: () => void) {
     ),
     Material: folder(
       {
-        color: { value: "#99a5b7", label: "Color" },
-        ambient: { value: 0.2, min: 0, max: 1, step: 0.01, label: "Ambient" },
-        wrap: { value: 0.35, min: 0, max: 1, step: 0.01, label: "Wrap" },
-        volumeStrength: { value: 0.67, min: 0, max: 1, step: 0.01, label: "Volume Strength" },
+        color: { value: HOLOGRAM_DEFAULTS.color, label: "Color" },
+        ambient: { value: HOLOGRAM_DEFAULTS.ambient, min: 0, max: 1, step: 0.01, label: "Ambient" },
+        wrap: { value: HOLOGRAM_DEFAULTS.wrap, min: 0, max: 1, step: 0.01, label: "Wrap" },
+        volumeStrength: { value: HOLOGRAM_DEFAULTS.volumeStrength, min: 0, max: 1, step: 0.01, label: "Volume Strength" },
         sphereSize: {
-          value: 0.014,
+          value: HOLOGRAM_DEFAULTS.sphereSize,
           min: 0.003,
           max: 0.08,
           step: 0.001,
@@ -39,87 +40,87 @@ export function useHologramControls(onReplay: () => void) {
     ),
     Position: folder(
       {
-        modelX: { value: 0, min: -5, max: 5, step: 0.05, label: "X" },
-        modelY: { value: -1.2, min: -5, max: 5, step: 0.05, label: "Y" },
-        modelZ: { value: 0, min: -5, max: 5, step: 0.05, label: "Z" },
+        modelX: { value: HOLOGRAM_DEFAULTS.modelX, min: -5, max: 5, step: 0.05, label: "X" },
+        modelY: { value: HOLOGRAM_DEFAULTS.modelY, min: -5, max: 5, step: 0.05, label: "Y" },
+        modelZ: { value: HOLOGRAM_DEFAULTS.modelZ, min: -5, max: 5, step: 0.05, label: "Z" },
       },
       { collapsed: false },
     ),
     Interaction: folder(
       {
         mouseRadius: {
-          value: 2.15,
+          value: HOLOGRAM_DEFAULTS.mouseRadius,
           min: 0.1,
           max: 5,
           step: 0.05,
           label: "Radius",
         },
         mouseStrength: {
-          value: 4.9,
+          value: HOLOGRAM_DEFAULTS.mouseStrength,
           min: 0,
           max: 10,
           step: 0.05,
           label: "Strength",
         },
         pushStrength: {
-          value: 2.5,
+          value: HOLOGRAM_DEFAULTS.pushStrength,
           min: 0,
           max: 30,
           step: 0.5,
           label: "Push Force",
         },
         springStiffness: {
-          value: 40,
+          value: HOLOGRAM_DEFAULTS.springStiffness,
           min: 0.5,
           max: 60,
           step: 0.5,
           label: "Return Speed",
         },
         springDamping: {
-          value: 20,
+          value: HOLOGRAM_DEFAULTS.springDamping,
           min: 0.1,
           max: 40,
           step: 0.1,
           label: "Return Smoothness",
         },
         mouseScatter: {
-          value: 1,
+          value: HOLOGRAM_DEFAULTS.mouseScatter,
           min: 0,
           max: 3,
           step: 0.05,
           label: "Scatter",
         },
-        mouseGlowColor: { value: "#ffada7", label: "Glow Color" },
+        mouseGlowColor: { value: HOLOGRAM_DEFAULTS.mouseGlowColor, label: "Glow Color" },
         mouseGlowPassive: {
-          value: 3,
+          value: HOLOGRAM_DEFAULTS.mouseGlowPassive,
           min: 0,
           max: 3,
           step: 0.05,
           label: "Glow Passive",
         },
         mouseGlowActive: {
-          value: 6,
+          value: HOLOGRAM_DEFAULTS.mouseGlowActive,
           min: 0,
           max: 6,
           step: 0.05,
           label: "Glow Active",
         },
         mouseGlowDecay: {
-          value: 0.3,
+          value: HOLOGRAM_DEFAULTS.mouseGlowDecay,
           min: 0.1,
           max: 10,
           step: 0.1,
           label: "Glow Decay",
         },
         mouseGlowPow: {
-          value: 6.0,
+          value: HOLOGRAM_DEFAULTS.mouseGlowPow,
           min: 0.5,
           max: 6,
           step: 0.1,
           label: "Glow Sharpness",
         },
         mouseLerp: {
-          value: 1.5,
+          value: HOLOGRAM_DEFAULTS.mouseLerp,
           min: 0.5,
           max: 30,
           step: 0.5,
@@ -131,28 +132,28 @@ export function useHologramControls(onReplay: () => void) {
     PostFX: folder(
       {
         bloomStrength: {
-          value: 0.65,
+          value: HOLOGRAM_DEFAULTS.bloomStrength,
           min: 0,
           max: 3,
           step: 0.05,
           label: "Bloom Strength",
         },
         bloomRadius: {
-          value: 0.65,
+          value: HOLOGRAM_DEFAULTS.bloomRadius,
           min: 0,
           max: 1,
           step: 0.01,
           label: "Bloom Radius",
         },
         bloomThreshold: {
-          value: 0.34,
+          value: HOLOGRAM_DEFAULTS.bloomThreshold,
           min: 0,
           max: 1,
           step: 0.01,
           label: "Bloom Threshold",
         },
         chromaticStr: {
-          value: 0.05,
+          value: HOLOGRAM_DEFAULTS.chromaticStr,
           min: 0,
           max: 3,
           step: 0.05,
@@ -163,35 +164,35 @@ export function useHologramControls(onReplay: () => void) {
     ),
     "Light 1": folder(
       {
-        light1X: { value: 0, min: -10, max: 10, step: 0.1, label: "X" },
-        light1Y: { value: 5, min: -10, max: 10, step: 0.1, label: "Y" },
-        light1Z: { value: 2, min: -10, max: 10, step: 0.1, label: "Z" },
-        light1Color: { value: "#ffffff", label: "Color" },
-        light1Intensity: { value: 1.5, min: 0, max: 5, step: 0.05, label: "Intensity" },
+        light1X: { value: HOLOGRAM_DEFAULTS.light1X, min: -10, max: 10, step: 0.1, label: "X" },
+        light1Y: { value: HOLOGRAM_DEFAULTS.light1Y, min: -10, max: 10, step: 0.1, label: "Y" },
+        light1Z: { value: HOLOGRAM_DEFAULTS.light1Z, min: -10, max: 10, step: 0.1, label: "Z" },
+        light1Color: { value: HOLOGRAM_DEFAULTS.light1Color, label: "Color" },
+        light1Intensity: { value: HOLOGRAM_DEFAULTS.light1Intensity, min: 0, max: 5, step: 0.05, label: "Intensity" },
       },
       { collapsed: false },
     ),
     "Light 2": folder(
       {
-        light2X: { value: 0, min: -10, max: 10, step: 0.1, label: "X" },
-        light2Y: { value: -5, min: -10, max: 10, step: 0.1, label: "Y" },
-        light2Z: { value: -2, min: -10, max: 10, step: 0.1, label: "Z" },
-        light2Color: { value: "#f2e0e0", label: "Color" },
-        light2Intensity: { value: 1.1, min: 0, max: 5, step: 0.05, label: "Intensity" },
+        light2X: { value: HOLOGRAM_DEFAULTS.light2X, min: -10, max: 10, step: 0.1, label: "X" },
+        light2Y: { value: HOLOGRAM_DEFAULTS.light2Y, min: -10, max: 10, step: 0.1, label: "Y" },
+        light2Z: { value: HOLOGRAM_DEFAULTS.light2Z, min: -10, max: 10, step: 0.1, label: "Z" },
+        light2Color: { value: HOLOGRAM_DEFAULTS.light2Color, label: "Color" },
+        light2Intensity: { value: HOLOGRAM_DEFAULTS.light2Intensity, min: 0, max: 5, step: 0.05, label: "Intensity" },
       },
       { collapsed: false },
     ),
     Animation: folder(
       {
         floatAmp: {
-          value: 0.01,
+          value: HOLOGRAM_DEFAULTS.floatAmp,
           min: 0,
           max: 0.15,
           step: 0.001,
           label: "Float Amp",
         },
         autoRotateSpeed: {
-          value: 2.53,
+          value: HOLOGRAM_DEFAULTS.autoRotateSpeed,
           min: 0,
           max: 5,
           step: 0.05,
@@ -203,49 +204,49 @@ export function useHologramControls(onReplay: () => void) {
     Wave: folder(
       {
         noiseAmp: {
-          value: 0.72,
+          value: HOLOGRAM_DEFAULTS.noiseAmp,
           min: 0,
           max: 1,
           step: 0.005,
           label: "Wave Amp",
         },
         noiseScale: {
-          value: 3.0,
+          value: HOLOGRAM_DEFAULTS.noiseScale,
           min: 0.05,
           max: 3,
           step: 0.05,
           label: "Wave Scale",
         },
         noiseSpeed: {
-          value: 1,
+          value: HOLOGRAM_DEFAULTS.noiseSpeed,
           min: 0,
           max: 2,
           step: 0.01,
           label: "Wave Speed",
         },
         noiseGain: {
-          value: 0.65,
+          value: HOLOGRAM_DEFAULTS.noiseGain,
           min: 0.1,
           max: 0.9,
           step: 0.01,
           label: "Turbulence",
         },
         maskScale: {
-          value: 0.95,
+          value: HOLOGRAM_DEFAULTS.maskScale,
           min: 0.05,
           max: 2,
           step: 0.05,
           label: "Instability Scale",
         },
         maskSpeed: {
-          value: 0.5,
+          value: HOLOGRAM_DEFAULTS.maskSpeed,
           min: 0,
           max: 0.5,
           step: 0.005,
           label: "Instability Speed",
         },
         maskContrast: {
-          value: 3.8,
+          value: HOLOGRAM_DEFAULTS.maskContrast,
           min: 0.1,
           max: 8,
           step: 0.1,
@@ -257,35 +258,35 @@ export function useHologramControls(onReplay: () => void) {
     Transition: folder(
       {
         transitionDeformDur: {
-          value: 0.4,
+          value: HOLOGRAM_DEFAULTS.transitionDeformDur,
           min: 0.1,
           max: 3,
           step: 0.05,
           label: "Deform Duration",
         },
         transitionMorphDur: {
-          value: 2.05,
+          value: HOLOGRAM_DEFAULTS.transitionMorphDur,
           min: 0.1,
           max: 4,
           step: 0.05,
           label: "Morph Duration",
         },
         transitionReformDur: {
-          value: 0.45,
+          value: HOLOGRAM_DEFAULTS.transitionReformDur,
           min: 0.1,
           max: 3,
           step: 0.05,
           label: "Reform Duration",
         },
         transitionMaskContrast: {
-          value: 1.65,
+          value: HOLOGRAM_DEFAULTS.transitionMaskContrast,
           min: 0.0,
           max: 2,
           step: 0.05,
           label: "Deform Amount",
         },
         transitionGlowScale: {
-          value: 1.0,
+          value: HOLOGRAM_DEFAULTS.transitionGlowScale,
           min: 0,
           max: 4,
           step: 0.05,
@@ -297,14 +298,14 @@ export function useHologramControls(onReplay: () => void) {
     Entrance: folder(
       {
         entranceMorphDur: {
-          value: 1.8,
+          value: HOLOGRAM_DEFAULTS.entranceMorphDur,
           min: 0.1,
           max: 3,
           step: 0.05,
           label: "Morph Duration",
         },
         entranceReformDur: {
-          value: 1.1,
+          value: HOLOGRAM_DEFAULTS.entranceReformDur,
           min: 0.05,
           max: 2,
           step: 0.05,
@@ -316,101 +317,101 @@ export function useHologramControls(onReplay: () => void) {
     ),
     Cylinder: folder(
       {
-        cylVisible: { value: true, label: "Visible" },
-        cylColor: { value: "#ffffff", label: "Color" },
+        cylVisible: { value: HOLOGRAM_DEFAULTS.cylVisible, label: "Visible" },
+        cylColor: { value: HOLOGRAM_DEFAULTS.cylColor, label: "Color" },
         cylRadius: {
-          value: 1.95,
+          value: HOLOGRAM_DEFAULTS.cylRadius,
           min: 0.5,
           max: 5,
           step: 0.05,
           label: "Radius",
         },
         cylHeight: {
-          value: 5.3,
+          value: HOLOGRAM_DEFAULTS.cylHeight,
           min: 0.5,
           max: 10,
           step: 0.1,
           label: "Height",
         },
         cylNoiseScale: {
-          value: 0.2,
+          value: HOLOGRAM_DEFAULTS.cylNoiseScale,
           min: 0.1,
           max: 12,
           step: 0.1,
           label: "Noise Scale",
         },
         cylLineWidth: {
-          value: 0.22,
+          value: HOLOGRAM_DEFAULTS.cylLineWidth,
           min: 0.005,
           max: 0.5,
           step: 0.005,
           label: "Line Width",
         },
         cylFresnelPow: {
-          value: 1.6,
+          value: HOLOGRAM_DEFAULTS.cylFresnelPow,
           min: 0.5,
           max: 8,
           step: 0.1,
           label: "Fresnel Power",
         },
         cylBaseOpacity: {
-          value: 0.0,
+          value: HOLOGRAM_DEFAULTS.cylBaseOpacity,
           min: 0,
           max: 1,
           step: 0.01,
           label: "Base Opacity",
         },
         cylLineOpacity: {
-          value: 1,
+          value: HOLOGRAM_DEFAULTS.cylLineOpacity,
           min: 0,
           max: 1,
           step: 0.01,
           label: "Line Opacity",
         },
         cylNoiseSpeed: {
-          value: 0.15,
+          value: HOLOGRAM_DEFAULTS.cylNoiseSpeed,
           min: 0,
           max: 3,
           step: 0.05,
           label: "Noise Speed",
         },
         cylPulseSpeed: {
-          value: 2.5,
+          value: HOLOGRAM_DEFAULTS.cylPulseSpeed,
           min: 0,
           max: 5,
           step: 0.05,
           label: "Pulse Speed",
         },
         cylPulseAmp: {
-          value: 0.68,
+          value: HOLOGRAM_DEFAULTS.cylPulseAmp,
           min: 0,
           max: 1,
           step: 0.01,
           label: "Pulse Amount",
         },
         cylPulseEasing: {
-          value: 2.5,
+          value: HOLOGRAM_DEFAULTS.cylPulseEasing,
           min: 1,
           max: 8,
           step: 0.1,
           label: "Pulse Easing",
         },
         cylWaveFreq: {
-          value: 2.0,
+          value: HOLOGRAM_DEFAULTS.cylWaveFreq,
           min: 0.1,
           max: 10,
           step: 0.1,
           label: "Wave Freq",
         },
         cylTexRepeat: {
-          value: 8.5,
+          value: HOLOGRAM_DEFAULTS.cylTexRepeat,
           min: 0.5,
           max: 20,
           step: 0.5,
           label: "Tex Repeat",
         },
         cylY: {
-          value: -0.85,
+          value: HOLOGRAM_DEFAULTS.cylY,
           min: -5,
           max: 5,
           step: 0.05,
@@ -421,39 +422,39 @@ export function useHologramControls(onReplay: () => void) {
     ),
     "Dot Grid": folder(
       {
-        gridVisible: { value: true, label: "Visible" },
-        gridColor: { value: "#c8d4de", label: "Color" },
-        gridBaseOpacity: { value: 0.31, min: 0, max: 1, step: 0.01, label: "Base Opacity" },
+        gridVisible: { value: HOLOGRAM_DEFAULTS.gridVisible, label: "Visible" },
+        gridColor: { value: HOLOGRAM_DEFAULTS.gridColor, label: "Color" },
+        gridBaseOpacity: { value: HOLOGRAM_DEFAULTS.gridBaseOpacity, min: 0, max: 1, step: 0.01, label: "Base Opacity" },
         gridWaveAmp: {
-          value: 0.73,
+          value: HOLOGRAM_DEFAULTS.gridWaveAmp,
           min: 0,
           max: 4,
           step: 0.05,
           label: "Wave Amp",
         },
         gridNoiseScale: {
-          value: 0.44,
+          value: HOLOGRAM_DEFAULTS.gridNoiseScale,
           min: 0.01,
           max: 1,
           step: 0.01,
           label: "Wave Scale",
         },
         gridWaveSpeed: {
-          value: 0.62,
+          value: HOLOGRAM_DEFAULTS.gridWaveSpeed,
           min: 0,
           max: 1,
           step: 0.01,
           label: "Wave Speed",
         },
         gridDensity: {
-          value: 2.15,
+          value: HOLOGRAM_DEFAULTS.gridDensity,
           min: 0.2,
           max: 4,
           step: 0.05,
           label: "Density",
         },
         gridDotSize: {
-          value: 0.04,
+          value: HOLOGRAM_DEFAULTS.gridDotSize,
           min: 0.01,
           max: 0.45,
           step: 0.01,
@@ -464,20 +465,20 @@ export function useHologramControls(onReplay: () => void) {
     ),
     Ring: folder(
       {
-        ringVisible: { value: true, label: "Visible" },
-        ringColor: { value: "#ffffff", label: "Color" },
-        ringThickness: { value: 0.03, min: 0.001, max: 0.2, step: 0.001, label: "Thickness" },
-        ringBrightness: { value: 3.0, min: 0, max: 10, step: 0.1, label: "Brightness" },
-        ringOpacity: { value: 0.9, min: 0, max: 1, step: 0.01, label: "Opacity" },
+        ringVisible: { value: HOLOGRAM_DEFAULTS.ringVisible, label: "Visible" },
+        ringColor: { value: HOLOGRAM_DEFAULTS.ringColor, label: "Color" },
+        ringThickness: { value: HOLOGRAM_DEFAULTS.ringThickness, min: 0.001, max: 0.2, step: 0.001, label: "Thickness" },
+        ringBrightness: { value: HOLOGRAM_DEFAULTS.ringBrightness, min: 0, max: 10, step: 0.1, label: "Brightness" },
+        ringOpacity: { value: HOLOGRAM_DEFAULTS.ringOpacity, min: 0, max: 1, step: 0.01, label: "Opacity" },
         ringRadius: {
-          value: 1.95,
+          value: HOLOGRAM_DEFAULTS.ringRadius,
           min: 0.1,
           max: 6,
           step: 0.05,
           label: "Radius",
         },
         ringGap: {
-          value: 20,
+          value: HOLOGRAM_DEFAULTS.ringGap,
           min: 0,
           max: 80,
           step: 1,
@@ -488,30 +489,30 @@ export function useHologramControls(onReplay: () => void) {
     ),
     Background: folder(
       {
-        bgColorCenter: { value: "#495155", label: "Center" },
-        bgColorMid: { value: "#495258", label: "Mid" },
-        bgColorEdge: { value: "#305269", label: "Edge" },
+        bgColorCenter: { value: HOLOGRAM_DEFAULTS.bgColorCenter, label: "Center" },
+        bgColorMid: { value: HOLOGRAM_DEFAULTS.bgColorMid, label: "Mid" },
+        bgColorEdge: { value: HOLOGRAM_DEFAULTS.bgColorEdge, label: "Edge" },
       },
       { collapsed: true },
     ),
     Camera: folder(
       {
         camIntensity: {
-          value: 1,
+          value: HOLOGRAM_DEFAULTS.camIntensity,
           min: 0,
           max: 40,
           step: 0.5,
           label: "Intensity",
         },
         camStiffness: {
-          value: 3.0,
+          value: HOLOGRAM_DEFAULTS.camStiffness,
           min: 0.1,
           max: 20,
           step: 0.1,
           label: "Stiffness",
         },
         camDamping: {
-          value: 4.0,
+          value: HOLOGRAM_DEFAULTS.camDamping,
           min: 0.1,
           max: 20,
           step: 0.1,

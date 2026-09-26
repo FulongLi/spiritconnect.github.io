@@ -1,128 +1,102 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import type { ParticlesHologramProps } from "./types";
+import type { HologramBackendOverride } from "@/lib/debugFlags";
+import { STAGE_LAYOUT } from "./utils/presets";
 
-const ParticlesHologram = dynamic(
-  () => import("./ParticlesHologram"),
-  { ssr: false }
-);
+const ParticlesHologram = dynamic(() => import("./ParticlesHologram"), { ssr: false });
 
-export default function HologramScene(props: ParticlesHologramProps) {
-  const [supportState, setSupportState] = useState<"checking" | "ready" | "unsupported">("checking");
-  const { onUnavailable } = props;
-  const notifyUnavailable = useCallback(() => {
-    setSupportState("unsupported");
-    onUnavailable?.();
-  }, [onUnavailable]);
+/**
+ * Picks the best available renderer for the particle stage:
+ *
+ *   webgpu  → WebGPURenderer on WebGPU
+ *   webgl   → WebGPURenderer on its WebGL 2 backend (lighter particle budget)
+ *   fallback→ the caller's `fallback` (e.g. the 2D canvas Presence orb)
+ *
+ * A backend that fails to initialise falls through to the next one.
+ */
+export type HologramBackend = "checking" | "webgpu" | "webgl" | "fallback";
+
+type Props = ParticlesHologramProps & {
+  fallback: ReactNode;
+  backendOverride?: HologramBackendOverride;
+  onBackendChange?: (backend: HologramBackend) => void;
+};
+
+async function detectBackend(): Promise<Exclude<HologramBackend, "checking">> {
+  const gpu = (navigator as Navigator & {
+    gpu?: { requestAdapter?: () => Promise<unknown> };
+  }).gpu;
+  if (gpu?.requestAdapter) {
+    try {
+      if (await gpu.requestAdapter()) return "webgpu";
+    } catch {
+      /* fall through to WebGL */
+    }
+  }
+  return hasWebGL2() ? "webgl" : "fallback";
+}
+
+function hasWebGL2() {
+  try {
+    return !!document.createElement("canvas").getContext("webgl2");
+  } catch {
+    return false;
+  }
+}
+
+export default function HologramScene({
+  fallback,
+  backendOverride = "auto",
+  onBackendChange,
+  onUnavailable,
+  ...props
+}: Props) {
+  const [backend, setBackend] = useState<HologramBackend>("checking");
 
   useEffect(() => {
     let cancelled = false;
-
-    async function checkWebGPU() {
-      const gpu = (navigator as Navigator & {
-        gpu?: {
-          requestAdapter?: () => Promise<unknown>;
-        };
-      }).gpu;
-
-      if (!gpu?.requestAdapter) {
-        if (!cancelled) {
-          notifyUnavailable();
-        }
-        return;
-      }
-
-      try {
-        const adapter = await gpu.requestAdapter();
-        if (cancelled) return;
-        if (adapter) {
-          setSupportState("ready");
-        } else {
-          notifyUnavailable();
-        }
-      } catch {
-        if (!cancelled) {
-          notifyUnavailable();
-        }
-      }
-    }
-
-    checkWebGPU();
-
+    const pick =
+      backendOverride === "2d"
+        ? Promise.resolve("fallback" as const)
+        : backendOverride === "webgl"
+          ? Promise.resolve(hasWebGL2() ? ("webgl" as const) : ("fallback" as const))
+          : detectBackend();
+    pick.then((next) => {
+      if (!cancelled) setBackend(next);
+    });
     return () => {
       cancelled = true;
     };
-  }, [notifyUnavailable]);
+  }, [backendOverride]);
 
-  if (supportState !== "ready") {
-    return <WebGPUFallback checking={supportState === "checking"} />;
-  }
+  useEffect(() => {
+    onBackendChange?.(backend);
+    if (backend === "fallback") onUnavailable?.();
+  }, [backend, onBackendChange, onUnavailable]);
 
-  return <ParticlesHologram {...props} onUnavailable={notifyUnavailable} />;
-}
+  const handleUnavailable = useCallback(() => {
+    setBackend((current) => (current === "webgpu" && hasWebGL2() ? "webgl" : "fallback"));
+  }, []);
 
-function WebGPUFallback({ checking }: { checking: boolean }) {
+  if (backend === "checking") return null;
+  if (backend === "fallback") return <>{fallback}</>;
+
+  const webgl = backend === "webgl";
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "grid",
-        placeItems: "center",
-        padding: 28,
-        background:
-          "radial-gradient(circle at 50% 42%, #d2dde8 0%, #9eb3c7 42%, #718da3 100%)",
-      }}
-    >
-      <section
-        style={{
-          width: "min(440px, 100%)",
-          border: "1px solid rgba(240, 248, 255, 0.42)",
-          background: "rgba(10, 15, 20, 0.28)",
-          padding: "24px 22px",
-          color: "rgba(244, 250, 255, 0.92)",
-          backdropFilter: "blur(14px)",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-ibm-mono), monospace",
-            fontSize: 10,
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            marginBottom: 10,
-          }}
-        >
-          SPIRIT CONNECT
-        </div>
-        <h2
-          style={{
-            fontFamily: "var(--font-bebas), sans-serif",
-            fontSize: 38,
-            lineHeight: 1,
-            letterSpacing: "0.04em",
-            margin: 0,
-          }}
-        >
-          {checking ? "INITIALIZING" : "RENDERER UNAVAILABLE"}
-        </h2>
-        <p
-          style={{
-            fontFamily: "var(--font-barlow), sans-serif",
-            fontSize: 15,
-            fontWeight: 300,
-            lineHeight: 1.5,
-            letterSpacing: "0.03em",
-            margin: "14px 0 0",
-          }}
-        >
-          {checking
-            ? "Preparing the Spirit Connect showcase."
-            : "This device or browser cannot start the interactive showcase. Open the site in a current browser with hardware acceleration enabled."}
-        </p>
-      </section>
-    </div>
+    <ParticlesHologram
+      key={backend}
+      {...props}
+      forceWebGL={webgl}
+      maxPixelRatio={webgl ? Math.min(props.maxPixelRatio ?? 2, 1.5) : props.maxPixelRatio}
+      particleCount={
+        webgl
+          ? Math.min(props.particleCount ?? STAGE_LAYOUT.webglMaxParticles, STAGE_LAYOUT.webglMaxParticles)
+          : props.particleCount
+      }
+      onUnavailable={handleUnavailable}
+    />
   );
 }

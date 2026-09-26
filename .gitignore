@@ -17,6 +17,23 @@
 /.next/
 /out/
 
+# static-export output must never be committed at the repo root — the site is
+# built into out/ by GitHub Actions (see .github/workflows/deploy-main-site.yml)
+/_next/
+/_not-found*
+/__next.*
+/404.html
+/index.html
+/index.txt
+/journey*
+/presence*
+/about*
+/branches/
+/assets/
+/glb/
+/draco/
+/icon.svg
+
 # production
 /build
 

@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { assetPath } from "@/components/shared/assetPath";
-import { terrainHeight } from "./townBuilder";
+import { terrainHeight } from "./scene/terrain";
 
 /* ------------------------------------------------------------------ */
 /* NASA GLB set (public domain), optimized with gltf-transform:        */

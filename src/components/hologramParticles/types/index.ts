@@ -253,4 +253,37 @@ export interface ParticlesHologramProps {
   entranceReformDur?: number;
   /** Increment to re-trigger the entrance animation */
   replayTrigger?: number;
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+  /**
+   * Render frames. When false the loop stops (after a short warm-up that
+   * compiles the GPU pipelines), so a hidden stage costs nothing.
+   */
+  active?: boolean;
+  /** Mouse-wheel / pinch zoom of the model (off when embedded in a scroller) */
+  enableZoom?: boolean;
+  /** CSS touch-action of the canvas container ("pan-y" keeps page scroll) */
+  touchAction?: string;
+  /** Use the WebGL 2 backend of WebGPURenderer instead of WebGPU */
+  forceWebGL?: boolean;
+  /** Upper bound for the device pixel ratio */
+  maxPixelRatio?: number;
 }
+
+// ── Engine-facing types ───────────────────────────────────────────────────────
+
+/** Props that are not visual parameters. */
+type NonParamKeys =
+  | "url"
+  | "onLoaded"
+  | "onTransitionComplete"
+  | "onUnavailable"
+  | "preloadUrls"
+  | "replayTrigger"
+  | "active"
+  | "enableZoom"
+  | "touchAction"
+  | "forceWebGL"
+  | "maxPixelRatio";
+
+/** Every visual / behavioural parameter, with defaults applied. */
+export type HologramParams = Required<Omit<ParticlesHologramProps, NonParamKeys>>;

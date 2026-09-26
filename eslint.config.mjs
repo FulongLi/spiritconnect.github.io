@@ -6,7 +6,9 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    files: ["src/components/hologramParticles/ParticlesHologram.tsx"],
+    // TSL node graphs are untyped in @types/three; the React wrapper mirrors
+    // its latest props into refs during render for the engine to read.
+    files: ["src/components/hologramParticles/**/*.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "react-hooks/refs": "off",
@@ -20,6 +22,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // vendored third-party decoder (minified, from three.js)
+    "public/draco/**",
   ]),
 ]);
 
