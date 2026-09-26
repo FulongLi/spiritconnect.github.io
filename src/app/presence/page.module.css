@@ -252,7 +252,9 @@
    actions can sit over them — the video reads as the space itself */
 .heroMedia {
   position: relative;
-  width: min(1280px, 100%, calc((100svh - 290px) * 16 / 9));
+  /* as large as the viewport height allows, up to the video's native 1920 px
+     (its black surround fades into the page, so the width never reads as a box) */
+  width: min(1920px, 100%, calc((100svh - 290px) * 16 / 9));
   min-width: min(100%, 560px);
   margin-top: calc(-1 * clamp(20px, 5vh, 64px));
   margin-bottom: calc(-1 * clamp(8px, 2.4vh, 28px));
@@ -678,18 +680,20 @@
     padding-bottom: 8px;
   }
 
-  /* on phones the animation goes edge to edge and is cropped to a taller
-     frame — its content is centred, so the sphere and captions stay whole
-     while becoming large enough to be the first experience */
+  /* on phones the animation goes edge to edge in a square frame: the centre
+     56% of the width holds every caption and form (captions stay within
+     35–62%), so nothing important is cut while the sphere stays large. The
+     sound / pause controls sit in a row below it (see MediaSlot), clear of
+     the captions */
   .heroMedia {
     width: calc(100% + 2 * var(--gutter));
     min-width: 0;
     margin-top: -12px;
-    margin-bottom: -28px;
+    margin-bottom: 60px;
   }
 
   .heroSlot {
-    --slot-ratio: 4 / 5;
+    --slot-ratio: 1 / 1;
   }
 
   .heroActions {

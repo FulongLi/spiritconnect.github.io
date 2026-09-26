@@ -21,6 +21,7 @@
 /* ── ambient: the media is part of the environment, not an embedded player ── */
 
 .frame[data-variant="ambient"] {
+  overflow: visible; /* the video is masked instead; lets the controls sit below on phones */
   background: transparent;
 }
 
@@ -32,12 +33,68 @@
   mask-image: radial-gradient(ellipse 74% 72% at 50% 48%, #000 62%, transparent 100%);
 }
 
-/* a quiet pause / play control, present but never competing */
-.playToggle {
+/* quiet sound + pause controls, present but never competing */
+.controls {
   position: absolute;
   right: clamp(12px, 5%, 64px);
   bottom: clamp(40px, 12%, 96px);
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.soundToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px 0 12px;
+  border: 1px solid var(--p-line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--p-muted);
+  font-family: var(--p-font-sans);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    color var(--p-dur-ui) var(--p-ease),
+    border-color var(--p-dur-ui) var(--p-ease);
+}
+
+.soundToggle:hover,
+.soundToggle:focus-visible {
+  border-color: var(--p-line-strong);
+  color: var(--p-text);
+}
+
+.soundToggle:focus-visible {
+  outline: 2px solid var(--p-accent);
+  outline-offset: 3px;
+}
+
+.speaker {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+/* phones: the frame is cropped, so captions come close to the edges — the
+   controls move out of the picture into a centred row just below it */
+@media (max-width: 640px) {
+  .frame[data-variant="ambient"] .controls {
+    top: calc(100% + 12px);
+    right: 50%;
+    bottom: auto;
+    transform: translateX(50%);
+  }
+}
+
+.playToggle {
   display: grid;
   place-items: center;
   width: 36px;
@@ -175,7 +232,8 @@
     opacity: 0.7;
   }
 
-  .playToggle {
+  .playToggle,
+  .soundToggle {
     transition: none;
   }
 }

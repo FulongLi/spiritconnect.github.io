@@ -14,6 +14,60 @@ export function requestMediaPlay(slotId: string) {
   window.dispatchEvent(new CustomEvent(PLAY_MEDIA_EVENT, { detail: slotId }));
 }
 
+/** the visitor's "Sound on" choice for the hero, remembered for the session */
+const SOUND_PREF_KEY = "presence:hero-sound";
+
+function readSoundPref() {
+  try {
+    return sessionStorage.getItem(SOUND_PREF_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+function writeSoundPref(on: boolean) {
+  try {
+    sessionStorage.setItem(SOUND_PREF_KEY, on ? "on" : "off");
+  } catch {
+    /* storage unavailable (private mode etc.) — the choice just isn't remembered */
+  }
+}
+
+type MediaWithAudioInfo = HTMLVideoElement & {
+  audioTracks?: { length: number };
+  mozHasAudio?: boolean;
+  webkitAudioDecodedByteCount?: number;
+};
+
+/** true / false when the browser can tell whether the file has sound, null when it can't (yet) */
+function detectAudio(video: MediaWithAudioInfo): boolean | null {
+  if (video.audioTracks) return video.audioTracks.length > 0;
+  if (typeof video.mozHasAudio === "boolean") return video.mozHasAudio;
+  if (typeof video.webkitAudioDecodedByteCount === "number" && video.currentTime > 1.5) {
+    return video.webkitAudioDecodedByteCount > 0;
+  }
+  return null;
+}
+
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg className={styles.speaker} viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2.5 6h2.2L8 3.2v9.6L4.7 10H2.5z" fill="currentColor" />
+      {muted ? (
+        <path d="M11 6l3.5 4M14.5 6L11 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      ) : (
+        <path
+          d="M10.6 5.6a3.4 3.4 0 010 4.8M12.4 3.9a5.8 5.8 0 010 8.2"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          fill="none"
+        />
+      )}
+    </svg>
+  );
+}
+
 type Props = {
   config: MediaSlotConfig;
   /** load eagerly (above the fold) */
@@ -37,6 +91,9 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
   const reducedMotion = useReducedMotion();
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(true);
+  const [audioAvailable, setAudioAvailable] = useState(!!config.hasAudio);
+  const soundButtonRef = useRef<HTMLButtonElement>(null);
   const hasMedia = config.sources.length > 0 && !failed;
 
   useEffect(() => {
@@ -79,11 +136,58 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
     };
   }, [config.kind, hasMedia]);
 
+  // sound: mirror the muted state, hide the control if the file turns out to
+  // be silent, and re-apply a "Sound on" choice from earlier in the session on
+  // the visitor's first interaction (browsers only allow audible playback
+  // after a user gesture, so it can't be restored on load)
+  useEffect(() => {
+    const video = videoRef.current as MediaWithAudioInfo | null;
+    if (!video || config.kind !== "animation" || !config.hasAudio) return;
+    const onVolume = () => setMuted(video.muted);
+    const check = () => {
+      const has = detectAudio(video);
+      if (has === null) return;
+      setAudioAvailable(has);
+      video.removeEventListener("timeupdate", check);
+    };
+    video.addEventListener("volumechange", onVolume);
+    video.addEventListener("loadedmetadata", check);
+    video.addEventListener("timeupdate", check);
+
+    const restore = (e: Event) => {
+      if (soundButtonRef.current?.contains(e.target as Node)) return; // the toggle handles itself
+      window.removeEventListener("click", restore, true);
+      window.removeEventListener("keydown", restore, true);
+      if (readSoundPref()) video.muted = false;
+    };
+    if (readSoundPref()) {
+      window.addEventListener("click", restore, true);
+      window.addEventListener("keydown", restore, true);
+    }
+    return () => {
+      video.removeEventListener("volumechange", onVolume);
+      video.removeEventListener("loadedmetadata", check);
+      video.removeEventListener("timeupdate", check);
+      window.removeEventListener("click", restore, true);
+      window.removeEventListener("keydown", restore, true);
+    };
+  }, [config.kind, config.hasAudio, hasMedia]);
+
   const togglePlayback = () => {
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) video.play().catch(() => {});
     else video.pause();
+  };
+
+  const toggleSound = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const turnOn = video.muted;
+    video.muted = !turnOn;
+    // sound belongs to the moving animation — asking for it starts playback
+    if (turnOn && video.paused) video.play().catch(() => {});
+    writeSoundPref(turnOn);
   };
 
   const poster = config.poster ? assetPath(config.poster) : undefined;
@@ -135,7 +239,7 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
         onError={() => setFailed(true)}
       >
         {config.sources.map((s) => (
-          <source key={s.src} src={assetPath(s.src)} type={s.type} />
+          <source key={s.src} src={assetPath(s.src)} type={s.type} media={s.media} />
         ))}
       </video>
     );
@@ -150,18 +254,32 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
       data-empty={!hasMedia}
     >
       {content}
-      {/* looping motion must be pausable (WCAG 2.2.2); under reduced motion
-          the animation waits on its poster frame until started here */}
       {hasMedia && config.kind === "animation" && (
-        <button
-          type="button"
-          className={styles.playToggle}
-          onClick={togglePlayback}
-          aria-label={playing ? "Pause animation" : "Play animation"}
-          data-playing={playing}
-        >
-          <span className={styles.playIcon} aria-hidden="true" />
-        </button>
+        <div className={styles.controls}>
+          {audioAvailable && (
+            <button
+              ref={soundButtonRef}
+              type="button"
+              className={styles.soundToggle}
+              onClick={toggleSound}
+              aria-label={muted ? "Sound on: unmute the Presence animation" : "Sound off: mute the Presence animation"}
+            >
+              <SpeakerIcon muted={muted} />
+              <span aria-hidden="true">{muted ? "Sound on" : "Sound off"}</span>
+            </button>
+          )}
+          {/* looping motion must be pausable (WCAG 2.2.2); under reduced motion
+              the animation waits on its poster frame until started here */}
+          <button
+            type="button"
+            className={styles.playToggle}
+            onClick={togglePlayback}
+            aria-label={playing ? "Pause animation" : "Play animation"}
+            data-playing={playing}
+          >
+            <span className={styles.playIcon} aria-hidden="true" />
+          </button>
+        </div>
       )}
     </figure>
   );

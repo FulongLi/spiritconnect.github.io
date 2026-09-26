@@ -123,7 +123,12 @@ export const INTEREST_FORM_COPY = {
 
 /* ---------------- media slots ---------------- */
 
-export type MediaSource = { src: string; type: string };
+export type MediaSource = {
+  src: string;
+  type: string;
+  /** video only: media query for this source (e.g. a lighter encode for phones) */
+  media?: string;
+};
 
 export type MediaSlotConfig = {
   id: string;
@@ -132,6 +137,8 @@ export type MediaSlotConfig = {
   /** empty until the final asset is added — the slot then shows its placeholder */
   sources: MediaSource[];
   poster?: string;
+  /** the asset carries a sound track: the muted hero offers a "Sound on" control */
+  hasAudio?: boolean;
   alt: string;
   aspectRatio: string;
   placeholder: string;
@@ -149,11 +156,15 @@ export const PRESENCE_MEDIA: Record<"heroAnimation" | "demoVideo" | "hardwareCon
   heroAnimation: {
     id: "presence-hero-animation",
     kind: "animation",
+    // 1920×1080 60 fps for larger screens; a 1280×720 encode for phones, whose
+    // layout shows the centre square of the frame (the first matching source
+    // is used, so browsers that ignore `media` fall back to the full file)
     sources: [
-      // add a WebM (VP9/AV1) copy above the MP4 when one is encoded
-      { src: "/presence/presence-app-hero.mp4", type: "video/mp4" },
+      { src: "/presence/presence-app-hero.mp4", type: "video/mp4", media: "(min-width: 641px)" },
+      { src: "/presence/presence-app-hero-720.mp4", type: "video/mp4" },
     ],
     poster: "/presence/presence-app-hero-poster.jpg",
+    hasAudio: true,
     alt: "Presence app demonstration animation",
     aspectRatio: "16 / 9",
     placeholder: "Presence app animation — coming soon",
@@ -175,13 +186,12 @@ export const PRESENCE_MEDIA: Record<"heroAnimation" | "demoVideo" | "hardwareCon
   hardwareConcept: {
     id: "presence-hardware-concept",
     kind: "image",
-    sources: [
-      // { src: "/presence/presence-hardware-concept.webp", type: "image/webp" },
-    ],
-    alt: "Presence hardware concept",
-    aspectRatio: "4 / 5",
+    sources: [{ src: "/presence/presence-hardware-concept.png", type: "image/png" }],
+    alt: "Presence hardware concept: a particle sphere floating inside a glass cylinder above a speaker base, with a phone resting on its charging tray",
+    // the concept render is 3:4 — shown whole, nothing cropped
+    aspectRatio: "3 / 4",
     placeholder: "Hardware concept imagery — in development",
-    assetHint: "public/presence/presence-hardware-concept.webp, then list it in src/content/presence.ts → PRESENCE_MEDIA.hardwareConcept",
+    assetHint: "public/presence/presence-hardware-concept.png, then list it in src/content/presence.ts → PRESENCE_MEDIA.hardwareConcept",
   },
 };
 

@@ -5,9 +5,11 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { createRenderLoop } from "@/lib/render/renderLoop";
+import { getDebugFlags } from "@/lib/debugFlags";
 import { buildTown, DAY, NIGHT } from "../townBuilder";
 import { loadGltfFleet } from "../gltfAssets";
 import { createCameraPath } from "./cameraPath";
+import { computeRenderProfile, type RenderProfile } from "./renderProfile";
 
 /* ------------------------------------------------------------------ */
 /* Lunar micro-grid renderer (WebGL). Framework-free: the React        */
@@ -42,19 +44,26 @@ export function createLunarRenderer(
   inputs: LunarInputs,
   options: { flightEnd: number; reducedMotion: boolean },
 ): LunarRenderer {
-  // throws when WebGL is unavailable — the caller shows its fallback
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-
+  const flags = getDebugFlags();
+  const diagnostics = flags.renderDiagnostics;
   const compact = window.matchMedia("(max-width: 720px), (pointer: coarse)").matches;
-  const quality = compact ? "low" : "high";
+  const overrides = { dpr: flags.lunarDpr, samples: flags.lunarMsaa };
+  const profileFor = () =>
+    computeRenderProfile(window.innerWidth, window.innerHeight, window.devicePixelRatio, compact, overrides);
+  let profile = profileFor();
+  const { quality } = profile;
   let reducedMotion = options.reducedMotion;
 
-  const dpr = Math.min(window.devicePixelRatio, compact ? 1.5 : 2);
-  renderer.setPixelRatio(dpr);
+  // Every frame is drawn into the composer's (multisampled) targets and only
+  // a fullscreen quad reaches the canvas, so the canvas itself needs no MSAA —
+  // on a Retina display that buffer alone is hundreds of MB.
+  // throws when WebGL is unavailable — the caller shows its fallback
+  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+  renderer.setPixelRatio(profile.dpr);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  if (quality === "high") {
+  if (profile.shadows) {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   }
@@ -66,7 +75,9 @@ export function createLunarRenderer(
 
   // image-based lighting: gives metals (solar panels) real reflections
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const roomEnv = new RoomEnvironment();
+  let envTarget = pmrem.fromScene(roomEnv, 0.04);
+  scene.environment = envTarget.texture;
   scene.environmentIntensity = 0.32;
 
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.5, 900);
@@ -80,7 +91,7 @@ export function createLunarRenderer(
   scene.add(fill);
   const sun = new THREE.DirectionalLight(DAY.sunColor.clone(), DAY.sunIntensity);
   sun.position.set(150, 65, 90); // low sun angle → long, dramatic lunar shadows
-  if (quality === "high") {
+  if (profile.shadows) {
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     sun.shadow.camera.left = -140;
@@ -101,12 +112,14 @@ export function createLunarRenderer(
   scene.add(fleet.group);
 
   /* post-processing: bloom gives the emissive conduits a real glow */
-  const rt = new THREE.WebGLRenderTarget(window.innerWidth * dpr, window.innerHeight * dpr, {
-    samples: quality === "high" ? 8 : 2,
+  // The composer swaps its two targets every frame (OutputPass needsSwap),
+  // so both carry these samples — keep the count modest.
+  const rt = new THREE.WebGLRenderTarget(window.innerWidth * profile.dpr, window.innerHeight * profile.dpr, {
+    samples: profile.samples,
     type: THREE.HalfFloatType,
   });
   const composer = new EffectComposer(renderer, rt);
-  composer.setPixelRatio(dpr);
+  composer.setPixelRatio(profile.dpr);
   composer.setSize(window.innerWidth, window.innerHeight);
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
@@ -117,6 +130,59 @@ export function createLunarRenderer(
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
+  sizeBloom();
+
+  /** bloom at render resolution, or below it on very large displays */
+  function sizeBloom() {
+    const scale = profile.dpr * profile.bloomScale;
+    bloom.setSize(Math.round(window.innerWidth * scale), Math.round(window.innerHeight * scale));
+  }
+
+  /* diagnostics: is a flash a GPU context loss? (dev, or ?gldebug=1) */
+  const canvas = renderer.domElement;
+  let contextLosses = 0;
+  const logProfile = (reason: string, p: RenderProfile) => {
+    if (!diagnostics) return;
+    const gl = renderer.getContext();
+    const maxSamples = gl instanceof WebGL2RenderingContext ? gl.getParameter(gl.MAX_SAMPLES) : 0;
+    console.info(`[lunar] render profile (${reason})`, {
+      tier: p.tier,
+      css: `${window.innerWidth}×${window.innerHeight}`,
+      deviceDpr: window.devicePixelRatio,
+      dpr: p.dpr,
+      nativeMP: +(p.nativePixels / 1e6).toFixed(2),
+      renderMP: +(p.renderPixels / 1e6).toFixed(2),
+      samples: `${p.samples} (GPU max ${maxSamples})`,
+      bloomScale: p.bloomScale,
+      shadows: p.shadows,
+    });
+  };
+  logProfile("init", profile);
+  const onContextLost = (event: Event) => {
+    contextLosses += 1;
+    // three.js calls preventDefault() itself so the context can be restored
+    if (diagnostics) {
+      console.warn(`[lunar] webglcontextlost #${contextLosses}`, {
+        at: `${performance.now().toFixed(0)}ms`,
+        visibility: document.visibilityState,
+        rendering: loop.running,
+        statusMessage: (event as WebGLContextEvent).statusMessage || undefined,
+      });
+    }
+  };
+  const onContextRestored = () => {
+    // the PMREM environment is rendered on the GPU, so it is gone — rebuild it
+    // (the old target's GL objects died with the context; nothing to dispose)
+    envTarget = pmrem.fromScene(roomEnv, 0.04);
+    scene.environment = envTarget.texture;
+    if (diagnostics) {
+      console.warn(`[lunar] webglcontextrestored (after ${contextLosses} loss(es))`, {
+        at: `${performance.now().toFixed(0)}ms`,
+      });
+    }
+  };
+  canvas.addEventListener("webglcontextlost", onContextLost);
+  canvas.addEventListener("webglcontextrestored", onContextRestored);
 
   const path = createCameraPath();
   const camPos = new THREE.Vector3();
@@ -227,11 +293,19 @@ export function createLunarRenderer(
   });
 
   const onResize = () => {
+    // DPR can change too (window dragged between a Retina and an external display)
+    const next = profileFor();
+    const dprChanged = next.dpr !== profile.dpr || next.bloomScale !== profile.bloomScale;
+    // MSAA samples / shadows / quality are fixed at creation; only sizing follows the window
+    profile = { ...next, samples: profile.samples, quality: profile.quality, shadows: profile.shadows };
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+    renderer.setPixelRatio(profile.dpr);
     renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setPixelRatio(profile.dpr);
     composer.setSize(window.innerWidth, window.innerHeight);
-    bloom.setSize(window.innerWidth, window.innerHeight);
+    sizeBloom();
+    if (dprChanged) logProfile("resize", profile);
   };
   window.addEventListener("resize", onResize);
 
@@ -259,10 +333,14 @@ export function createLunarRenderer(
       loop.dispose();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored);
       town.dispose();
       fleet.dispose();
       composer.dispose();
       rt.dispose();
+      envTarget.dispose();
+      roomEnv.dispose();
       pmrem.dispose();
       renderer.dispose();
       renderer.domElement.remove();

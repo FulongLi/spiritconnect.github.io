@@ -21,6 +21,7 @@ import {
   type RenderPlan,
 } from "@/lib/render/experienceState";
 import { useReducedMotion } from "@/lib/hooks/useMediaQuery";
+import { useDebugFlags } from "@/lib/hooks/useDebugFlags";
 import styles from "./JourneyExperience.module.css";
 
 // the interior (and its WebGPU stack) is only downloaded when approached
@@ -76,6 +77,7 @@ export default function JourneyExperience() {
   const [entranceKey, setEntranceKey] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const reducedMotion = useReducedMotion();
+  const debug = useDebugFlags();
 
   const toggleTheme = useCallback(() => {
     setNight((n) => {
@@ -290,8 +292,8 @@ export default function JourneyExperience() {
       {/* subtle vignette for a polished, cinematic feel */}
       <div className={styles.vignette} aria-hidden="true" />
 
-      {/* film grain */}
-      <div className={styles.grain} aria-hidden="true" />
+      {/* film grain (?grain=0 hides it, to A/B compositing on Safari) */}
+      {debug.grain && <div className={styles.grain} aria-hidden="true" />}
 
       {/* intro fade from black */}
       <div className={styles.introFade} aria-hidden="true" />
