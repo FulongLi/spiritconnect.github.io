@@ -1,14 +1,19 @@
 import * as THREE from "three";
-import { R, rand } from "./scene/random";
+import { rand } from "./scene/random";
 import { craterShade, terrainHeight } from "./scene/terrain";
-import {
-  makeDotTexture,
-  makeGlowTexture,
-  makeRegolithTexture,
-  makeSolarCellTexture,
-} from "./scene/textures";
+import { makeDotTexture, makeGlowTexture, makeRegolithTexture } from "./scene/textures";
 import { buildAtmosphere } from "./scene/atmosphere";
 import { buildConduits } from "./scene/conduits";
+import { createIndustrialKit } from "./scene/materials";
+import { buildRocks } from "./scene/rocks";
+import type { InfraContext } from "./infrastructure/context";
+import { createGroundLayer } from "./infrastructure/ground";
+import { buildSST } from "./infrastructure/sst";
+import { buildDataCentre } from "./infrastructure/dataCentre";
+import { buildBESS } from "./infrastructure/bess";
+import { buildNuclearCore } from "./infrastructure/nuclear";
+import { buildSolarField } from "./infrastructure/solarField";
+import { buildChargers, buildDomeCollars, buildPadDetails } from "./infrastructure/secondary";
 
 export { terrainHeight } from "./scene/terrain";
 export { DAY, NIGHT } from "./scene/palette";
@@ -25,7 +30,11 @@ export { DAY, NIGHT } from "./scene/palette";
 /*                                                                     */
 /* Pure helpers live in ./scene: random (shared seeded stream),        */
 /* terrain (height field, craters, ribbons), textures, palette,        */
-/* atmosphere (dust + sky) and conduits (energy / data networks).      */
+/* materials (the shared industrial material kit), rocks, atmosphere   */
+/* (dust + sky) and conduits (energy / data networks).                 */
+/* The engineered installations (SST, data centre, BESS, nuclear core, */
+/* solar field, chargers) are authored in ./infrastructure and merged  */
+/* per material; ground decals tie them into the regolith.             */
 /* ------------------------------------------------------------------ */
 
 export type Town = {
@@ -47,9 +56,6 @@ export function buildTown(quality: "high" | "low"): Town {
     return o;
   };
   const shadows = quality === "high";
-
-
-
   /* ---------------- materials ---------------- */
   const std = (color: string, extra?: THREE.MeshStandardMaterialParameters) =>
     track(
@@ -76,17 +82,6 @@ export function buildTown(quality: "high" | "low"): Town {
     side: THREE.DoubleSide, // dome hull stays solid during the fly-through
   });
   const shellDarkMat = std("#a9bfd1", { roughness: 0.6, metalness: 0.15 });
-  const solarCellTex = track(makeSolarCellTexture());
-  const solarMat = std("#ffffff", {
-    map: solarCellTex,
-    bumpMap: solarCellTex,
-    bumpScale: 0.06,
-    roughness: 0.3,
-    metalness: 0.45,
-    flatShading: false,
-    emissive: new THREE.Color("#1f7fe8"),
-    emissiveIntensity: 0.1,
-  });
   const conduitMat = std("#10161f", {
     roughness: 0.4,
     emissive: new THREE.Color("#2ebcfe"),
@@ -128,6 +123,16 @@ export function buildTown(quality: "high" | "low"): Town {
   const terrain = new THREE.Mesh(terrainGeo, terrainMat);
   terrain.receiveShadow = shadows;
   group.add(terrain);
+
+  /* shared industrial materials + ground integration layer */
+  const kit = createIndustrialKit(track);
+  const ground = createGroundLayer(group, track, quality, shadows);
+  const infra: InfraContext = { group, kit, track, detail: quality === "high", shadows, ground };
+
+  /* ================== INPUTS: PV array (first: consumes the shared
+     random stream exactly where the original layout did) ============ */
+  const solarCenter = { x: 76, z: 38 };
+  buildSolarField(infra, solarCenter.x, solarCenter.z);
 
   /* ================== LOADS: habitat — hexagon layout ==============
      One central main dome, six SECONDARY DOMES at the vertices of a
@@ -228,198 +233,15 @@ export function buildTown(quality: "high" | "low"): Town {
   /* (dome interior stage removed — the handoff to the portal happens
      through a brief dark beat with the WELCOME caption instead) */
 
-  /* ================== INPUTS: PV array + reactor =================== */
-  const solarCenter = { x: 76, z: 38 };
-  const boxGeo = track(new THREE.BoxGeometry(1, 1, 1));
-  const panelPlacements: THREE.Matrix4[] = [];
-  const legPlacements: THREE.Matrix4[] = [];
-  const panelYaw = Math.atan2(150 - solarCenter.x, 90 - solarCenter.z);
-  const panelTilt = 0.55;
-  const cosY = Math.cos(panelYaw);
-  const sinY = Math.sin(panelYaw);
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 6; col++) {
-      const px = solarCenter.x - 19 + col * 7.6 + R(-0.2, 0.2);
-      const pz = solarCenter.z - 14 + row * 7.0 + R(-0.2, 0.2);
-      const gy = terrainHeight(px, pz);
-      const mm = new THREE.Matrix4();
-      mm.compose(
-        new THREE.Vector3(px, gy + 1.5, pz),
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(panelTilt, panelYaw, 0, "YXZ")),
-        new THREE.Vector3(6.6, 0.18, 5.0)
-      );
-      panelPlacements.push(mm);
-      for (const lx of [-2.4, 2.4]) {
-        const ox = lx * cosY - 0.7 * sinY;
-        const oz = -lx * sinY - 0.7 * cosY;
-        const lm = new THREE.Matrix4();
-        lm.compose(
-          new THREE.Vector3(px + ox, gy + 0.6, pz + oz),
-          new THREE.Quaternion(),
-          new THREE.Vector3(0.16, 1.2, 0.16)
-        );
-        legPlacements.push(lm);
-      }
-    }
-  }
-  const panelMesh = new THREE.InstancedMesh(boxGeo, solarMat, panelPlacements.length);
-  panelMesh.castShadow = shadows;
-  panelPlacements.forEach((mm, i) => panelMesh.setMatrixAt(i, mm));
-  const legMesh = new THREE.InstancedMesh(boxGeo, shellDarkMat, legPlacements.length);
-  legPlacements.forEach((mm, i) => legMesh.setMatrixAt(i, mm));
-  group.add(panelMesh, legMesh);
-
-  /* ----- nuclear reactor (detailed) ----- */
+  /* ----- nuclear power core ----- */
   const reactor = { x: 90, z: 0 };
-  {
-    const gy = terrainHeight(reactor.x, reactor.z);
-    const X = reactor.x;
-    const Z = reactor.z;
-    // octagonal platform + skirt
-    const platform = new THREE.Mesh(track(new THREE.CylinderGeometry(7, 7.6, 0.9, 8)), shellDarkMat);
-    platform.position.set(X, gy + 0.45, Z);
-    platform.receiveShadow = shadows;
-    group.add(platform);
-    // main vessel with segment rings
-    const vessel = new THREE.Mesh(track(new THREE.CylinderGeometry(2.9, 3.3, 6.2, 16)), shellMat);
-    vessel.position.set(X, gy + 4.0, Z);
-    vessel.castShadow = shadows;
-    group.add(vessel);
-    for (const ry of [2.4, 4.0, 5.6]) {
-      const seg = new THREE.Mesh(track(new THREE.TorusGeometry(3.12, 0.12, 8, 32)), shellDarkMat);
-      seg.rotation.x = Math.PI / 2;
-      seg.position.set(X, gy + ry, Z);
-      group.add(seg);
-    }
-    // glowing core showing through the vessel
-    const core = new THREE.Mesh(track(new THREE.CylinderGeometry(2.2, 2.2, 6.4, 12)), coreMat);
-    core.position.set(X, gy + 4.0, Z);
-    group.add(core);
-    // top cap dome + vent + antenna
-    const cap = new THREE.Mesh(
-      track(new THREE.SphereGeometry(2.9, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2)),
-      shellMat
-    );
-    cap.position.set(X, gy + 7.1, Z);
-    cap.castShadow = shadows;
-    group.add(cap);
-    const vent = new THREE.Mesh(track(new THREE.CylinderGeometry(0.35, 0.45, 1.6, 8)), shellDarkMat);
-    vent.position.set(X + 1.2, gy + 8.4, Z + 0.6);
-    group.add(vent);
-    const antenna = new THREE.Mesh(track(new THREE.CylinderGeometry(0.05, 0.08, 2.4, 6)), shellDarkMat);
-    antenna.position.set(X, gy + 10.0, Z);
-    const tip = new THREE.Mesh(track(new THREE.SphereGeometry(0.14, 8, 6)), coreMat);
-    tip.position.set(X, gy + 11.2, Z);
-    group.add(antenna, tip);
-    // radiator fins (bigger, panel-like)
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.25, 5.0, 3.4)), shellDarkMat);
-      fin.position.set(X + Math.cos(a) * 4.9, gy + 3.6, Z + Math.sin(a) * 4.9);
-      fin.rotation.y = -a;
-      fin.castShadow = shadows;
-      group.add(fin);
-    }
-    // coolant tanks + connecting pipes
-    for (const side of [-1, 1]) {
-      const tank = new THREE.Mesh(track(new THREE.CapsuleGeometry(0.95, 2.2, 4, 12)), shellMat);
-      tank.position.set(X + side * 5.6, gy + 2.3, Z - 3.6);
-      tank.castShadow = shadows;
-      group.add(tank);
-      const pipe = new THREE.Mesh(track(new THREE.CylinderGeometry(0.18, 0.18, 4.2, 8)), shellDarkMat);
-      pipe.rotation.z = Math.PI / 2;
-      pipe.rotation.y = 0.6 * side;
-      pipe.position.set(X + side * 3.4, gy + 1.7, Z - 2.2);
-      group.add(pipe);
-    }
-    // pipe ring around the vessel base
-    const pipeRing = new THREE.Mesh(track(new THREE.TorusGeometry(3.8, 0.16, 8, 40)), shellDarkMat);
-    pipeRing.rotation.x = Math.PI / 2;
-    pipeRing.position.set(X, gy + 1.15, Z);
-    group.add(pipeRing);
-    // glowing halo + ground ring
-    const halo = new THREE.Mesh(track(new THREE.TorusGeometry(4.6, 0.22, 8, 48)), conduitMat);
-    halo.rotation.x = Math.PI / 2;
-    halo.position.set(X, gy + 1.5, Z);
-    group.add(halo);
-  }
+  buildNuclearCore(infra, reactor.x, reactor.z);
 
   /* ================== STORAGE: battery banks ======================= */
-  const bessLightMat = std("#10161f", {
-    roughness: 0.4,
-    emissive: new THREE.Color("#2ebcfe"),
-    emissiveIntensity: 0.8,
-  });
-  const bessCenter = { x: 74, z: -32 };
-  for (let row = 0; row < 2; row++) {
-    for (let col = 0; col < 3; col++) {
-      const bx = bessCenter.x - 6 + col * 6 + (row % 2) * 1.2;
-      const bz = bessCenter.z - 3.5 + row * 7;
-      const gy = terrainHeight(bx, bz);
-      const body = new THREE.Mesh(track(new THREE.BoxGeometry(4.4, 2.7, 2.7)), shellMat);
-      body.position.set(bx, gy + 1.45, bz);
-      body.rotation.y = 0.18;
-      body.castShadow = shadows;
-      group.add(body);
-      const stripe = new THREE.Mesh(track(new THREE.BoxGeometry(4.46, 0.5, 2.76)), solarMat);
-      stripe.position.set(bx, gy + 2.35, bz);
-      stripe.rotation.y = 0.18;
-      group.add(stripe);
-      const status = new THREE.Mesh(track(new THREE.BoxGeometry(3.4, 0.16, 0.06)), bessLightMat);
-      status.position.set(bx + Math.sin(0.18) * 1.41, gy + 1.0, bz + Math.cos(0.18) * 1.41);
-      status.rotation.y = 0.18;
-      group.add(status);
-    }
-  }
+  buildBESS(infra, 74, -32);
 
   /* ================== PROCESS: SST station ========================= */
-  const sstCenter = { x: 44, z: 0 };
-  const sstRingMat = std("#1a1410", {
-    roughness: 0.35,
-    emissive: new THREE.Color("#ffc23f"),
-    emissiveIntensity: 0.8,
-  });
-  {
-    const gy = terrainHeight(sstCenter.x, sstCenter.z);
-    const platform = new THREE.Mesh(track(new THREE.BoxGeometry(15, 0.7, 11)), shellDarkMat);
-    platform.position.set(sstCenter.x, gy + 0.35, sstCenter.z);
-    platform.receiveShadow = shadows;
-    group.add(platform);
-    const sstBody = new THREE.Mesh(track(new THREE.BoxGeometry(4.6, 5.4, 3.6)), shellMat);
-    sstBody.position.set(sstCenter.x - 3, gy + 3.1, sstCenter.z - 1);
-    sstBody.castShadow = shadows;
-    group.add(sstBody);
-    for (const bandY of [2.3, 4.1]) {
-      const band = new THREE.Mesh(track(new THREE.BoxGeometry(4.78, 0.22, 3.78)), sstRingMat);
-      band.position.set(sstCenter.x - 3, gy + bandY, sstCenter.z - 1);
-      group.add(band);
-    }
-    for (let k = 0; k < 5; k++) {
-      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.16, 4.2, 1.3)), shellDarkMat);
-      fin.position.set(sstCenter.x - 3 - 1.8 + k * 0.9, gy + 3.1, sstCenter.z - 1 - 2.4);
-      fin.castShadow = shadows;
-      group.add(fin);
-    }
-    for (const bx of [-1.3, 0, 1.3]) {
-      const post = new THREE.Mesh(track(new THREE.CylinderGeometry(0.13, 0.16, 0.85, 8)), shellDarkMat);
-      post.position.set(sstCenter.x - 3 + bx, gy + 6.2, sstCenter.z - 1);
-      const tipB = new THREE.Mesh(track(new THREE.SphereGeometry(0.18, 8, 6)), sstRingMat);
-      tipB.position.set(sstCenter.x - 3 + bx, gy + 6.72, sstCenter.z - 1);
-      group.add(post, tipB);
-    }
-    for (const [cx, cz] of [
-      [3.6, 2.4],
-      [3.6, -2.6],
-    ] as [number, number][]) {
-      const cab = new THREE.Mesh(track(new THREE.BoxGeometry(2.4, 3.1, 1.8)), shellMat);
-      cab.position.set(sstCenter.x + cx, gy + 2.25, sstCenter.z + cz);
-      cab.castShadow = shadows;
-      group.add(cab);
-      const led = new THREE.Mesh(track(new THREE.BoxGeometry(1.7, 0.14, 0.06)), bessLightMat);
-      led.position.set(sstCenter.x + cx, gy + 3.2, sstCenter.z + cz + 0.94);
-      group.add(led);
-    }
-  }
+  buildSST(infra, 44, 0);
 
   /* ----- landing pads + charging posts, laid out like the hand sketch ----- */
   type PadNode = { x: number; z: number; r: number; kind?: "pad" | "dome" };
@@ -517,13 +339,7 @@ export function buildTown(quality: "high" | "low"): Town {
     );
     padRing.rotation.x = Math.PI / 2;
     padRing.position.set(pd.x, top + 0.05, pd.z);
-    const padMark = new THREE.Mesh(
-      track(new THREE.TorusGeometry(pd.r * 0.48, 0.08, 6, 48)),
-      shellDarkMat
-    );
-    padMark.rotation.x = Math.PI / 2;
-    padMark.position.set(pd.x, top + 0.04, pd.z);
-    group.add(padRing, padMark);
+    group.add(padRing);
   }
   {
     const pad = pads[3];
@@ -575,11 +391,6 @@ export function buildTown(quality: "high" | "low"): Town {
     }
     group.add(lander);
 
-    const chargerGeo = track(new THREE.BoxGeometry(1.4, 2.4, 0.85));
-    const chargerBaseGeo = track(new THREE.BoxGeometry(3.6, 0.16, 3.0));
-    const screenGeo = track(new THREE.BoxGeometry(0.82, 0.5, 0.08));
-    const armGeo = track(new THREE.CylinderGeometry(0.06, 0.06, 1.55, 6));
-    const spotGeo = track(new THREE.PlaneGeometry(4.0, 3.2));
     const chargers = [
       // three square charger posts on the left branch
       { x: -108, z: -23, rot: -1.48 },
@@ -598,71 +409,20 @@ export function buildTown(quality: "high" | "low"): Town {
       { x: -56, z: 86, rot: 0.12 },
       { x: -44, z: 88, rot: 0.12 },
     ];
-    for (const station of chargers) {
-      const gy = terrainHeight(station.x, station.z);
-      const charger = new THREE.Group();
-      charger.position.set(station.x, gy, station.z);
-      charger.rotation.y = station.rot;
-
-      const base = new THREE.Mesh(chargerBaseGeo, shellDarkMat);
-      base.position.y = 0.08;
-      base.receiveShadow = shadows;
-      charger.add(base);
-
-      const pillar = new THREE.Mesh(chargerGeo, shellMat);
-      pillar.position.set(0, 1.35, 0);
-      pillar.castShadow = shadows;
-      charger.add(pillar);
-
-      const screen = new THREE.Mesh(screenGeo, bessLightMat);
-      screen.position.set(0, 1.65, -0.47);
-      charger.add(screen);
-
-      const arm = new THREE.Mesh(armGeo, shellDarkMat);
-      arm.rotation.x = Math.PI / 2.6;
-      arm.position.set(0, 2.22, -0.72);
-      charger.add(arm);
-
-      const spot = new THREE.Mesh(spotGeo, conduitMat);
-      spot.rotation.x = -Math.PI / 2;
-      spot.position.set(0, 0.14, -2.35);
-      charger.add(spot);
-
-      group.add(charger);
-    }
+    buildChargers(infra, chargers, conduitMat);
   }
+  buildPadDetails(
+    infra,
+    pads.map((pd, i) => ({ x: pd.x, z: pd.z, r: pd.r, top: padTops[i], dome: pd.kind === "dome" })),
+  );
+  buildDomeCollars(
+    infra,
+    domes.map((d) => ({ x: d.x, z: d.z, r: d.r, base: terrainHeight(d.x, d.z) + 0.1 })),
+  );
 
   /* ================== LOAD: data centre ============================ */
   const dcCenter = { x: 16, z: -42 };
-  {
-    const rot = 0.3;
-    const gy = terrainHeight(dcCenter.x, dcCenter.z);
-    const hall = new THREE.Mesh(track(new THREE.BoxGeometry(11, 4, 6.5)), shellMat);
-    hall.position.set(dcCenter.x, gy + 2, dcCenter.z);
-    hall.rotation.y = rot;
-    hall.castShadow = shadows;
-    group.add(hall);
-    for (let k = 0; k < 5; k++) {
-      const fx = -4 + k * 2;
-      const fin = new THREE.Mesh(track(new THREE.BoxGeometry(0.18, 1.1, 5.9)), shellDarkMat);
-      fin.position.set(dcCenter.x + Math.cos(rot) * fx, gy + 4.55, dcCenter.z - Math.sin(rot) * fx);
-      fin.rotation.y = rot;
-      fin.castShadow = shadows;
-      group.add(fin);
-    }
-    for (const side of [-1, 1]) {
-      for (const ly of [1.1, 2.0, 2.9]) {
-        const strip = new THREE.Mesh(track(new THREE.BoxGeometry(9.6, 0.14, 0.06)), bessLightMat);
-        strip.position.set(
-          dcCenter.x + Math.sin(rot) * 3.31 * side,
-          gy + ly,
-          dcCenter.z + Math.cos(rot) * 3.31 * side
-        );
-        strip.rotation.y = rot;
-        group.add(strip);
-      }
-    }
-  }
+  buildDataCentre(infra, dcCenter.x, dcCenter.z, 0.3);
 
   /* the data centre's "intelligence" glow — dark until the AI loop engages */
   const dcGlowMat = track(
@@ -700,6 +460,27 @@ export function buildTown(quality: "high" | "low"): Town {
 
 
   const conduits = buildConduits({ group, track, std, conduitMat, dotTex });
+
+  /* boulders, kept clear of every installation, pad and dome */
+  const rocks = buildRocks(group, track, quality, shadows, [
+    { x: 0, z: 0, r: 36 },
+    { x: solarCenter.x, z: solarCenter.z, r: 30 },
+    { x: reactor.x, z: reactor.z, r: 14 },
+    { x: 74, z: -32, r: 18 },
+    { x: 44, z: 0, r: 16 },
+    { x: dcCenter.x, z: dcCenter.z, r: 15 },
+    { x: comms.x, z: comms.z, r: 5 },
+    { x: -26, z: 34, r: 10 },
+    { x: -50, z: -35, r: 6 },
+    ...pads.map((pd) => ({ x: pd.x, z: pd.z, r: pd.r + 4 })),
+    ...[
+      [-118, -25],
+      [-116, 6],
+      [-118, 68],
+      [-56, 86],
+    ].map(([x, z]) => ({ x, z, r: 16 })),
+  ]);
+  ground.build();
 
   /* dust, stars, Milky Way */
   const atmosphere = buildAtmosphere(group, track, quality);
@@ -740,7 +521,6 @@ export function buildTown(quality: "high" | "low"): Town {
     [terrainMat, "#ffffff", "#5d6b85"],
     [shellMat, "#cfe0ec", "#39435a"],
     [shellDarkMat, "#a9bfd1", "#2b3346"],
-    [solarMat, "#ffffff", "#7088ad"],
     [conduitMat, "#10161f", "#0b1018"],
     [goldMat, "#c9a86a", "#5d5038"],
   ];
@@ -756,7 +536,9 @@ export function buildTown(quality: "high" | "low"): Town {
     conduitMat.emissiveIntensity = 0.55 + 0.85 * mix;
     coreMat.emissiveIntensity = 0.9 + 0.7 * mix;
     stripMat.emissiveIntensity = 0.3 + 0.9 * mix;
-    solarMat.emissiveIntensity = 0.1 + 0.45 * mix;
+    kit.applyTheme(mix);
+    ground.applyTheme(mix);
+    rocks.applyTheme(mix);
     atmosphere.applyTheme(mix);
   }
 
@@ -770,15 +552,13 @@ export function buildTown(quality: "high" | "low"): Town {
     atmosphere.update(elapsed);
     conduits.update(dt, elapsed, lastMix);
 
-    sstRingMat.emissiveIntensity = (0.7 + 0.6 * lastMix) * (0.8 + 0.3 * Math.sin(elapsed * 2.1));
-
     const blink = Math.max(0, Math.sin(elapsed * 2.3));
     beaconRedMat.opacity = 0.15 + 0.75 * blink * blink * blink;
     const breathe = 0.5 + 0.5 * Math.sin(elapsed * 1.1);
     beaconBlueMat.opacity = 0.35 + 0.4 * breathe;
 
     // AI loop: information lights and the data-centre glow come alive
-    bessLightMat.emissiveIntensity = 0.8 * (1 + 0.9 * loop);
+    kit.update(elapsed, loop);
     dcGlow.visible = loop > 0.002;
     if (dcGlow.visible) {
       const hum = 0.85 + 0.15 * Math.sin(elapsed * 2.4);
@@ -799,8 +579,6 @@ export function buildTown(quality: "high" | "low"): Town {
 
   function dispose() {
     for (const d of disposables) d.dispose();
-    panelMesh.dispose();
-    legMesh.dispose();
   }
 
   applyThemeWrapped(0);

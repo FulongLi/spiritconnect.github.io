@@ -80,6 +80,14 @@ export function loadGltfFleet(shadows: boolean): GltfFleet {
       for (const m of mats) {
         const std = m as THREE.MeshStandardMaterial;
         if (std.color) tinted.push({ mat: std, base: std.color.clone() });
+        // Some texels of the compressed NASA normal maps decode to a zero
+        // vector, which shades as NaN; bloom then smears that NaN over the
+        // whole frame (a full black flash). The models are small on screen,
+        // so they go without normal maps.
+        if (std.normalMap) {
+          std.normalMap = null;
+          std.needsUpdate = true;
+        }
       }
     });
   };

@@ -35,6 +35,7 @@
 
 /* quiet sound + pause controls, present but never competing */
 .controls {
+  touch-action: manipulation; /* no double-tap-zoom delay on taps */
   position: absolute;
   right: clamp(12px, 5%, 64px);
   bottom: clamp(40px, 12%, 96px);
@@ -66,7 +67,6 @@
     border-color var(--p-dur-ui) var(--p-ease);
 }
 
-.soundToggle:hover,
 .soundToggle:focus-visible {
   border-color: var(--p-line-strong);
   color: var(--p-text);
@@ -112,10 +112,20 @@
     border-color var(--p-dur-ui) var(--p-ease);
 }
 
-.playToggle:hover,
 .playToggle:focus-visible {
   border-color: var(--p-line-strong);
   color: var(--p-text);
+}
+
+/* hover only where a pointer really hovers: on iOS a tap that changes
+   :hover styles can be spent on the hover alone, so every other tap on
+   the controls was ignored */
+@media (hover: hover) {
+  .soundToggle:hover,
+  .playToggle:hover {
+    border-color: var(--p-line-strong);
+    color: var(--p-text);
+  }
 }
 
 .playToggle:focus-visible {

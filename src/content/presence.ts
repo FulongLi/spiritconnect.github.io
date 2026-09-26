@@ -126,7 +126,7 @@ export const INTEREST_FORM_COPY = {
 export type MediaSource = {
   src: string;
   type: string;
-  /** video only: media query for this source (e.g. a lighter encode for phones) */
+  /** video only: media query for this source (e.g. a lighter encode for phones); the first match is used */
   media?: string;
 };
 
@@ -157,8 +157,8 @@ export const PRESENCE_MEDIA: Record<"heroAnimation" | "demoVideo" | "hardwareCon
     id: "presence-hero-animation",
     kind: "animation",
     // 1920×1080 60 fps for larger screens; a 1280×720 encode for phones, whose
-    // layout shows the centre square of the frame (the first matching source
-    // is used, so browsers that ignore `media` fall back to the full file)
+    // layout shows the centre square of the frame. MediaSlot picks the first
+    // source whose `media` matches, on the client (see MediaSlot.tsx for why)
     sources: [
       { src: "/presence/presence-app-hero.mp4", type: "video/mp4", media: "(min-width: 641px)" },
       { src: "/presence/presence-app-hero-720.mp4", type: "video/mp4" },

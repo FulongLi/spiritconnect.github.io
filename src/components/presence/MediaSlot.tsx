@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { MediaSlotConfig } from "@/content/presence";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { MediaSlotConfig, MediaSource } from "@/content/presence";
 import { assetPath } from "@/components/shared/assetPath";
 import { useReducedMotion } from "@/lib/hooks/useMediaQuery";
 import PresenceOrb from "./PresenceOrb";
@@ -12,6 +12,25 @@ export const PLAY_MEDIA_EVENT = "presence-media:play";
 
 export function requestMediaPlay(slotId: string) {
   window.dispatchEvent(new CustomEvent(PLAY_MEDIA_EVENT, { detail: slotId }));
+}
+
+/*
+ * Responsive video sources (`media` on a source) are chosen on the client.
+ * WebKit evaluates <source media> while parsing — before this page has a
+ * laid-out viewport — so desktop Safari always matched the phone encode.
+ * The static HTML therefore ships only the poster; after hydration the first
+ * matching source is picked once per slot (resizing never swaps the file
+ * mid-playback) and inserting it starts loading / muted autoplay.
+ */
+const chosenSource = new Map<string, number>();
+const subscribeNever = () => () => {};
+
+function pickSource(id: string, sources: MediaSource[]) {
+  if (!chosenSource.has(id)) {
+    const i = sources.findIndex((s) => !s.media || window.matchMedia(s.media).matches);
+    chosenSource.set(id, i === -1 ? sources.length - 1 : i);
+  }
+  return chosenSource.get(id)!;
 }
 
 /** the visitor's "Sound on" choice for the hero, remembered for the session */
@@ -33,20 +52,18 @@ function writeSoundPref(on: boolean) {
   }
 }
 
-type MediaWithAudioInfo = HTMLVideoElement & {
-  audioTracks?: { length: number };
-  mozHasAudio?: boolean;
-  webkitAudioDecodedByteCount?: number;
-};
-
-/** true / false when the browser can tell whether the file has sound, null when it can't (yet) */
-function detectAudio(video: MediaWithAudioInfo): boolean | null {
-  if (video.audioTracks) return video.audioTracks.length > 0;
-  if (typeof video.mozHasAudio === "boolean") return video.mozHasAudio;
-  if (typeof video.webkitAudioDecodedByteCount === "number" && video.currentTime > 1.5) {
-    return video.webkitAudioDecodedByteCount > 0;
-  }
-  return null;
+/**
+ * Unmute and make sure the animation is running. Must be called from a user
+ * gesture. If the browser still refuses audible playback, fall back to muted
+ * playback rather than leaving the animation stopped.
+ */
+function enableSound(video: HTMLVideoElement) {
+  video.muted = false;
+  if (!video.paused) return;
+  video.play().catch(() => {
+    video.muted = true;
+    video.play().catch(() => {});
+  });
 }
 
 function SpeakerIcon({ muted }: { muted: boolean }) {
@@ -92,9 +109,19 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
   const [failed, setFailed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
-  const [audioAvailable, setAudioAvailable] = useState(!!config.hasAudio);
   const soundButtonRef = useRef<HTMLButtonElement>(null);
   const hasMedia = config.sources.length > 0 && !failed;
+  const responsive = config.sources.some((s) => s.media);
+  const sourceIndex = useSyncExternalStore(
+    subscribeNever,
+    () => (responsive ? pickSource(config.id, config.sources) : -1),
+    () => -1,
+  );
+  const videoSources = responsive
+    ? sourceIndex === -1
+      ? []
+      : [config.sources[sourceIndex]]
+    : config.sources;
 
   useEffect(() => {
     if (config.kind !== "video") return;
@@ -112,14 +139,18 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
   useEffect(() => {
     const video = videoRef.current;
     if (!video || config.kind !== "animation") return;
+    if (responsive && sourceIndex === -1) return; // source not chosen yet
     if (reducedMotion) {
       video.pause();
       video.load();
     } else {
+      // a source inserted after hydration isn't picked up by every browser
+      // (Chrome leaves it unloaded) — load it explicitly
+      if (responsive) video.load();
       video.muted = true;
       video.play().catch(() => {});
     }
-  }, [reducedMotion, config.kind]);
+  }, [reducedMotion, config.kind, responsive, sourceIndex]);
 
   // mirror the animation's play state for its pause / play toggle
   useEffect(() => {
@@ -136,29 +167,23 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
     };
   }, [config.kind, hasMedia]);
 
-  // sound: mirror the muted state, hide the control if the file turns out to
-  // be silent, and re-apply a "Sound on" choice from earlier in the session on
-  // the visitor's first interaction (browsers only allow audible playback
-  // after a user gesture, so it can't be restored on load)
+  // sound: `config.hasAudio` is authoritative — the control is always shown
+  // for assets that declare a sound track (runtime probes such as
+  // audioTracks / webkitAudioDecodedByteCount are unreliable in WebKit and
+  // hid the control in Safari). Mirror the muted state, and re-apply a
+  // "Sound on" choice from earlier in the session on the visitor's first
+  // interaction (audible playback needs a user gesture, so not on load).
   useEffect(() => {
-    const video = videoRef.current as MediaWithAudioInfo | null;
+    const video = videoRef.current;
     if (!video || config.kind !== "animation" || !config.hasAudio) return;
     const onVolume = () => setMuted(video.muted);
-    const check = () => {
-      const has = detectAudio(video);
-      if (has === null) return;
-      setAudioAvailable(has);
-      video.removeEventListener("timeupdate", check);
-    };
     video.addEventListener("volumechange", onVolume);
-    video.addEventListener("loadedmetadata", check);
-    video.addEventListener("timeupdate", check);
 
     const restore = (e: Event) => {
       if (soundButtonRef.current?.contains(e.target as Node)) return; // the toggle handles itself
       window.removeEventListener("click", restore, true);
       window.removeEventListener("keydown", restore, true);
-      if (readSoundPref()) video.muted = false;
+      if (readSoundPref()) enableSound(video);
     };
     if (readSoundPref()) {
       window.addEventListener("click", restore, true);
@@ -166,8 +191,6 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
     }
     return () => {
       video.removeEventListener("volumechange", onVolume);
-      video.removeEventListener("loadedmetadata", check);
-      video.removeEventListener("timeupdate", check);
       window.removeEventListener("click", restore, true);
       window.removeEventListener("keydown", restore, true);
     };
@@ -184,9 +207,9 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
     const video = videoRef.current;
     if (!video) return;
     const turnOn = video.muted;
-    video.muted = !turnOn;
-    // sound belongs to the moving animation — asking for it starts playback
-    if (turnOn && video.paused) video.play().catch(() => {});
+    // sound belongs to the moving animation — asking for it also starts playback
+    if (turnOn) enableSound(video);
+    else video.muted = true;
     writeSoundPref(turnOn);
   };
 
@@ -238,8 +261,8 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
         aria-label={config.alt}
         onError={() => setFailed(true)}
       >
-        {config.sources.map((s) => (
-          <source key={s.src} src={assetPath(s.src)} type={s.type} media={s.media} />
+        {videoSources.map((s) => (
+          <source key={s.src} src={assetPath(s.src)} type={s.type} />
         ))}
       </video>
     );
@@ -256,7 +279,7 @@ export default function MediaSlot({ config, priority = false, variant = "framed"
       {content}
       {hasMedia && config.kind === "animation" && (
         <div className={styles.controls}>
-          {audioAvailable && (
+          {config.hasAudio && (
             <button
               ref={soundButtonRef}
               type="button"
