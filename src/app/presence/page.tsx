@@ -3,7 +3,6 @@ import SiteHeader from "@/components/site/SiteHeader";
 import Footer from "@/components/overlay/components/Footer/Footer";
 import MediaSlot from "@/components/presence/MediaSlot";
 import InterestForm from "@/components/presence/InterestForm";
-import PresenceOrb from "@/components/presence/PresenceOrb";
 import { Reveal, WatchDemoLink } from "@/components/presence/PageEffects";
 import {
   INTEREST_FORM_COPY,
@@ -31,11 +30,11 @@ export default function PresencePage() {
     <>
       <SiteHeader current="presence" />
       <main className={styles.page}>
-        {/* ── Hero: the app animation is the dominant element ─────────────── */}
+        {/* ── Hero: the app animation is the dominant element. The video is
+            rendered on pure black like the page, so it dissolves into the
+            environment instead of sitting in a player frame. ──────────── */}
         <section className={styles.hero} aria-labelledby="presence-title">
-          <div className={styles.heroGlow} aria-hidden="true">
-            <PresenceOrb scale={0.42} intensity={0.35} />
-          </div>
+          <div className={styles.heroHaze} aria-hidden="true" />
           <div className={styles.heroHeading}>
             <p className={styles.eyebrow}>{PRESENCE_HERO.eyebrow}</p>
             <h1 id="presence-title" className={styles.heroTitle}>
@@ -44,7 +43,12 @@ export default function PresencePage() {
             <p className={styles.heroTagline}>{PRESENCE_HERO.tagline}</p>
           </div>
           <div className={styles.heroMedia}>
-            <MediaSlot config={PRESENCE_MEDIA.heroAnimation} priority />
+            <MediaSlot
+              config={PRESENCE_MEDIA.heroAnimation}
+              variant="ambient"
+              className={styles.heroSlot}
+              priority
+            />
           </div>
           <div className={styles.heroActions}>
             <WatchDemoLink
@@ -52,7 +56,8 @@ export default function PresencePage() {
               slotId={PRESENCE_MEDIA.demoVideo.id}
               className={styles.primaryButton}
             >
-              <span aria-hidden="true">▶</span> {PRESENCE_HERO.primaryCta}
+              <span className={styles.playGlyph} aria-hidden="true" />
+              {PRESENCE_HERO.primaryCta}
             </WatchDemoLink>
             <a href="#register" className={styles.ghostButton}>
               {PRESENCE_HERO.secondaryCta}
@@ -133,11 +138,11 @@ export default function PresencePage() {
             </Reveal>
             <Reveal className={styles.hardwareCopy} delay={100}>
               <p className={styles.kicker}>{PRESENCE_HARDWARE.kicker}</p>
-              <p className={styles.badge}>{PRESENCE_HARDWARE.status}</p>
               <h2 id="hardware-title" className={styles.h2}>
                 {PRESENCE_HARDWARE.title}
               </h2>
               <p className={styles.lead}>{PRESENCE_HARDWARE.body}</p>
+              <p className={styles.status}>{PRESENCE_HARDWARE.status}</p>
               <h3 className={styles.capabilitiesTitle}>Exploring</h3>
               <ul className={styles.capabilities}>
                 {PRESENCE_HARDWARE.capabilities.map((c) => (
@@ -151,6 +156,7 @@ export default function PresencePage() {
 
         {/* ── Founding 100 ──────────────────────────────────────────────────── */}
         <section id="founding" className={styles.founding} aria-labelledby="founding-title">
+          <div className={styles.foundingHaze} aria-hidden="true" />
           <Reveal className={styles.foundingInner}>
             <h2 id="founding-title" className={styles.foundingKicker}>
               {PRESENCE_FOUNDING.kicker}

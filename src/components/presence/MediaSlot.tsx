@@ -18,18 +18,25 @@ type Props = {
   config: MediaSlotConfig;
   /** load eagerly (above the fold) */
   priority?: boolean;
+  /**
+   * "ambient": no frame — the media dissolves into the page background (the
+   * hero animation is rendered on pure black, like the page).
+   * "framed": a quiet glass surface for user-started media.
+   */
+  variant?: "ambient" | "framed";
   className?: string;
 };
 
 /**
- * A framed media area for Presence product media. While the final asset is
- * not configured (see src/content/presence.ts → PRESENCE_MEDIA) it shows a
+ * A media area for Presence product media. While the final asset is not
+ * configured (see src/content/presence.ts → PRESENCE_MEDIA) it shows a
  * labelled placeholder — it never pretends to be the real product footage.
  */
-export default function MediaSlot({ config, priority = false, className }: Props) {
+export default function MediaSlot({ config, priority = false, variant = "framed", className }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const reducedMotion = useReducedMotion();
   const [failed, setFailed] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const hasMedia = config.sources.length > 0 && !failed;
 
   useEffect(() => {
@@ -42,13 +49,42 @@ export default function MediaSlot({ config, priority = false, className }: Props
     return () => window.removeEventListener(PLAY_MEDIA_EVENT, onPlay);
   }, [config.id, config.kind]);
 
-  // respect reduced motion for the autoplaying hero animation
+  // respect reduced motion for the autoplaying hero animation: stop, and
+  // reload so the poster shows (an autoplay attempt from the static HTML
+  // hides the poster even if playback never advanced)
   useEffect(() => {
     const video = videoRef.current;
     if (!video || config.kind !== "animation") return;
-    if (reducedMotion) video.pause();
-    else video.play().catch(() => {});
+    if (reducedMotion) {
+      video.pause();
+      video.load();
+    } else {
+      video.muted = true;
+      video.play().catch(() => {});
+    }
   }, [reducedMotion, config.kind]);
+
+  // mirror the animation's play state for its pause / play toggle
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || config.kind !== "animation") return;
+    const sync = () => setPlaying(!video.paused);
+    const initial = window.setTimeout(sync, 0); // it may already be autoplaying
+    video.addEventListener("play", sync);
+    video.addEventListener("pause", sync);
+    return () => {
+      window.clearTimeout(initial);
+      video.removeEventListener("play", sync);
+      video.removeEventListener("pause", sync);
+    };
+  }, [config.kind, hasMedia]);
+
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  };
 
   const poster = config.poster ? assetPath(config.poster) : undefined;
 
@@ -56,7 +92,10 @@ export default function MediaSlot({ config, priority = false, className }: Props
   if (!hasMedia) {
     content = (
       <div className={styles.placeholder}>
-        <PresenceOrb scale={0.26} intensity={0.55} className={styles.placeholderOrb} />
+        {/* one ambient sphere for moving media; stills get a quiet pool of light */}
+        {config.kind !== "image" && (
+          <PresenceOrb scale={0.24} intensity={0.7} className={styles.placeholderOrb} />
+        )}
         <div className={styles.placeholderLabel}>
           <span className={styles.placeholderDot} aria-hidden="true" />
           {config.placeholder}
@@ -89,8 +128,9 @@ export default function MediaSlot({ config, priority = false, className }: Props
         muted={isAnimation}
         loop={isAnimation}
         autoPlay={isAnimation && !reducedMotion}
-        controls={!isAnimation || reducedMotion}
-        preload={priority ? "auto" : "metadata"}
+        controls={!isAnimation}
+        preload={priority && !(isAnimation && reducedMotion) ? "auto" : "metadata"}
+        disablePictureInPicture={isAnimation}
         aria-label={config.alt}
         onError={() => setFailed(true)}
       >
@@ -104,14 +144,25 @@ export default function MediaSlot({ config, priority = false, className }: Props
   return (
     <figure
       className={`${styles.frame} ${className ?? ""}`}
-      style={{ aspectRatio: config.aspectRatio }}
+      style={{ "--slot-ratio-default": config.aspectRatio } as React.CSSProperties}
+      data-variant={variant}
+      data-kind={config.kind}
       data-empty={!hasMedia}
     >
-      <span className={`${styles.corner} ${styles.tl}`} aria-hidden="true" />
-      <span className={`${styles.corner} ${styles.tr}`} aria-hidden="true" />
-      <span className={`${styles.corner} ${styles.bl}`} aria-hidden="true" />
-      <span className={`${styles.corner} ${styles.br}`} aria-hidden="true" />
       {content}
+      {/* looping motion must be pausable (WCAG 2.2.2); under reduced motion
+          the animation waits on its poster frame until started here */}
+      {hasMedia && config.kind === "animation" && (
+        <button
+          type="button"
+          className={styles.playToggle}
+          onClick={togglePlayback}
+          aria-label={playing ? "Pause animation" : "Play animation"}
+          data-playing={playing}
+        >
+          <span className={styles.playIcon} aria-hidden="true" />
+        </button>
+      )}
     </figure>
   );
 }

@@ -1,23 +1,28 @@
+/* Colours, lines and timing come from the Presence tokens on the page
+   (src/app/presence/page.module.css → .page). The form is the one place the
+   page uses a real container: a single glass surface, because it is a task. */
+
 .form,
 .result {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  padding: clamp(22px, 3vw, 36px);
-  border: 1px solid rgba(158, 252, 255, 0.18);
+  gap: 30px;
+  padding: clamp(24px, 3.4vw, 40px);
+  border: 1px solid var(--p-line);
+  border-radius: var(--p-radius-lg);
   background:
-    linear-gradient(160deg, rgba(46, 188, 254, 0.08), transparent 45%),
-    rgba(6, 12, 22, 0.72);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+    radial-gradient(ellipse 80% 50% at 50% 0%, var(--p-glow-soft), transparent 70%),
+    var(--p-surface);
+  backdrop-filter: blur(var(--p-blur));
+  -webkit-backdrop-filter: blur(var(--p-blur));
 }
 
 .field,
 .fieldset {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -26,12 +31,12 @@
 
 .legend {
   padding: 0;
-  margin-bottom: 10px;
-  color: rgba(222, 236, 246, 0.72);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  margin-bottom: 12px;
+  color: var(--p-text);
+  font-family: var(--p-font-sans);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .field .legend {
@@ -40,29 +45,36 @@
 
 .input {
   width: 100%;
-  padding: 14px 16px;
-  border: 1px solid rgba(240, 246, 255, 0.2);
-  border-radius: 0;
-  background: rgba(2, 5, 10, 0.6);
-  color: #f4f9ff;
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 14px;
-  letter-spacing: 0.04em;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--p-line-strong);
+  border-radius: var(--p-radius);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--p-text);
+  font-family: var(--p-font-sans);
+  /* 16px keeps iOS from zooming on focus */
+  font-size: 16px;
+  transition:
+    border-color var(--p-dur-ui) var(--p-ease),
+    box-shadow var(--p-dur-ui) var(--p-ease);
 }
 
 .input::placeholder {
-  color: rgba(222, 236, 246, 0.32);
+  color: var(--p-faint);
+}
+
+.input:hover {
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 .input:focus {
   outline: none;
-  border-color: rgba(158, 252, 255, 0.7);
-  box-shadow: 0 0 0 3px rgba(46, 188, 254, 0.15);
+  border-color: var(--p-accent);
+  box-shadow: 0 0 0 3px rgba(169, 191, 214, 0.22);
 }
 
 .input[aria-invalid="true"] {
-  border-color: rgba(255, 140, 120, 0.8);
+  border-color: var(--p-danger);
 }
 
 .choices {
@@ -84,66 +96,75 @@
 }
 
 .choice span {
-  display: inline-block;
-  padding: 10px 14px;
-  border: 1px solid rgba(240, 246, 255, 0.18);
-  background: rgba(2, 5, 10, 0.45);
-  color: rgba(240, 246, 255, 0.8);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-muted);
+  font-family: var(--p-font-sans);
+  font-size: 15px;
   transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color var(--p-dur-ui) var(--p-ease),
+    background var(--p-dur-ui) var(--p-ease),
+    color var(--p-dur-ui) var(--p-ease),
+    box-shadow var(--p-dur-ui) var(--p-ease);
 }
 
 .choice:hover span {
-  border-color: rgba(158, 252, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.34);
+  color: var(--p-text);
 }
 
+/* selected: the option lights up like a particle — unmistakable */
 .choice input:checked + span {
-  border-color: #9efcff;
-  background: rgba(46, 188, 254, 0.16);
-  color: #ffffff;
-  box-shadow: 0 0 18px rgba(46, 188, 254, 0.22);
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--p-highlight), var(--p-particle));
+  color: #050506;
+  font-weight: 500;
+  box-shadow: 0 0 24px var(--p-glow);
 }
 
 .choice input:focus-visible + span {
-  outline: 1px solid #9efcff;
+  outline: 2px solid var(--p-accent);
   outline-offset: 3px;
 }
 
 .fieldset[aria-invalid="true"] .choice span {
-  border-color: rgba(255, 140, 120, 0.55);
+  border-color: rgba(240, 168, 152, 0.6);
 }
 
 .consent {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  color: rgba(222, 236, 246, 0.74);
-  font-family: var(--font-barlow), sans-serif;
+  color: var(--p-muted);
+  font-family: var(--p-font-sans);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
   cursor: pointer;
 }
 
 .consent input {
   flex: none;
-  width: 16px;
-  height: 16px;
-  margin-top: 2px;
-  accent-color: #2ebcfe;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--p-particle);
+}
+
+.consent input:focus-visible {
+  outline: 2px solid var(--p-accent);
+  outline-offset: 3px;
 }
 
 .error {
   margin: 0;
-  color: #ffb4a4;
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  color: var(--p-danger);
+  font-family: var(--p-font-sans);
+  font-size: 13px;
 }
 
 .trap {
@@ -159,25 +180,30 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 16px 24px;
-  border: 1px solid rgba(158, 252, 255, 0.5);
-  background: rgba(46, 188, 254, 0.16);
-  color: #ffffff;
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 12px;
+  min-height: 52px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--p-highlight), var(--p-particle));
+  color: #050506;
+  font-family: var(--p-font-sans);
+  font-size: 16px;
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  text-shadow: 0 0 12px rgba(158, 252, 255, 0.6);
   cursor: pointer;
-  box-shadow: 0 0 30px rgba(46, 188, 254, 0.18);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background var(--p-dur-ui) var(--p-ease),
+    box-shadow var(--p-dur-ui) var(--p-ease);
 }
 
 .submit:hover:not(:disabled),
 .submit:focus-visible {
-  background: rgba(46, 188, 254, 0.26);
-  box-shadow: 0 0 40px rgba(46, 188, 254, 0.32);
+  background: linear-gradient(180deg, #f4f5f7, var(--p-highlight));
+  box-shadow: 0 0 36px 2px var(--p-glow);
+}
+
+.submit:focus-visible {
+  outline: 2px solid var(--p-accent);
+  outline-offset: 3px;
 }
 
 .submit:disabled {
@@ -186,11 +212,10 @@
 }
 
 .note {
-  margin: -12px 0 0;
-  color: rgba(222, 236, 246, 0.45);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  margin: -14px 0 0;
+  color: var(--p-faint);
+  font-family: var(--p-font-sans);
+  font-size: 13px;
   text-align: center;
 }
 
@@ -200,43 +225,59 @@
 }
 
 .result[data-status="success"] {
-  border-color: rgba(158, 252, 255, 0.45);
+  border-color: var(--p-line-strong);
 }
 
 .result[data-status="error"] {
-  border-color: rgba(255, 160, 140, 0.4);
+  border-color: rgba(240, 168, 152, 0.4);
 }
 
 .resultTitle {
   margin: 0;
-  font-family: var(--font-bebas), sans-serif;
-  font-size: clamp(30px, 3.4vw, 42px);
-  letter-spacing: 0.06em;
-  color: #ffffff;
+  color: var(--p-text);
+  font-family: var(--p-font-sans);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 300;
+  letter-spacing: -0.01em;
 }
 
 .resultBody {
   margin: 0;
-  color: rgba(222, 236, 246, 0.78);
-  font-family: var(--font-barlow), sans-serif;
+  color: var(--p-muted);
+  font-family: var(--p-font-sans);
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .resultBody a {
-  color: #9efcff;
+  color: var(--p-text);
+  text-underline-offset: 4px;
 }
 
 .secondaryButton {
   align-self: flex-start;
+  min-height: 42px;
   margin-top: 8px;
-  padding: 10px 14px;
-  border: 1px solid rgba(240, 246, 255, 0.3);
+  padding: 0 18px;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 999px;
   background: transparent;
-  color: rgba(240, 246, 255, 0.9);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  color: var(--p-text);
+  font-family: var(--p-font-sans);
+  font-size: 14px;
   cursor: pointer;
+  transition: border-color var(--p-dur-ui) var(--p-ease);
+}
+
+.secondaryButton:hover {
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .choice span,
+  .submit,
+  .secondaryButton {
+    transition: none;
+  }
 }

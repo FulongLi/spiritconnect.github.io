@@ -14,7 +14,7 @@ export const PRESENCE_HERO = {
 
 export const PRESENCE_INTRO = {
   kicker: "WHAT IS PRESENCE",
-  title: "A VISUAL + VOICE INTERFACE FOR AI.",
+  title: "A visual + voice interface for AI.",
   body: "Presence is the interface between people and intelligent systems. No chat window, no dashboard — a living visual form you talk to, that answers in its own voice and shows you what matters.",
   pillars: [
     { title: "Talk naturally.", body: "Speak the way you would to a person. Presence listens, thinks and answers." },
@@ -25,22 +25,22 @@ export const PRESENCE_INTRO = {
 
 export const PRESENCE_IN_ACTION = {
   kicker: "PRESENCE IN ACTION",
-  title: "SEE IT LISTEN, THINK AND SPEAK.",
+  title: "See it listen, think and speak.",
   caption: "Presence app demonstration.",
 } as const;
 
 export const PRESENCE_USE_CASES = {
   kicker: "WORK + EVERYDAY",
-  title: "ONE INTERFACE. BOTH SIDES OF LIFE.",
+  title: "One interface. Both sides of life.",
   columns: [
     {
       id: "work",
-      label: "WORK",
+      label: "Work",
       items: ["Engineering", "Research", "AI agents", "Tools", "Productivity", "Information"],
     },
     {
       id: "everyday",
-      label: "EVERYDAY",
+      label: "Everyday",
       items: ["Conversation", "General AI", "Information", "Entertainment", "Personal assistance", "Ambient interaction"],
     },
   ],
@@ -49,8 +49,8 @@ export const PRESENCE_USE_CASES = {
 
 export const PRESENCE_HARDWARE = {
   kicker: "PRESENCE HARDWARE",
-  status: "EARLY PRODUCT CONCEPT",
-  title: "A HOME FOR PRESENCE.",
+  status: "Early product concept",
+  title: "A home for Presence.",
   body: "We are exploring a dedicated device that gives Presence a physical place in the room — shaped together with our first supporters.",
   // conceptual capabilities only — no specifications until they are confirmed
   capabilities: [
@@ -102,21 +102,21 @@ export const PURCHASE_INTENTS = [
 
 export const INTEREST_FORM_COPY = {
   kicker: "REGISTER YOUR INTEREST",
-  title: "HELP SHAPE PRESENCE.",
+  title: "Help shape Presence.",
   body: "Tell us how you would use Presence. It takes under a minute and helps us decide what to build first.",
   purchaseQuestion: `Would you consider purchasing Presence at ${FOUNDING_PRICE_LABEL}?`,
   consentLabel: "I agree that Spirit Connect may email me about Presence and the Founding 100. I can unsubscribe at any time.",
   submit: "Register interest",
   success: {
-    title: "YOU'RE ON THE LIST.",
+    title: "You're on the list.",
     body: "Thank you for helping shape Presence. We'll be in touch with Founding 100 updates.",
   },
   notConfigured: {
-    title: "REGISTRATION OPENS SOON.",
+    title: "Registration opens soon.",
     body: "We're connecting our registration service and couldn't record your answers yet. Nothing was sent. Please check back shortly.",
   },
   error: {
-    title: "SOMETHING WENT WRONG.",
+    title: "Something went wrong.",
     body: "Your registration couldn't be sent. Please check your connection and try again.",
   },
 } as const;
@@ -150,10 +150,10 @@ export const PRESENCE_MEDIA: Record<"heroAnimation" | "demoVideo" | "hardwareCon
     id: "presence-hero-animation",
     kind: "animation",
     sources: [
-      // { src: "/presence/presence-app-hero.webm", type: "video/webm" },
-      // { src: "/presence/presence-app-hero.mp4", type: "video/mp4" },
+      // add a WebM (VP9/AV1) copy above the MP4 when one is encoded
+      { src: "/presence/presence-app-hero.mp4", type: "video/mp4" },
     ],
-    // poster: "/presence/presence-app-hero-poster.jpg",
+    poster: "/presence/presence-app-hero-poster.jpg",
     alt: "Presence app demonstration animation",
     aspectRatio: "16 / 9",
     placeholder: "Presence app animation — coming soon",
