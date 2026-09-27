@@ -97,8 +97,10 @@
   justify-content: flex-end;
 }
 
-/* hero text sits high up, in the dark space above the horizon */
-.chapter[data-hero="true"] {
+/* hero text sits high up, in the dark space above the horizon; the
+   closing statement returns to the same place over the system view */
+.chapter[data-hero="true"],
+.chapter[data-coda="true"] {
   align-items: flex-start;
   padding-top: 13vh;
 }
@@ -163,28 +165,21 @@
   opacity: 0.92;
 }
 
-.chapterLink {
-  display: inline-flex;
-  margin-top: 20px;
-  padding: 9px 14px;
-  border: 1px solid rgba(240, 246, 255, 0.4);
-  background: rgba(8, 14, 26, 0.45);
-  color: rgba(240, 246, 255, 0.95);
-  font-family: var(--font-ibm-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  text-decoration: none;
-  text-shadow: none;
-  pointer-events: auto;
-  backdrop-filter: blur(8px);
-  transition: border-color 0.2s ease, background 0.2s ease;
+.sentence {
+  display: inline-block;
 }
 
-.chapterLink:hover,
-.chapterLink:focus-visible {
-  border-color: rgba(240, 246, 255, 0.8);
-  background: rgba(8, 14, 26, 0.7);
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-ibm-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  opacity: 0.78;
 }
 
 /* ── hint, skip, theme toggle ─────────────────────────────────────────── */
@@ -295,6 +290,30 @@
 }
 
 @media (max-width: 720px) {
+  /* compact: every chapter reads from the same lower-left block, clear
+     of the subject in the middle of the frame */
+  .chapter:not([data-hero="true"]):not([data-coda="true"]) {
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding-bottom: 17vh;
+  }
+
+  .chapterInner {
+    max-width: min(88vw, 420px);
+  }
+
+  .chapterTitle {
+    font-size: clamp(32px, 9vw, 44px);
+  }
+
+  .sub {
+    font-size: 16px;
+  }
+
+  .body {
+    font-size: 14px;
+  }
+
   .chapterInner::before {
     inset: -40px -24px;
     background: radial-gradient(closest-side, rgba(3, 7, 14, 0.74), rgba(3, 7, 14, 0.45) 60%, transparent);

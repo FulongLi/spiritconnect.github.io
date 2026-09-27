@@ -1,9 +1,11 @@
 import * as THREE from "three";
+import { MAIN_DOME } from "@/components/shared/domeArchitecture";
 import { rand } from "./scene/random";
 import { craterShade, terrainHeight } from "./scene/terrain";
 import { makeDotTexture, makeGlowTexture, makeRegolithTexture } from "./scene/textures";
 import { buildAtmosphere } from "./scene/atmosphere";
 import { buildConduits } from "./scene/conduits";
+import { mainDomeToWorld } from "./scene/habitatSite";
 import { createIndustrialKit } from "./scene/materials";
 import { buildRocks } from "./scene/rocks";
 import type { InfraContext } from "./infrastructure/context";
@@ -13,8 +15,8 @@ import { buildDataCentre } from "./infrastructure/dataCentre";
 import { buildBESS } from "./infrastructure/bess";
 import { buildNuclearCore } from "./infrastructure/nuclear";
 import { buildSolarField } from "./infrastructure/solarField";
-import { buildChargers, buildPadDetails } from "./infrastructure/secondary";
-import { buildHabitat, type PadDome } from "./infrastructure/habitat";
+import { buildHabitat } from "./infrastructure/habitat";
+import { buildMobility } from "./infrastructure/mobility";
 
 export { terrainHeight } from "./scene/terrain";
 export { DAY, NIGHT } from "./scene/palette";
@@ -23,7 +25,8 @@ export { DAY, NIGHT } from "./scene/palette";
 /* Lunar micro-grid, organized by energy flow:                         */
 /*   INPUTS  : PV array + nuclear reactor (east, side by side)         */
 /*   STORAGE : battery banks (BESS)                                    */
-/*   PROCESS : solid-state transformer (SST) + landing pad / charging  */
+/*   PROCESS : solid-state transformer (SST)                           */
+/*   ACTION  : landing pads, lander, rover charging rows (mobility)    */
 /*   LOADS   : data centre + habitat ring (domes & capsules in a       */
 /*             closed loop of tubes), with the portal pedestal inside  */
 /*             the main dome.                                          */
@@ -34,7 +37,7 @@ export { DAY, NIGHT } from "./scene/palette";
 /* materials (the shared industrial material kit), rocks, atmosphere   */
 /* (dust + sky) and conduits (energy / data networks).                 */
 /* The engineered installations (SST, data centre, BESS, nuclear core, */
-/* solar field, chargers) are authored in ./infrastructure and merged  */
+/* solar field, mobility) are authored in ./infrastructure and merged  */
 /* per material; ground decals tie them into the regolith.             */
 /* ------------------------------------------------------------------ */
 
@@ -44,6 +47,8 @@ export type Town = {
   applyTheme: (mix: number) => void;
   /** AI → energy feedback loop strength, 0..1 */
   setLoop: (k: number) => void;
+  /** reduced motion: the loop brightens without travelling waves */
+  setReducedMotion: (reduced: boolean) => void;
   dispose: () => void;
 };
 
@@ -93,12 +98,6 @@ export function buildTown(quality: "high" | "low"): Town {
     emissive: new THREE.Color("#67d6ff"),
     emissiveIntensity: 0.9,
   });
-  const stripMat = std("#2b3346", {
-    roughness: 0.4,
-    emissive: new THREE.Color("#ffd9a0"),
-    emissiveIntensity: 0.3,
-  });
-  const goldMat = std("#c9a86a", { roughness: 0.35, metalness: 0.6 });
   const glowTex = track(makeGlowTexture());
   const dotTex = track(makeDotTexture());
 
@@ -139,8 +138,8 @@ export function buildTown(quality: "high" | "low"): Town {
      The main Dome (home of the workspace) in the centre, six satellite
      domes on a hexagon, corridors along the spokes and the perimeter —
      authored in ./infrastructure/habitat, in the same architectural
-     language as the Dome interior. Built after the pads (below) so the
-     small pad domes join it. */
+     language as the Dome interior. Built after the mobility district
+     (below) so the small pad domes join it. */
 
   /* ----- nuclear power core ----- */
   const reactor = { x: 90, z: 0 };
@@ -152,134 +151,12 @@ export function buildTown(quality: "high" | "low"): Town {
   /* ================== PROCESS: SST station ========================= */
   buildSST(infra, 44, 0);
 
-  /* ----- landing pads + charging posts, laid out like the hand sketch ----- */
-  type PadNode = { x: number; z: number; r: number; kind?: "pad" | "dome" };
-  const pads: PadNode[] = [
-    { x: -42, z: -8, r: 5.2 }, // node #0 — chain pushed west along the red arrow
-    { x: -58, z: -12, r: 6.4, kind: "dome" }, // small dome #1 (moved up +12)
-    { x: -74, z: -16, r: 5.8 }, // landing pad #2 — on the straight line through #0 and #1
-    { x: -92, z: -20, r: 5.8 }, // left terminal pad beside chargers (follows #2)
-    { x: -94, z: 4, r: 5.8 }, // terminal pad #4 — flipped up, moved a big step left (-X)
-    { x: -36, z: 20, r: 5.2 }, // second node attached to the habitat ring
-    { x: -58, z: 40, r: 6.4, kind: "dome" }, // small dome at the second approach node
-    { x: -80, z: 60, r: 5.8 }, // second landing pad at the charger branch junction
-    { x: -100, z: 64, r: 5.8 }, // second left terminal pad beside chargers
-    { x: -80, z: 82, r: 5.8 }, // second lower terminal pad beside chargers
-  ];
-  const padTops: number[] = [];
-  const padDomes: PadDome[] = [];
-  for (let pi = 0; pi < pads.length; pi++) {
-    const pd = pads[pi];
-    // sample the rim so the pad always clears the local terrain
-    let maxEdge = -1e9;
-    let minEdge = 1e9;
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
-      const h = terrainHeight(pd.x + Math.cos(a) * pd.r, pd.z + Math.sin(a) * pd.r);
-      maxEdge = Math.max(maxEdge, h);
-      minEdge = Math.min(minEdge, h);
-    }
-    const top = maxEdge + 0.22; // low profile
-    padTops[pi] = top;
-    // every node sits on a raised disc platform that clears the local terrain
-    const baseH = top - (minEdge - 0.8);
-    const padMesh = new THREE.Mesh(
-      track(new THREE.CylinderGeometry(pd.r, pd.r + 0.6, baseH, 28)),
-      shellDarkMat
-    );
-    padMesh.position.set(pd.x, top - baseH / 2, pd.z);
-    padMesh.receiveShadow = shadows;
-    group.add(padMesh);
-
-    if (pd.kind === "dome") {
-      // a small habitat dome stands ON the platform (see buildHabitat)
-      padDomes.push({ x: pd.x, z: pd.z, radius: pd.r * 0.9, floor: top + 0.02, facing: Math.atan2(-pd.z, -pd.x) });
-      continue;
-    }
-
-    const padRing = new THREE.Mesh(
-      track(new THREE.TorusGeometry(pd.r * 0.86, 0.15, 8, 64)),
-      conduitMat
-    );
-    padRing.rotation.x = Math.PI / 2;
-    padRing.position.set(pd.x, top + 0.05, pd.z);
-    group.add(padRing);
-  }
-  {
-    const pad = pads[3];
-    /* detailed lander on the left terminal pad */
-    const lx = pad.x + 0.8;
-    const lz = pad.z - 0.7;
-    const lander = new THREE.Group();
-    lander.position.set(lx, padTops[3], lz);
-    lander.rotation.y = 0.2;
-    // descent stage: octagonal, gold-foil skirt
-    const descent = new THREE.Mesh(track(new THREE.CylinderGeometry(1.6, 1.7, 1.0, 8)), goldMat);
-    descent.position.y = 1.35;
-    descent.castShadow = shadows;
-    lander.add(descent);
-    const skirt = new THREE.Mesh(track(new THREE.CylinderGeometry(1.7, 1.95, 0.35, 8)), goldMat);
-    skirt.position.y = 0.78;
-    lander.add(skirt);
-    // engine nozzle
-    const nozzle = new THREE.Mesh(track(new THREE.CylinderGeometry(0.32, 0.62, 0.6, 12)), shellDarkMat);
-    nozzle.position.y = 0.42;
-    lander.add(nozzle);
-    // ascent module: cone + porthole ring
-    const ascent = new THREE.Mesh(track(new THREE.ConeGeometry(1.25, 1.7, 8)), shellMat);
-    ascent.position.y = 2.7;
-    ascent.castShadow = shadows;
-    lander.add(ascent);
-    const portRing = new THREE.Mesh(track(new THREE.TorusGeometry(0.95, 0.07, 6, 24)), stripMat);
-    portRing.rotation.x = Math.PI / 2;
-    portRing.position.y = 2.25;
-    lander.add(portRing);
-    // antenna + dish
-    const mastL = new THREE.Mesh(track(new THREE.CylinderGeometry(0.04, 0.05, 1.1, 6)), shellDarkMat);
-    mastL.position.set(0.5, 3.9, 0.2);
-    const dishL = new THREE.Mesh(track(new THREE.CircleGeometry(0.34, 12)), shellMat);
-    dishL.position.set(0.5, 4.5, 0.2);
-    dishL.rotation.x = -Math.PI / 3;
-    (dishL.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
-    lander.add(mastL, dishL);
-    // four legs with footpads
-    for (let i = 0; i < 4; i++) {
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const leg = new THREE.Mesh(track(new THREE.CylinderGeometry(0.07, 0.09, 2.1, 6)), shellDarkMat);
-      leg.position.set(Math.cos(a) * 1.75, 1.0, Math.sin(a) * 1.75);
-      leg.rotation.z = Math.cos(a) * 0.55;
-      leg.rotation.x = -Math.sin(a) * 0.55;
-      const foot = new THREE.Mesh(track(new THREE.CylinderGeometry(0.34, 0.42, 0.12, 10)), goldMat);
-      foot.position.set(Math.cos(a) * 2.45, 0.07, Math.sin(a) * 2.45);
-      lander.add(leg, foot);
-    }
-    group.add(lander);
-
-    const chargers = [
-      // three square charger posts on the left branch
-      { x: -108, z: -23, rot: -1.48 },
-      { x: -118, z: -25, rot: -1.48 },
-      { x: -128, z: -27, rot: -1.48 },
-      // three square charger posts on the upper branch (flipped up, moved left of #4)
-      { x: -104, z: 5, rot: -0.06 },
-      { x: -116, z: 6, rot: -0.06 },
-      { x: -128, z: 7, rot: -0.06 },
-      // three square charger posts on the second left branch
-      { x: -108, z: 66, rot: -1.38 },
-      { x: -118, z: 68, rot: -1.38 },
-      { x: -128, z: 70, rot: -1.38 },
-      // three square charger posts on the second lower branch
-      { x: -68, z: 84, rot: 0.12 },
-      { x: -56, z: 86, rot: 0.12 },
-      { x: -44, z: 88, rot: 0.12 },
-    ];
-    buildChargers(infra, chargers, conduitMat);
-  }
-  buildPadDetails(
-    infra,
-    pads.map((pd, i) => ({ x: pd.x, z: pd.z, r: pd.r, top: padTops[i], dome: pd.kind === "dome" })),
-  );
-  const habitat = buildHabitat(infra, padDomes);
+  /* ================= MOBILITY: landing pads, lander, rover chargers ==
+     where the energy system enters the physical world (see
+     ./infrastructure/mobility). Built before the habitat so the small
+     pad domes join it. */
+  const mobility = buildMobility(infra);
+  const habitat = buildHabitat(infra, mobility.padDomes);
 
   /* ================== LOAD: data centre ============================ */
   const dcCenter = { x: 16, z: -42 };
@@ -320,7 +197,21 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
 
-  const conduits = buildConduits({ group, track, std, conduitMat, dotTex });
+  // no flow dots under the pads, under the main Dome, or across its entrance
+  // court — where the final approach flies low toward the airlock
+  const court = mainDomeToWorld(0, 0, 24);
+  const conduits = buildConduits({
+    group,
+    track,
+    std,
+    conduitMat,
+    dotTex,
+    covered: [
+      ...mobility.footprints,
+      { x: 0, z: 0, r: MAIN_DOME.radius + 1 },
+      { x: court.x, z: court.z, r: 14 },
+    ],
+  });
 
   /* boulders, kept clear of every installation, pad and dome */
   const rocks = buildRocks(group, track, quality, shadows, [
@@ -333,13 +224,7 @@ export function buildTown(quality: "high" | "low"): Town {
     { x: comms.x, z: comms.z, r: 5 },
     { x: -26, z: 34, r: 10 },
     { x: -50, z: -35, r: 6 },
-    ...pads.map((pd) => ({ x: pd.x, z: pd.z, r: pd.r + 4 })),
-    ...[
-      [-118, -25],
-      [-116, 6],
-      [-118, 68],
-      [-56, 86],
-    ].map(([x, z]) => ({ x, z, r: 16 })),
+    ...mobility.keepClear,
   ]);
   ground.build();
 
@@ -384,7 +269,6 @@ export function buildTown(quality: "high" | "low"): Town {
     [shellMat, "#cfe0ec", "#39435a"],
     [shellDarkMat, "#a9bfd1", "#2b3346"],
     [conduitMat, "#10161f", "#0b1018"],
-    [goldMat, "#c9a86a", "#5d5038"],
   ];
   const pairColors = themePairs.map(
     ([mat, d, n]) => [mat, new THREE.Color(d), new THREE.Color(n)] as const
@@ -397,7 +281,6 @@ export function buildTown(quality: "high" | "low"): Town {
     conduits.applyTheme(mix, conduitMat.color);
     conduitMat.emissiveIntensity = 0.55 + 0.85 * mix;
     coreMat.emissiveIntensity = 0.9 + 0.7 * mix;
-    stripMat.emissiveIntensity = 0.3 + 0.9 * mix;
     kit.applyTheme(mix);
     habitat.applyTheme(mix);
     ground.applyTheme(mix);
@@ -425,8 +308,10 @@ export function buildTown(quality: "high" | "low"): Town {
     dcGlow.visible = loop > 0.002;
     if (dcGlow.visible) {
       const hum = 0.85 + 0.15 * Math.sin(elapsed * 2.4);
-      dcGlowMat.opacity = 0.55 * loop * hum;
-      dcGlow.scale.setScalar(7 + 7 * loop);
+      // each feedback wave leaves the data centre with a soft pulse
+      const pulse = conduits.feedbackPulse();
+      dcGlowMat.opacity = 0.55 * loop * hum + 0.3 * pulse;
+      dcGlow.scale.setScalar(7 + 7 * loop + 4 * pulse);
     }
   }
 
@@ -445,5 +330,12 @@ export function buildTown(quality: "high" | "low"): Town {
   }
 
   applyThemeWrapped(0);
-  return { group, update, applyTheme: applyThemeWrapped, setLoop, dispose };
+  return {
+    group,
+    update,
+    applyTheme: applyThemeWrapped,
+    setLoop,
+    setReducedMotion: (reduced: boolean) => conduits.setReducedMotion(reduced),
+    dispose,
+  };
 }

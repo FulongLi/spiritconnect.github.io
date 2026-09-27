@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import TownCanvas from "@/components/energyTown/TownCanvas";
 import SiteHeader from "@/components/site/SiteHeader";
@@ -50,11 +50,26 @@ function fadeWindow(p: number, start: number, end: number) {
   return 1;
 }
 
+/** a title whose sentences each stay on one line when the column is narrow */
+function Sentences({ text }: { text: string }) {
+  const parts = text.split(". ");
+  if (parts.length < 2) return text;
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {i > 0 && " "}
+      <span className={styles.sentence}>{i < parts.length - 1 ? `${part}.` : part}</span>
+    </Fragment>
+  ));
+}
+
 function clamp01(n: number) {
   return Math.min(1, Math.max(0, n));
 }
 
 const INITIAL_PLAN = planRendering("LUNAR", 0);
+
+/** chapters that close on a statement of their own (no empty slots: keeps SSR ids stable) */
+const CODAS = CHAPTERS.flatMap((chapter, index) => (chapter.coda ? [{ chapter, coda: chapter.coda, index }] : []));
 
 /** scroll → camera damping (per second); the same feel the flight always had */
 const PROGRESS_DAMPING = 1.65;
@@ -68,6 +83,7 @@ export default function JourneyExperience() {
   const loopRef = useRef(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const chapterRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const codaRefs = useRef<(HTMLDivElement | null)[]>([]);
   const hintRef = useRef<HTMLDivElement>(null);
   const skipRef = useRef<HTMLButtonElement>(null);
   const portalWrapRef = useRef<HTMLDivElement>(null);
@@ -119,7 +135,7 @@ export default function JourneyExperience() {
         (p - TIMELINE.interiorStart) / (TIMELINE.interiorEnd - TIMELINE.interiorStart),
       );
 
-      /* WELCOME caption as the airlock approaches */
+      /* ENTER caption as the airlock approaches */
       if (captionRef.current) {
         const inO = clamp01((p - TIMELINE.captionIn) / 0.016);
         const outO = clamp01((TIMELINE.captionOut - p) / 0.016);
@@ -187,13 +203,15 @@ export default function JourneyExperience() {
       if (p >= PREFETCH_INTERIOR_AT) prefetchInterior();
 
       /* chapter overlay opacity, driven directly on the DOM */
-      CHAPTERS.forEach((c, i) => {
-        const el = chapterRefs.current[i];
+      const show = (el: HTMLDivElement | null, o: number) => {
         if (!el) return;
-        const o = fadeWindow(p, c.start, c.end);
         el.style.opacity = o.toFixed(3);
         el.style.transform = `translateY(${(1 - o) * 14}px)`;
         el.style.visibility = o <= 0.001 ? "hidden" : "visible";
+      };
+      CHAPTERS.forEach((c, i) => {
+        show(chapterRefs.current[i], fadeWindow(p, c.start, c.end));
+        if (c.coda) show(codaRefs.current[i], fadeWindow(p, c.coda.start, c.coda.end));
       });
 
       /* scroll hint + skip control */
@@ -338,21 +356,39 @@ export default function JourneyExperience() {
         >
           <div className={styles.chapterInner}>
             <div className={styles.kicker}>{c.kicker}</div>
-            <h2 className={styles.chapterTitle}>{c.title}</h2>
+            <h2 className={styles.chapterTitle}>
+              <Sentences text={c.title} />
+            </h2>
             {c.sub && <p className={styles.sub}>{c.sub}</p>}
             {c.body && <p className={styles.body}>{c.body}</p>}
-            {c.link && (
-              <a
-                className={styles.chapterLink}
-                href={c.link.href}
-                target={c.link.external ? "_blank" : undefined}
-                rel={c.link.external ? "noopener noreferrer" : undefined}
-              >
-                {c.link.label}
-                {c.link.external && <span aria-hidden="true"> ↗</span>}
-                {c.link.external && <span className="sr-only"> (opens external site)</span>}
-              </a>
+            {c.tags && (
+              <ul className={styles.tags}>
+                {c.tags.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
             )}
+          </div>
+        </div>
+      ))}
+
+      {/* closing statements: part of their chapter, shown in its place */}
+      {CODAS.map(({ chapter: c, coda, index }) => (
+        <div
+          key={`${c.id}-coda`}
+          ref={(el) => {
+            codaRefs.current[index] = el;
+          }}
+          className={styles.chapter}
+          data-align={coda.align}
+          data-coda="true"
+        >
+          <div className={styles.chapterInner}>
+            <div className={styles.kicker}>{coda.kicker}</div>
+            <h2 className={styles.chapterTitle}>
+              <Sentences text={coda.title} />
+            </h2>
+            {coda.sub && <p className={styles.sub}>{coda.sub}</p>}
           </div>
         </div>
       ))}
@@ -373,7 +409,7 @@ export default function JourneyExperience() {
           scrollToProgress(1);
         }}
       >
-        Skip to Presence <span aria-hidden="true">↓</span>
+        Skip to the Dome <span aria-hidden="true">↓</span>
       </button>
 
       <SiteHeader
@@ -407,9 +443,9 @@ export default function JourneyExperience() {
         )}
       </div>
 
-      {/* WELCOME caption over the airlock approach */}
+      {/* ENTER caption over the airlock approach */}
       <div ref={captionRef} className={styles.caption} aria-hidden="true">
-        <div className={styles.captionText}>WELCOME TO SPIRIT CONNECT</div>
+        <div className={styles.captionText}>ENTER SPIRIT CONNECT</div>
       </div>
 
       {/* screen-reader summary of the visual journey */}
@@ -417,7 +453,8 @@ export default function JourneyExperience() {
         <ol>
           {CHAPTERS.map((c) => (
             <li key={c.id}>
-              {c.kicker}: {c.title}. {c.sub} {c.body}
+              {c.kicker}: {c.title} {c.sub} {c.body} {c.tags?.join(", ")}
+              {c.coda && ` ${c.coda.title}`}
             </li>
           ))}
         </ol>

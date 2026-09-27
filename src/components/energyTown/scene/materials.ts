@@ -15,7 +15,8 @@ import { makeSolarCellTexture } from "./textures";
 /* products of the same manufacturer:                                  */
 /*   satin aluminium cladding · dark anodised graphite · steel frames  */
 /*   glazed ceramic insulators · copper conductors · dark tech glass   */
-/*   sintered-regolith foundations · frosted functional lighting       */
+/*   sintered-regolith foundations · off-white ceramic decks ·         */
+/*   thermal foil · frosted functional lighting                        */
 /* Surfaces differ by roughness, metalness and relief, not colour only. */
 /* ------------------------------------------------------------------ */
 
@@ -31,6 +32,8 @@ export type MatKey =
   | "glass"
   | "foundation"
   | "cable"
+  | "deck"
+  | "foil"
   | "solar"
   | "lightCool"
   | "lightInfo"
@@ -110,6 +113,10 @@ export function createIndustrialKit(track: Track): IndustrialKit {
     foundation: std({ color: "#8d8f91", metalness: 0, roughness: 0.94, ...surface(cladding, 0.8, 0.6) }),
     // cable jackets, hoses
     cable: std({ color: "#1c2026", metalness: 0.2, roughness: 0.72 }),
+    // off-white lunar-rated ceramic deck and structural panels
+    deck: std({ color: "#d9d9d4", metalness: 0.05, roughness: 0.78, ...surface(cladding, 0.45, 0.55) }),
+    // champagne multi-layer thermal blanket (lander descent stages)
+    foil: std({ color: "#a38c5f", metalness: 0.75, roughness: 0.4, ...surface(cladding, 1.4, 0.5) }),
     // anti-reflective solar glass over monocrystalline cells
     solar: std({
       color: "#ffffff",
@@ -173,6 +180,8 @@ export function createIndustrialKit(track: Track): IndustrialKit {
     ["glass", "#0b1118", "#070b12"],
     ["foundation", "#8d8f91", "#353c4a"],
     ["cable", "#1c2026", "#0c0f15"],
+    ["deck", "#d9d9d4", "#3f4556"],
+    ["foil", "#a38c5f", "#4a4234"],
     ["solar", "#ffffff", "#7088ad"],
     ["decal", "#ffffff", "#6c778b"],
   ];

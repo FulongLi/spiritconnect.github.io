@@ -392,7 +392,11 @@ export function makeSoftRectTexture() {
   return tex;
 }
 
-/** Landing-pad paint: touchdown rings, cross hairs and a scorched centre. */
+/**
+ * Landing-pad paint for the blast plate (the canvas spans the plate's
+ * radius): a scorched centre, the touchdown ring, a dashed inner ring,
+ * alignment bars, rim ticks and one amber approach chevron on +x.
+ */
 export function makePadMarkingTexture() {
   const S = 512;
   const c = document.createElement("canvas");
@@ -400,39 +404,59 @@ export function makePadMarkingTexture() {
   c.height = S;
   const ctx = c.getContext("2d")!;
   const m = S / 2;
-  // exhaust scorch
-  const g = ctx.createRadialGradient(m, m, 0, m, m, m * 0.62);
-  g.addColorStop(0, "rgba(20,20,22,0.55)");
-  g.addColorStop(0.55, "rgba(30,30,32,0.28)");
+  const at = (a: number, r: number) => [m + Math.cos(a) * m * r, m + Math.sin(a) * m * r] as const;
+  // exhaust scorch, strongest under the engine
+  const g = ctx.createRadialGradient(m, m, 0, m, m, m * 0.72);
+  g.addColorStop(0, "rgba(14,14,16,0.6)");
+  g.addColorStop(0.45, "rgba(24,24,26,0.32)");
   g.addColorStop(1, "rgba(30,30,32,0)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, S, S);
-  ctx.strokeStyle = "rgba(226,232,238,0.82)";
-  ctx.lineWidth = 7;
+  const paint = "rgba(228,231,234,0.84)";
+  ctx.strokeStyle = paint;
+  // touchdown ring
+  ctx.lineWidth = 11;
   ctx.beginPath();
-  ctx.arc(m, m, m * 0.9, 0, Math.PI * 2);
+  ctx.arc(m, m, m * 0.8, 0, Math.PI * 2);
   ctx.stroke();
+  // dashed inner ring
   ctx.lineWidth = 4;
-  ctx.setLineDash([22, 16]);
+  ctx.setLineDash([20, 15]);
   ctx.beginPath();
-  ctx.arc(m, m, m * 0.62, 0, Math.PI * 2);
+  ctx.arc(m, m, m * 0.46, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.lineWidth = 5;
+  // alignment bars on the diagonals, centre ring
+  ctx.lineWidth = 8;
   for (let k = 0; k < 4; k++) {
-    const a = (k * Math.PI) / 2;
+    const a = Math.PI / 4 + (k * Math.PI) / 2;
     ctx.beginPath();
-    ctx.moveTo(m + Math.cos(a) * m * 0.2, m + Math.sin(a) * m * 0.2);
-    ctx.lineTo(m + Math.cos(a) * m * 0.42, m + Math.sin(a) * m * 0.42);
+    ctx.moveTo(...at(a, 0.14));
+    ctx.lineTo(...at(a, 0.32));
     ctx.stroke();
   }
-  // amber alignment ticks at the rim
-  ctx.strokeStyle = "rgba(217,154,43,0.85)";
-  ctx.lineWidth = 10;
-  for (let k = 0; k < 8; k++) {
-    const a = (k * Math.PI) / 4 + Math.PI / 8;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(m, m, m * 0.07, 0, Math.PI * 2);
+  ctx.stroke();
+  // rim ticks every 15°, longer on the quarters
+  for (let k = 0; k < 24; k++) {
+    const a = (k * Math.PI) / 12;
+    ctx.lineWidth = k % 6 === 0 ? 6 : 3;
     ctx.beginPath();
-    ctx.arc(m, m, m * 0.9, a - 0.03, a + 0.03);
+    ctx.moveTo(...at(a, k % 6 === 0 ? 0.87 : 0.9));
+    ctx.lineTo(...at(a, 0.97));
+    ctx.stroke();
+  }
+  // the approach chevron (limited amber)
+  ctx.strokeStyle = "rgba(214,150,52,0.9)";
+  ctx.lineWidth = 12;
+  ctx.lineJoin = "miter";
+  for (const r of [0.58, 0.67]) {
+    ctx.beginPath();
+    ctx.moveTo(...at(-0.16, r + 0.05));
+    ctx.lineTo(...at(0, r));
+    ctx.lineTo(...at(0.16, r + 0.05));
     ctx.stroke();
   }
   const tex = new THREE.CanvasTexture(c);
@@ -582,6 +606,72 @@ export class GroundPainter {
       this.stroke(p, 0.42, `rgba(38,38,40,${alpha})`);
       this.stroke(p, 0.34, `rgba(20,20,22,${alpha * 0.8})`, [0.09, 0.11]);
     }
+  }
+
+  /**
+   * Landing-pad surroundings for a deck of radius r: a compacted apron,
+   * a plume-scoured ring just outside the berm and fine ejecta rays.
+   */
+  padApron(x: number, z: number, r: number) {
+    const k = this.k;
+    const cx = this.px(x);
+    const cz = this.pz(z);
+    this.blurred(r * 0.3, "rgba(150,150,152,0.42)", (ctx) => {
+      ctx.beginPath();
+      ctx.arc(cx, cz, r * 1.6 * k, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = "rgba(38,38,40,0.14)";
+    ctx.lineWidth = r * 0.4 * k;
+    ctx.beginPath();
+    ctx.arc(cx, cz, r * 1.62 * k, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineCap = "round";
+    for (let i = 0; i < 110; i++) {
+      const a = this.rng() * Math.PI * 2;
+      const r0 = r * (1.45 + this.rng() * 0.25);
+      const r1 = r * (1.95 + this.rng() * 1.3);
+      const light = this.rng() > 0.4;
+      const alpha = light ? 0.05 + this.rng() * 0.08 : 0.04 + this.rng() * 0.06;
+      ctx.strokeStyle = light ? `rgba(226,226,228,${alpha})` : `rgba(28,28,30,${alpha})`;
+      ctx.lineWidth = Math.max(1, (0.08 + this.rng() * 0.2) * k);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r0 * k, cz + Math.sin(a) * r0 * k);
+      ctx.lineTo(cx + Math.cos(a) * r1 * k, cz + Math.sin(a) * r1 * k);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Painted rover bay (w across, d deep), centred at x, z and turned like
+   * the charger it belongs to: the charger stands at local +z, the bay
+   * opens toward -z. Pale side lines and a limited amber stop bar.
+   */
+  bay(x: number, z: number, w: number, d: number, rot = 0) {
+    const k = this.k;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(this.px(x), this.pz(z));
+    ctx.rotate(-rot);
+    // compacted, swept bay floor so the paint has something to read against
+    ctx.fillStyle = "rgba(70,70,72,0.2)";
+    ctx.fillRect((-w / 2) * k, (-d / 2) * k, w * k, d * k);
+    ctx.strokeStyle = "rgba(236,238,240,0.8)";
+    ctx.lineWidth = Math.max(1, 0.14 * k);
+    ctx.beginPath();
+    for (const sx of [-w / 2, w / 2]) {
+      ctx.moveTo(sx * k, (-d / 2) * k);
+      ctx.lineTo(sx * k, (d / 2) * k);
+    }
+    ctx.moveTo((-w / 2) * k, (d / 2) * k);
+    ctx.lineTo((w / 2) * k, (d / 2) * k);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(206,146,52,0.7)";
+    ctx.fillRect((-w / 2 + 0.3) * k, (d / 2 - 0.85) * k, (w - 0.6) * k, 0.22 * k);
+    ctx.restore();
   }
 
   /** covered cable trench: dark slot with pale edge lines */
