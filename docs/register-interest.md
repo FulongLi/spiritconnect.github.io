@@ -1,7 +1,9 @@
 # Register Your Interest — backend integration
 
-The Founding 100 form on `/presence` is market validation only: it takes no
-payment and never reports success unless a backend accepted the submission.
+The Register Interest form on `/presence` is the Presence update list ("I like
+Presence, keep me updated"). It asks nothing about buying — purchasing is the
+separate pre-order path (see below) — takes no payment, and never reports
+success unless a backend accepted the submission.
 
 ## How it works
 
@@ -20,16 +22,15 @@ build-time variable:
 | unset (today) | nothing is sent; the form says registration opens soon |
 | an `https://…` URL | the payload is `POST`ed as JSON; any 2xx = success |
 
-## Payload (`InterestSubmission`, `schemaVersion: 1`)
+## Payload (`InterestSubmission`, `schemaVersion: 2`)
 
 ```json
 {
   "email": "person@example.com",
-  "interestLevel": "just-following | interested | very-interested | would-consider-buying",
+  "interestLevel": "just-following | interested | very-interested",
   "primaryUse": "ai-conversation | work-productivity | engineering | smart-home-ambient | entertainment | other",
-  "purchaseIntent": "yes | maybe | not-yet",
   "consent": true,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "product": "presence",
   "programme": "founding-100",
   "foundingPrice": 399,
@@ -40,8 +41,11 @@ build-time variable:
 }
 ```
 
-`foundingPrice` / `currency` come from `src/content/pricing.ts`, so the
-answer to "would you buy at £399?" is always stored with the price shown.
+`foundingPrice` / `currency` come from `src/content/pricing.ts` and record the
+Founding 100 price shown on the page at sign-up.
+
+v2 removed `purchaseIntent` and the `would-consider-buying` interest level
+(v1). A backend that stored v1 records should accept both versions.
 
 ## Connecting a backend
 
@@ -63,3 +67,17 @@ the hidden `company` field are dropped client-side.
 
 For a non-HTTP integration, implement `InterestTransport` and return it from
 `getInterestTransport()` — the UI does not change.
+
+## Pre-order and Try Presence links
+
+Neither is handled by this site. Both CTAs read one value each in
+`src/content/pricing.ts → PRESENCE_RELEASE`:
+
+| Field | CTA | While `null` |
+| --- | --- | --- |
+| `preorderUrl` | "Pre-order Presence" (Founding 100 + bottom of the page) | "Pre-order opening soon" — an unavailable control, no link |
+| `experienceUrl` | "Try Presence" (under the demo) | "Online experience coming soon" — an unavailable control, no link |
+
+Set an absolute `https://…` URL (the external checkout / reservation page, or
+the deployed online experience) and rebuild; the CTAs become ordinary links.
+No order is recorded or confirmed on this site.

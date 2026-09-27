@@ -8,17 +8,35 @@
 /* meant to be read is set below ~40 units.                            */
 /* ------------------------------------------------------------------ */
 
-export type CanvasFonts = { sans: string; mono: string };
+/** the Spirit Connect type roles: display (Bebas Neue), body (Barlow Condensed), mono (IBM Plex Mono) */
+export type CanvasFonts = { display: string; body: string; mono: string };
 
-/** the site's type stacks (CSS variables), readable by canvas text */
-export function readCanvasFonts(): CanvasFonts {
+/** the site's type stacks (the :root role variables), readable by canvas text */
+function readCanvasFonts(): CanvasFonts {
   const css = getComputedStyle(document.documentElement);
-  const mono = css.getPropertyValue("--font-mono").trim() || "Menlo, monospace";
+  const read = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
   return {
-    // light, wide-tracked grotesk for the monitor UIs
-    sans: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-    mono,
+    display: read("--font-display", '"Arial Narrow", sans-serif'),
+    body: read("--font-body", '"Arial Narrow", sans-serif'),
+    mono: read("--font-mono", "monospace"),
   };
+}
+
+/**
+ * The type stacks, once the web fonts the screens use have loaded — a
+ * canvas paints with whatever is available at that moment and never
+ * repaints on its own when a font arrives.
+ */
+export async function loadCanvasFonts(): Promise<CanvasFonts> {
+  const fonts = readCanvasFonts();
+  if (document.fonts) {
+    await Promise.all(
+      [`400 64px ${fonts.display}`, `400 64px ${fonts.body}`, `500 64px ${fonts.body}`, `500 64px ${fonts.mono}`].map(
+        (font) => document.fonts.load(font).catch(() => []),
+      ),
+    );
+  }
+  return fonts;
 }
 
 export function loadImage(src: string): Promise<HTMLImageElement | null> {
@@ -145,12 +163,12 @@ export function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, opts: Scre
   spacedText(ctx, label, x + (markW ? markW + 26 * s : 0), y + 1, 4 * s);
 }
 
-/** the big title */
+/** the big title, in the brand display face */
 export function drawTitle(ctx: CanvasRenderingContext2D, s: number, opts: ScreenPaintOptions, title: string, y: number) {
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = INK.bright;
-  ctx.font = `300 ${178 * s}px ${opts.fonts.sans}`;
-  spacedText(ctx, title, (MARGIN - 8) * s, y, 9 * s);
+  ctx.font = `400 ${196 * s}px ${opts.fonts.display}`;
+  spacedText(ctx, title, (MARGIN - 6) * s, y, 6 * s);
 }
 
 /** the call to action, identical on both screens; returns its bottom edge */
@@ -174,7 +192,7 @@ export function drawButton(
   ctx.fillStyle = "#0c0d0f";
   ctx.textBaseline = "middle";
   spacedText(ctx, label, x + 64 * s, y + h / 2 + 2, 5 * s);
-  ctx.font = `400 ${50 * s}px ${opts.fonts.sans}`;
+  ctx.font = `500 ${50 * s}px ${opts.fonts.body}`;
   // the arrow leans forward on hover / focus
   ctx.fillText(arrow, x + w - (opts.hover ? 78 : 92) * s, y + h / 2 + 2);
   return y + h;

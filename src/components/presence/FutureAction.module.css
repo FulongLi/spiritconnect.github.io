@@ -1,0 +1,77 @@
+/* The unavailable state of a Presence CTA (see FutureAction.tsx). Colours
+   come from the Presence tokens on the page (src/app/presence/page.module.css
+   → .page). The control keeps its button shape but reads as not yet lit: no
+   fill, no glow, no pointer — the particle before it brightens. */
+
+.pending {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.pending[data-align="start"] {
+  align-items: flex-start;
+}
+
+/* scoped under .pending so it outranks the page's button hover/focus fills
+   (the focus outline is kept) */
+.pending .control,
+.pending .control:hover,
+.pending .control:focus-visible {
+  border-color: var(--p-line-strong);
+  background: var(--p-surface);
+  box-shadow: none;
+  color: var(--p-muted);
+  cursor: default;
+}
+
+.note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--p-faint);
+  font-family: var(--p-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* a single dim particle: something is on its way */
+.note::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--p-accent);
+  animation: pendingPulse 3.2s var(--p-ease) infinite;
+}
+
+@keyframes pendingPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .pending {
+    width: 100%;
+  }
+
+  .pending .control {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note::before {
+    animation: none;
+  }
+}

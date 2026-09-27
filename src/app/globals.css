@@ -1,18 +1,25 @@
 @import "tailwindcss";
 
-@theme inline {
-  --font-bebas: var(--font-display);
-  --font-barlow: var(--font-body);
-  --font-ibm-mono: var(--font-mono);
-}
-
+/* ── Spirit Connect type system ──────────────────────────────────────────
+   The families are loaded by next/font (components/shared/fonts.ts); their
+   classes on <html> define --font-bebas / --font-barlow / --font-ibm-mono.
+   Components use the three roles below. The named fallbacks only hold the
+   metrics while the web fonts load — they are not the design.
+     display  Bebas Neue        statements, chapter + section titles
+     body     Barlow Condensed  copy, descriptions, short narrative
+     mono     IBM Plex Mono     numbers, kickers, labels, nav, microcopy */
 :root {
-  --font-display: Impact, "Arial Narrow", sans-serif;
-  --font-body: "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  --font-bebas: var(--font-display);
-  --font-barlow: var(--font-body);
-  --font-ibm-mono: var(--font-mono);
+  --font-display: var(--font-bebas), "Bebas Neue", "Arial Narrow", sans-serif;
+  --font-body: var(--font-barlow), "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-mono: var(--font-ibm-mono), "IBM Plex Mono", ui-monospace, monospace;
+
+  /* text: silver / white hierarchy — cool blue is a functional accent only */
+  --ink: #f1f1ef;
+  --ink-soft: rgba(230, 230, 226, 0.7);
+  --ink-micro: rgba(230, 230, 226, 0.5);
+  --hairline: rgba(230, 230, 226, 0.12);
+  --focus: rgba(222, 230, 240, 0.92);
+
   --color-bg: #1a1816;
   --color-bg-light: #242220;
   --color-surface: #2a2826;
@@ -34,7 +41,7 @@ body {
   min-height: 100%;
   background: var(--color-black);
   color: var(--color-text);
-  font-family: var(--font-barlow), sans-serif;
+  font-family: var(--font-body);
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -51,7 +58,7 @@ html {
 }
 
 :focus-visible {
-  outline: 1px solid #9efcff;
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
 }
 

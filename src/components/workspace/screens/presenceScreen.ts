@@ -71,10 +71,10 @@ export const paintPresenceScreen: ScreenPainter = (ctx, w, h, opts) => {
   drawTitle(ctx, s, opts, C.title, 330 * s);
   const left = MARGIN * s;
   ctx.fillStyle = INK.soft;
-  ctx.font = `400 ${60 * s}px ${opts.fonts.sans}`;
+  ctx.font = `500 ${62 * s}px ${opts.fonts.body}`;
   spacedText(ctx, C.tagline, left, 424 * s, 4 * s);
   ctx.fillStyle = INK.dim;
-  ctx.font = `400 ${48 * s}px ${opts.fonts.sans}`;
+  ctx.font = `400 ${54 * s}px ${opts.fonts.body}`;
   ctx.fillText(C.body, left, 496 * s);
 
   // three words: voice · visual · agents

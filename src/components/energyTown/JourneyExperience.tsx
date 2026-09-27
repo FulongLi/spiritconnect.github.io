@@ -50,7 +50,7 @@ function fadeWindow(p: number, start: number, end: number) {
   return 1;
 }
 
-/** a title whose sentences each stay on one line when the column is narrow */
+/** a title whose sentences each stay on one line (hero + coda: one line per sentence) */
 function Sentences({ text }: { text: string }) {
   const parts = text.split(". ");
   if (parts.length < 2) return text;
@@ -360,7 +360,6 @@ export default function JourneyExperience() {
               <Sentences text={c.title} />
             </h2>
             {c.sub && <p className={styles.sub}>{c.sub}</p>}
-            {c.body && <p className={styles.body}>{c.body}</p>}
             {c.tags && (
               <ul className={styles.tags}>
                 {c.tags.map((t) => (
@@ -453,7 +452,7 @@ export default function JourneyExperience() {
         <ol>
           {CHAPTERS.map((c) => (
             <li key={c.id}>
-              {c.kicker}: {c.title} {c.sub} {c.body} {c.tags?.join(", ")}
+              {c.kicker}: {c.title} {c.sub} {c.tags?.join(", ")}
               {c.coda && ` ${c.coda.title}`}
             </li>
           ))}

@@ -12,7 +12,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(4, 8, 16, 0.32) 100%);
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(4, 5, 7, 0.32) 100%);
 }
 
 .grain {
@@ -47,31 +47,31 @@
   right: 22px;
   top: 50%;
   z-index: 4;
-  width: 2px;
+  width: 1px;
   height: 38vh;
   transform: translateY(-50%);
-  background: rgba(240, 246, 255, 0.16);
+  background: rgba(230, 230, 226, 0.16);
   pointer-events: none;
 }
 
 .railTick {
   position: absolute;
   left: -2px;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: rgba(240, 246, 255, 0.35);
+  background: rgba(230, 230, 226, 0.32);
 }
 
 .railDot {
   position: absolute;
   left: -3px;
   top: 0;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: #2ebcfe;
-  box-shadow: 0 0 10px rgba(46, 188, 254, 0.9);
+  background: #ecece8;
+  box-shadow: 0 0 6px rgba(236, 236, 232, 0.35);
 }
 
 /* ── chapters ─────────────────────────────────────────────────────────── */
@@ -105,12 +105,20 @@
   padding-top: 13vh;
 }
 
+/* cinematic captions: silver / white, no glow — the scene is the subject.
+   Over the scene the secondary tiers sit a little above the page values
+   (--ink-soft / --ink-micro) so they hold up over sunlit regolith. */
 .chapterInner {
+  --caption-soft: rgba(232, 232, 228, 0.8);
+  --caption-micro: rgba(232, 232, 228, 0.64);
+
   position: relative;
   isolation: isolate;
   max-width: 520px;
-  color: rgba(240, 246, 255, 0.95);
-  text-shadow: 0 2px 18px rgba(0, 8, 24, 0.6);
+  color: var(--ink);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 18px rgba(0, 0, 0, 0.4);
 }
 
 /* soft legibility scrim — unnoticeable over dark space, keeps copy
@@ -118,9 +126,9 @@
 .chapterInner::before {
   content: "";
   position: absolute;
-  inset: -70px -90px;
+  inset: -80px -110px;
   z-index: -1;
-  background: radial-gradient(closest-side, rgba(3, 7, 14, 0.62), rgba(3, 7, 14, 0.32) 55%, transparent);
+  background: radial-gradient(closest-side, rgba(6, 7, 9, 0.7), rgba(6, 7, 9, 0.42) 55%, transparent);
   pointer-events: none;
 }
 
@@ -129,44 +137,52 @@
 }
 
 .kicker {
-  margin-bottom: 12px;
-  font-family: var(--font-ibm-mono), monospace;
+  margin-bottom: 16px;
+  color: var(--caption-micro);
+  font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.22em;
-  opacity: 0.85;
+  font-weight: 400;
+  letter-spacing: 0.28em;
 }
 
 .chapterTitle {
   margin: 0;
-  font-family: var(--font-bebas), sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(34px, 5.6vw, 64px);
   font-weight: 400;
-  line-height: 0.98;
-  letter-spacing: 0.03em;
+  line-height: 0.96;
+  letter-spacing: 0.02em;
 }
 
 .sub {
-  margin: 14px 0 0;
-  color: rgba(46, 188, 254, 0.92);
-  font-family: var(--font-barlow), sans-serif;
-  font-size: clamp(16px, 1.7vw, 21px);
+  max-width: 30em;
+  margin: 16px 0 0;
+  color: var(--caption-soft);
+  font-family: var(--font-body);
+  font-size: clamp(17px, 1.6vw, 21px);
   font-weight: 400;
-  line-height: 1.4;
-  letter-spacing: 0.04em;
+  line-height: 1.42;
+  letter-spacing: 0.02em;
 }
 
-.body {
-  margin: 12px 0 0;
-  font-family: var(--font-barlow), sans-serif;
-  font-size: clamp(15px, 1.5vw, 18px);
-  font-weight: 300;
-  line-height: 1.55;
-  letter-spacing: 0.03em;
-  opacity: 0.92;
+.chapter[data-align="center"] .sub {
+  margin-inline: auto;
 }
 
 .sentence {
   display: inline-block;
+}
+
+/* the brand statement is set as exactly two lines, one per sentence */
+.chapter[data-hero="true"] .chapterInner,
+.chapter[data-coda="true"] .chapterInner {
+  max-width: none;
+}
+
+.chapter[data-hero="true"] .sentence,
+.chapter[data-coda="true"] .sentence {
+  display: block;
+  white-space: nowrap;
 }
 
 .tags {
@@ -176,10 +192,10 @@
   margin: 16px 0 0;
   padding: 0;
   list-style: none;
-  font-family: var(--font-ibm-mono), monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.22em;
-  opacity: 0.78;
+  letter-spacing: 0.24em;
+  color: var(--caption-micro);
 }
 
 /* ── hint, skip, theme toggle ─────────────────────────────────────────── */
@@ -194,8 +210,8 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  color: rgba(240, 246, 255, 0.85);
-  font-family: var(--font-ibm-mono), monospace;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.3em;
   pointer-events: none;
@@ -223,8 +239,8 @@
   padding: 6px 0;
   border: 0;
   background: none;
-  color: rgba(240, 246, 255, 0.62);
-  font-family: var(--font-ibm-mono), monospace;
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -239,10 +255,10 @@
 
 .themeToggle {
   padding: 8px 12px;
-  border: 1px solid rgba(240, 246, 255, 0.3);
-  background: rgba(8, 14, 26, 0.55);
-  color: rgba(240, 246, 255, 0.92);
-  font-family: var(--font-ibm-mono), monospace;
+  border: 1px solid rgba(230, 230, 226, 0.26);
+  background: rgba(10, 10, 12, 0.5);
+  color: rgba(236, 236, 232, 0.9);
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.2em;
   white-space: nowrap;
@@ -252,7 +268,7 @@
 }
 
 .themeToggle[data-night="true"] {
-  border-color: rgba(160, 190, 240, 0.4);
+  border-color: rgba(230, 230, 226, 0.4);
 }
 
 /* ── transition layers ────────────────────────────────────────────────── */
@@ -271,12 +287,12 @@
 }
 
 .captionText {
-  color: rgba(244, 244, 242, 0.94);
-  font-family: var(--font-bebas), sans-serif;
+  color: var(--ink);
+  font-family: var(--font-display);
   font-size: clamp(28px, 3.6vw, 48px);
   letter-spacing: 0.12em;
   line-height: 1;
-  text-shadow: 0 1px 24px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 20px rgba(0, 0, 0, 0.4);
 }
 
 .portal {
@@ -306,17 +322,19 @@
     font-size: clamp(32px, 9vw, 44px);
   }
 
-  .sub {
-    font-size: 16px;
+  /* the two-line brand statement can run larger: each line is ≈ 6.2 em */
+  .chapter[data-hero="true"] .chapterTitle,
+  .chapter[data-coda="true"] .chapterTitle {
+    font-size: clamp(34px, 11.2vw, 56px);
   }
 
-  .body {
-    font-size: 14px;
+  .sub {
+    font-size: 17px;
   }
 
   .chapterInner::before {
     inset: -40px -24px;
-    background: radial-gradient(closest-side, rgba(3, 7, 14, 0.74), rgba(3, 7, 14, 0.45) 60%, transparent);
+    background: radial-gradient(closest-side, rgba(6, 7, 9, 0.76), rgba(6, 7, 9, 0.48) 60%, transparent);
   }
 
   .rail {

@@ -33,8 +33,8 @@ export const LEVA_THEME = {
     toolTipText: COLORS.text,
   },
   fonts: {
-    mono: "var(--font-ibm-mono), monospace",
-    sans: "var(--font-barlow), sans-serif",
+    mono: "var(--font-mono)",
+    sans: "var(--font-body)",
   },
   sizes: {
     titleBarHeight: "28px",

@@ -9,7 +9,7 @@ import { createPostProcessing } from "@/components/hologramParticles/engine/post
 import { createParticleField } from "@/components/hologramParticles/engine/scene/particleField";
 import { createTransitionController } from "@/components/hologramParticles/engine/transition";
 import { createRenderLoop } from "@/lib/render/renderLoop";
-import { loadImage, readCanvasFonts } from "../screens/canvasKit";
+import { loadCanvasFonts, loadImage } from "../screens/canvasKit";
 import { createDome } from "./dome";
 import { entityParams, type EntityQuality } from "./entity";
 import { arrivalPath, createLayout, layoutModeFor, type WorkspaceLayout } from "./layout";
@@ -209,12 +209,12 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     r.domElement.style.display = "block";
     container.appendChild(r.domElement);
 
-    const [logo, geometry] = await Promise.all([
+    const [logo, geometry, fonts] = await Promise.all([
       loadImage(assetPath(BRAND.logo)),
       sampleGeometry(MODEL_URLS.sphere, params.particleCount),
+      loadCanvasFonts(),
     ]);
     if (disposed) return;
-    const fonts = readCanvasFonts();
 
     const scene = new Scene();
     const materials = createWorkspaceMaterials({ compact });

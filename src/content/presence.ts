@@ -1,4 +1,11 @@
-import { FOUNDING_PRICE_LABEL, PLANNED_RETAIL_PRICE_LABEL, PRESENCE_PRICING } from "./pricing";
+import {
+  FOUNDING_PRICE_LABEL,
+  PLANNED_RETAIL_PRICE_LABEL,
+  PRESENCE_PRICING,
+  PRESENCE_RELEASE,
+} from "./pricing";
+
+const LAUNCH = PRESENCE_RELEASE.plannedLaunch;
 
 /* ------------------------------------------------------------------ */
 /* Presence product content                                            */
@@ -27,6 +34,9 @@ export const PRESENCE_IN_ACTION = {
   kicker: "PRESENCE IN ACTION",
   title: "See it listen, think and speak.",
   caption: "Presence app demonstration.",
+  // watch it → try it: the live online experience (PRESENCE_RELEASE.experienceUrl)
+  tryCta: "Try Presence",
+  tryPending: "Online experience coming soon",
 } as const;
 
 export const PRESENCE_USE_CASES = {
@@ -49,10 +59,12 @@ export const PRESENCE_USE_CASES = {
 
 export const PRESENCE_HARDWARE = {
   kicker: "PRESENCE HARDWARE",
-  status: "Early product concept",
+  status: `Pre-order phase · Planned launch ${LAUNCH}`,
   title: "A home for Presence.",
-  body: "We are exploring a dedicated device that gives Presence a physical place in the room — shaped together with our first supporters.",
-  // conceptual capabilities only — no specifications until they are confirmed
+  body: "Presence brings the visual and voice interface into a dedicated physical device — giving AI a place in the room.",
+  progress: `Hardware development is moving toward production, with the first release planned for ${LAUNCH}.`,
+  capabilitiesTitle: "Designed for",
+  // what the device is for — no precise specifications until they are published
   capabilities: [
     "Visual Presence interface",
     "Speaker",
@@ -61,19 +73,35 @@ export const PRESENCE_HARDWARE = {
     "Device + cloud connectivity",
     "Ambient AI interaction",
   ],
-  disclaimer:
-    "Concept stage. Design, capabilities, specifications and availability are not final and may change. Presence hardware is not yet available to buy.",
+  disclaimer: "Final specifications and industrial design may evolve before release.",
 } as const;
 
 export const PRESENCE_FOUNDING = {
   kicker: "FOUNDING 100",
   priceLabel: FOUNDING_PRICE_LABEL,
-  allocationLine: `For the first ${PRESENCE_PRICING.foundingAllocation} Presence units.`,
-  body: `The first ${PRESENCE_PRICING.foundingAllocation} Presence units are planned to be offered at ${FOUNDING_PRICE_LABEL} to early supporters who help shape the product.`,
-  retailLine: `Planned future retail price: ${PLANNED_RETAIL_PRICE_LABEL}.`,
-  finePrint:
-    "Registering interest is free and does not commit you to buy. No payment is taken. Pricing is planned and may change before launch.",
-  cta: "Join the Founding 100",
+  allocationLine: `The first ${PRESENCE_PRICING.foundingAllocation} Presence units.`,
+  body: `The first ${PRESENCE_PRICING.foundingAllocation} Presence units will be offered to Founding customers at ${FOUNDING_PRICE_LABEL}, ahead of the planned ${PLANNED_RETAIL_PRICE_LABEL} retail price.`,
+  facts: [
+    { label: "Planned retail", value: PLANNED_RETAIL_PRICE_LABEL },
+    { label: "Planned launch", value: LAUNCH },
+  ],
+  preorderCta: `Pre-order Presence — ${FOUNDING_PRICE_LABEL}`,
+  interestCta: "Register Interest",
+  finePrint: `Founding pricing applies to the first ${PRESENCE_PRICING.foundingAllocation} units only. Launch timing is planned and may change. Full pre-order terms are shown before any payment is taken.`,
+} as const;
+
+/* ---------------- Pre-order (external checkout) ---------------- */
+
+export const PRESENCE_PREORDER = {
+  kicker: "PRE-ORDER",
+  title: "Own one of the first.",
+  priceCaption: "Founding 100",
+  priceLabel: FOUNDING_PRICE_LABEL,
+  releaseLine: `First production release. Planned ${LAUNCH}.`,
+  retailLine: `Planned retail ${PLANNED_RETAIL_PRICE_LABEL}.`,
+  cta: "Pre-order Presence",
+  // shown while PRESENCE_RELEASE.preorderUrl is unset
+  pending: "Pre-order opening soon",
 } as const;
 
 /* ---------------- Register Your Interest form ---------------- */
@@ -82,7 +110,6 @@ export const INTEREST_LEVELS = [
   { value: "just-following", label: "Just following" },
   { value: "interested", label: "Interested" },
   { value: "very-interested", label: "Very interested" },
-  { value: "would-consider-buying", label: "I would consider buying" },
 ] as const;
 
 export const PRIMARY_USES = [
@@ -94,22 +121,16 @@ export const PRIMARY_USES = [
   { value: "other", label: "Other" },
 ] as const;
 
-export const PURCHASE_INTENTS = [
-  { value: "yes", label: "Yes" },
-  { value: "maybe", label: "Maybe" },
-  { value: "not-yet", label: "Not yet" },
-] as const;
-
 export const INTEREST_FORM_COPY = {
-  kicker: "REGISTER YOUR INTEREST",
-  title: "Help shape Presence.",
-  body: "Tell us how you would use Presence. It takes under a minute and helps us decide what to build first.",
-  purchaseQuestion: `Would you consider purchasing Presence at ${FOUNDING_PRICE_LABEL}?`,
-  consentLabel: "I agree that Spirit Connect may email me about Presence and the Founding 100. I can unsubscribe at any time.",
+  kicker: "REGISTER INTEREST",
+  title: "Stay close to Presence.",
+  body: "Not ready to pre-order yet? Register for Presence updates, launch news and Founding 100 availability.",
+  consentLabel: "I agree that Spirit Connect may email me about Presence, its launch and the Founding 100. I can unsubscribe at any time.",
   submit: "Register interest",
+  note: "Free, with no commitment. Registering interest does not reserve a Founding unit.",
   success: {
     title: "You're on the list.",
-    body: "Thank you for helping shape Presence. We'll be in touch with Founding 100 updates.",
+    body: "We'll keep you updated on Presence, the online experience and Founding 100 availability.",
   },
   notConfigured: {
     title: "Registration opens soon.",
@@ -187,10 +208,10 @@ export const PRESENCE_MEDIA: Record<"heroAnimation" | "demoVideo" | "hardwareCon
     id: "presence-hardware-concept",
     kind: "image",
     sources: [{ src: "/presence/presence-hardware-concept.png", type: "image/png" }],
-    alt: "Presence hardware concept: a particle sphere floating inside a glass cylinder above a speaker base, with a phone resting on its charging tray",
-    // the concept render is 3:4 — shown whole, nothing cropped
+    alt: "Presence hardware: a particle sphere floating inside a glass cylinder above a speaker base, with a phone resting on its charging tray",
+    // the render is 3:4 — shown whole, nothing cropped
     aspectRatio: "3 / 4",
-    placeholder: "Hardware concept imagery — in development",
+    placeholder: "Presence hardware imagery — coming soon",
     assetHint: "public/presence/presence-hardware-concept.png, then list it in src/content/presence.ts → PRESENCE_MEDIA.hardwareConcept",
   },
 };

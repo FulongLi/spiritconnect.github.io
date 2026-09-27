@@ -83,7 +83,7 @@ export function buildSubmission(
   return {
     ...values,
     email: values.email.trim(),
-    schemaVersion: 1,
+    schemaVersion: 2,
     product: "presence",
     programme: "founding-100",
     foundingPrice: PRESENCE_PRICING.foundingPrice,

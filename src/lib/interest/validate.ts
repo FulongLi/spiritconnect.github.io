@@ -19,7 +19,6 @@ export function validateInterest(draft: InterestDraft): {
   else if (!EMAIL_RE.test(email)) errors.email = "Please enter a valid email address.";
   if (!draft.interestLevel) errors.interestLevel = "Please choose one.";
   if (!draft.primaryUse) errors.primaryUse = "Please choose one.";
-  if (!draft.purchaseIntent) errors.purchaseIntent = "Please choose one.";
   if (!draft.consent) errors.consent = "Please confirm so we can contact you.";
 
   if (Object.keys(errors).length > 0) return { values: null, errors };

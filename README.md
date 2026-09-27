@@ -44,7 +44,8 @@ Navigation: **Vision** (`/`) · **Presence** (`/presence`) · **AIPE ↗** · **
    **Presence** device (the particle entity in its glass chamber) and two
    equal displays, **Presence** (`/presence`) and **AIPE** (aipel.co.uk).
 4. **`/presence`** — app animation (hero), what Presence is, demo, work +
-   everyday, hardware concept, **Founding 100 (£399)**, Register Your Interest.
+   everyday, hardware (pre-order phase, planned launch Summer 2027),
+   **Founding 100 (£399)**, then Pre-order / Register Interest.
 
 ## Editing content
 
@@ -54,7 +55,7 @@ All copy and numbers live in `src/content/`:
 | --- | --- |
 | `journey.ts` | chapters, scroll pacing, cinematic timeline, loop + information-view intensity |
 | `presence.ts` | Presence page + interior copy, form options, media slots |
-| `pricing.ts` | **founding price £399, planned retail £699, 100 units** (single source) |
+| `pricing.ts` | **founding price £399, planned retail £699, 100 units**, planned launch, pre-order + Try Presence URLs (single source) |
 | `site.ts` | company info, vision loop, divisions + links, main nav |
 | `news.ts` | news list (About page) |
 

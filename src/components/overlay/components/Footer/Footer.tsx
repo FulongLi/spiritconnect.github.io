@@ -12,7 +12,7 @@ const year = 2026;
 const Footer = ({ variant = "fixed" }: Props) => {
   if (variant === "fixed") {
     return (
-      <footer className="fixed bottom-0 left-0 z-[65] w-full flex justify-center items-center px-8 py-3 border-t border-[#3a3836] bg-[#0a0a0a] font-plex text-[8px] tracking-[2.5px] text-[#f5f2ed]/30 uppercase">
+      <footer className="fixed bottom-0 left-0 z-[65] w-full flex justify-center items-center px-8 py-3 border-t border-[#3a3836] bg-[#0a0a0a] font-mono text-[8px] tracking-[2.5px] text-[#f5f2ed]/30 uppercase">
         <span>
           © {year} {COMPANY.legalName}. All rights reserved.
         </span>
@@ -21,10 +21,10 @@ const Footer = ({ variant = "fixed" }: Props) => {
   }
 
   return (
-    <footer className="relative border-t border-white/10 bg-[#030509] px-[clamp(16px,6vw,96px)] py-10 font-[family-name:var(--font-ibm-mono)] text-[10px] uppercase tracking-[0.2em] text-[#e8f2ff]/55">
+    <footer className="relative border-t border-white/10 bg-[#0b0b0c] px-[clamp(16px,6vw,96px)] py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[#e6e6e2]/55">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="flex items-center gap-[10px] text-[#e8f2ff]/85 tracking-[0.26em]">
+          <div className="flex items-center gap-[10px] text-[#e6e6e2]/85 tracking-[0.26em]">
             <BrandMark size={15} />
             SPIRIT CONNECT
           </div>
@@ -53,7 +53,7 @@ const Footer = ({ variant = "fixed" }: Props) => {
           </ul>
         </nav>
       </div>
-      <div className="mt-8 text-[8px] tracking-[0.25em] text-[#e8f2ff]/35">
+      <div className="mt-8 text-[8px] tracking-[0.25em] text-[#e6e6e2]/35">
         © {year} {COMPANY.legalName}. All rights reserved.
       </div>
     </footer>

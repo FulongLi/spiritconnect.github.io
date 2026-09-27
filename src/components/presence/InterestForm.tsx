@@ -5,7 +5,6 @@ import {
   INTEREST_FORM_COPY as COPY,
   INTEREST_LEVELS,
   PRIMARY_USES,
-  PURCHASE_INTENTS,
 } from "@/content/presence";
 import { COMPANY } from "@/content/site";
 import { submitInterest } from "@/lib/interest/submitInterest";
@@ -19,17 +18,10 @@ const EMPTY: InterestDraft = {
   email: "",
   interestLevel: "",
   primaryUse: "",
-  purchaseIntent: "",
   consent: false,
 };
 
-const FIELD_ORDER: (keyof InterestFormValues)[] = [
-  "email",
-  "interestLevel",
-  "primaryUse",
-  "purchaseIntent",
-  "consent",
-];
+const FIELD_ORDER: (keyof InterestFormValues)[] = ["email", "interestLevel", "primaryUse", "consent"];
 
 type Option = { value: string; label: string };
 
@@ -81,8 +73,9 @@ function ChoiceGroup({
 }
 
 /**
- * Founding 100 market-validation form. Submission goes through
- * `submitInterest` (src/lib/interest) — no payment, no fake success.
+ * Presence update list ("I like Presence. Keep me updated."). Buying is the
+ * separate pre-order path, so nothing here asks about purchase. Submission
+ * goes through `submitInterest` (src/lib/interest) — no fake success.
  */
 export default function InterestForm() {
   const [draft, setDraft] = useState<InterestDraft>(EMPTY);
@@ -139,7 +132,7 @@ export default function InterestForm() {
         {status === "not-configured" && COMPANY.contactEmail && (
           <p className={styles.resultBody}>
             You can also write to us at{" "}
-            <a href={`mailto:${COMPANY.contactEmail}?subject=Presence%20Founding%20100`}>
+            <a href={`mailto:${COMPANY.contactEmail}?subject=Presence%20updates`}>
               {COMPANY.contactEmail}
             </a>
             .
@@ -199,15 +192,6 @@ export default function InterestForm() {
         onChange={(v) => set("primaryUse", v as InterestDraft["primaryUse"])}
       />
 
-      <ChoiceGroup
-        name="purchaseIntent"
-        legend={COPY.purchaseQuestion}
-        options={PURCHASE_INTENTS}
-        value={draft.purchaseIntent as string}
-        error={errors.purchaseIntent}
-        onChange={(v) => set("purchaseIntent", v as InterestDraft["purchaseIntent"])}
-      />
-
       {/* spam trap — hidden from people and assistive technology */}
       <div className={styles.trap} aria-hidden="true">
         <label>
@@ -246,7 +230,7 @@ export default function InterestForm() {
         {status === "submitting" ? "Sending…" : COPY.submit}
         <span aria-hidden="true">→</span>
       </button>
-      <p className={styles.note}>No payment is taken. Registering interest does not commit you to buy.</p>
+      <p className={styles.note}>{COPY.note}</p>
     </form>
   );
 }
