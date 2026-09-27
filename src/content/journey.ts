@@ -1,16 +1,17 @@
-import { DIVISIONS } from "./site";
-
 /* ------------------------------------------------------------------ */
 /* Journey content + timeline                                          */
 /*                                                                     */
 /* All values are in STORY progress (0..1). The camera flight, chapter */
-/* windows, mist, blackout and portal hand-off are tuned in this space. */
-/* Raw scroll position is mapped onto story progress by                */
-/* `scrollToStory`, which gives the closing AI-loop narrative extra    */
-/* scroll length without re-tuning anything else.                      */
+/* windows, the AI loop and the Dome hand-off are tuned in this space. */
+/* Raw scroll position is mapped onto story progress by a pacing       */
+/* curve (`scrollToStory`) that gives the turning point and the        */
+/* closing sequence more scroll length, with no abrupt speed changes.  */
+/*                                                                     */
+/* One causal story, told in seven chapters:                           */
+/*   energy is generated → made continuous → stored → shaped →         */
+/*   converted into computation → enters the physical world →          */
+/*   becomes data and intelligence → AI redesigns the energy system.   */
 /* ------------------------------------------------------------------ */
-
-export type ChapterLink = { label: string; href: string; external?: boolean };
 
 export type Chapter = {
   id: string;
@@ -19,112 +20,108 @@ export type Chapter = {
   kicker: string;
   title: string;
   sub?: string;
-  body: string;
+  body?: string;
+  /** a short row of mono labels under the copy */
+  tags?: string[];
   align: "left" | "right" | "center";
-  link?: ChapterLink;
+  /**
+   * The chapter's closing statement: it replaces the chapter copy in
+   * place (same chapter, no new number) before the camera turns to the Dome.
+   */
+  coda?: { start: number; end: number; kicker: string; title: string; sub?: string; align: "left" | "right" | "center" };
 };
 
 export const CHAPTERS: Chapter[] = [
   {
     id: "hero",
     start: 0.0,
-    end: 0.085,
+    end: 0.06,
     kicker: "SPIRIT CONNECT",
     title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
-    body: "",
     align: "center",
   },
+  /* ---- ACT I — ENERGY ---- */
   {
     id: "solar",
-    start: 0.1,
-    end: 0.21,
-    kicker: "01 / SOLAR FIELD",
-    title: "HARVEST THE SUN",
-    sub: "Solar energy begins the loop.",
-    body: "Photovoltaic fields capture the first source of power for future habitats, data centres, and intelligent energy systems.",
+    start: 0.075,
+    end: 0.165,
+    kicker: "01 / SOLAR",
+    title: "ENERGY BEGINS HERE.",
+    sub: "Sunlight becomes electricity.",
+    body: "The first input to an intelligent energy system.",
     align: "left",
   },
   {
     id: "nuclear",
-    start: 0.235,
-    end: 0.305,
-    kicker: "02 / NUCLEAR POWER CORE",
-    title: "POWER BEYOND THE SUN",
-    sub: "Some missions cannot depend on sunlight alone.",
-    body: "Nuclear power cores provide long-duration, high-reliability energy for deep-space operation, shadowed regions, and always-on infrastructure.",
+    start: 0.18,
+    end: 0.26,
+    kicker: "02 / NUCLEAR",
+    title: "POWER WHEN THE SUN CANNOT.",
+    sub: "Solar gives energy. Nuclear gives continuity.",
+    body: "A steady foundation for always-on infrastructure.",
     align: "right",
   },
   {
     id: "storage",
-    start: 0.32,
-    end: 0.4,
-    kicker: "03 / ENERGY STORAGE",
-    title: "STORE THE LIGHT",
-    sub: "Storage gives energy continuity.",
-    body: "Battery systems absorb fluctuation, bridge darkness, and turn intermittent generation into dependable power for mission-critical operation.",
+    start: 0.275,
+    end: 0.35,
+    kicker: "03 / STORAGE",
+    title: "ENERGY NEEDS MEMORY.",
+    sub: "Storage absorbs time.",
+    body: "It holds energy when generation and demand do not align.",
     align: "left",
   },
+  /* ---- ACT II — ENGINEERING ---- */
   {
-    id: "sst",
-    start: 0.415,
-    end: 0.495,
-    kicker: "04 / SOLID-STATE TRANSFORMER",
-    title: "SHAPE THE GRID",
-    sub: "Solid-state transformers form the backbone of advanced energy networks.",
-    body: "Wide-bandgap devices, high-frequency magnetics, control, protection, thermal design, and power routing are integrated into one intelligent conversion hub.",
-    align: "left",
+    id: "power-electronics",
+    start: 0.365,
+    end: 0.445,
+    kicker: "04 / POWER ELECTRONICS",
+    title: "POWER MUST BE SHAPED.",
+    sub: "Voltage, current and power flow — actively controlled.",
+    tags: ["DEVICES", "MAGNETICS", "CONTROL", "PROTECTION"],
+    align: "right",
   },
+  /* ---- ACT III — INTELLIGENCE + PHYSICAL ACTION ---- */
   {
-    // the turning point: from here the story runs back toward the grid
+    // the turning point: until here the camera follows the physical
+    // energy system; from here on it starts to read it as information
     id: "data-centre",
-    start: 0.505,
-    end: 0.585,
+    start: 0.46,
+    end: 0.555,
     kicker: "05 / DATA CENTRE",
-    title: "ENERGY BECOMES INTELLIGENCE",
-    sub: "Inside the data centre, energy becomes computation.",
-    body: "Digital twins, converter simulations, device databases, magnetic models and AI design agents learn from the power system that feeds them. This is where the loop turns.",
+    title: "ENERGY BECOMES INTELLIGENCE.",
+    sub: "Power becomes computation.",
+    body: "Computation becomes intelligence.",
     align: "left",
   },
   {
-    id: "charging",
-    start: 0.598,
-    end: 0.642,
-    kicker: "06 / CHARGING & LANDING",
-    title: "POWER ON THE MOVE",
-    sub: "Every vehicle docks into the same grid.",
-    body: "Landing pads and charging stations extend the micro-grid to rovers, landers, and future mobility — energy delivered wherever the mission goes.",
-    align: "right",
-  },
-  {
-    id: "ai-engineering",
-    start: 0.648,
-    end: 0.69,
-    kicker: "07 / AI ENGINEERING",
-    title: "DESIGN THE NEXT SYSTEM",
-    sub: "The system becomes data. The data becomes intelligence.",
-    body: "The intelligence returns to redesign the system that powers it.",
+    id: "mobility",
+    start: 0.575,
+    end: 0.65,
+    kicker: "06 / MOBILITY",
+    title: "ENERGY ENTERS THE PHYSICAL WORLD.",
+    sub: "Power reaches vehicles, machines and infrastructure.",
+    body: "Wherever the system needs to act.",
     align: "left",
   },
+  /* ---- ACT IV — SYSTEM / FEEDBACK ---- */
   {
-    id: "aipe",
-    start: 0.696,
-    end: 0.728,
-    kicker: "08 / AIPE — ENGINEERING DIVISION",
-    title: "ENGINEERING INTELLIGENCE",
-    sub: "AIPE turns engineering knowledge into AI that designs energy.",
-    body: "Devices, converters, magnetics, thermal behaviour and system validation — the Spirit Connect engineering division builds the tools that let AI take part in real power-electronics design.",
-    align: "right",
-    link: { label: "Explore AIPE", href: DIVISIONS.aipe.href, external: true },
-  },
-  {
-    id: "loop",
-    start: 0.733,
-    end: 0.762,
-    kicker: "09 / THE LOOP CLOSES",
-    title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
-    sub: "Every redesign returns new data. The loop keeps learning.",
-    body: "",
-    align: "center",
+    id: "intelligent-engineering",
+    start: 0.67,
+    end: 0.745,
+    kicker: "07 / INTELLIGENT ENGINEERING",
+    title: "AI DESIGNS THE NEXT SYSTEM.",
+    sub: "The physical system becomes data.",
+    body: "AI learns from devices, converters and networks — then returns to redesign the energy system.",
+    align: "left",
+    coda: {
+      start: 0.752,
+      end: 0.805,
+      kicker: "SPIRIT CONNECT",
+      title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
+      align: "center",
+    },
   },
 ];
 
@@ -134,54 +131,87 @@ export const CHAPTERS: Chapter[] = [
 export const SCROLL_SECTIONS = 14;
 
 /**
- * Story range that receives extra scroll length: the charging → AI loop
- * sequence, where three short chapters play while the camera rises over the
- * habitat. Everything outside it keeps the original pacing.
+ * Scroll density along the story: [story progress, relative scroll length].
+ * Linear in between, so the pace eases rather than steps. The data centre
+ * (the turning point) lingers a little; Chapter 07, the loop closing and
+ * the Dome approach — the climax — receive the most scroll.
  */
-const STRETCH = { start: 0.595, end: 0.77, extraSections: 2 };
+const PACE: [number, number][] = [
+  [0, 1],
+  [0.44, 1],
+  [0.47, 1.18],
+  [0.55, 1.18],
+  [0.575, 1],
+  [0.64, 1],
+  [0.675, 1.5],
+  [0.8, 1.5],
+  [0.83, 1.3],
+  [0.88, 1.3],
+  [0.92, 1],
+  [1, 1],
+];
 
-const SCROLL_UNITS = SCROLL_SECTIONS - 1;
-const BASE_UNITS = SCROLL_UNITS - STRETCH.extraSections;
-const U0 = STRETCH.start * BASE_UNITS;
-const U1 = U0 + (STRETCH.end - STRETCH.start) * BASE_UNITS + STRETCH.extraSections;
-
-/** raw scroll fraction (0..1) → story progress (0..1) */
-export function scrollToStory(r: number) {
-  const u = Math.min(1, Math.max(0, r)) * SCROLL_UNITS;
-  if (u < U0) return u / BASE_UNITS;
-  if (u < U1) return STRETCH.start + ((u - U0) / (U1 - U0)) * (STRETCH.end - STRETCH.start);
-  return Math.min(1, STRETCH.end + (u - U1) / BASE_UNITS);
-}
+/** cumulative scroll (0..1) at evenly spaced story samples */
+const PACE_TABLE = (() => {
+  const n = 1000;
+  const density = (s: number) => {
+    let i = 0;
+    while (i < PACE.length - 2 && s > PACE[i + 1][0]) i++;
+    const [s0, d0] = PACE[i];
+    const [s1, d1] = PACE[i + 1];
+    return d0 + ((d1 - d0) * (s - s0)) / (s1 - s0);
+  };
+  const cum = new Float64Array(n + 1);
+  for (let i = 1; i <= n; i++) {
+    cum[i] = cum[i - 1] + density((i - 0.5) / n) / n;
+  }
+  const total = cum[n];
+  for (let i = 0; i <= n; i++) cum[i] /= total;
+  return cum;
+})();
 
 /** story progress (0..1) → raw scroll fraction (0..1) */
 export function storyToScroll(p: number) {
-  const s = Math.min(1, Math.max(0, p));
-  let u: number;
-  if (s < STRETCH.start) u = s * BASE_UNITS;
-  else if (s < STRETCH.end)
-    u = U0 + ((s - STRETCH.start) / (STRETCH.end - STRETCH.start)) * (U1 - U0);
-  else u = U1 + (s - STRETCH.end) * BASE_UNITS;
-  return u / SCROLL_UNITS;
+  const n = PACE_TABLE.length - 1;
+  const f = Math.min(1, Math.max(0, p)) * n;
+  const i = Math.min(n - 1, Math.floor(f));
+  return PACE_TABLE[i] + (PACE_TABLE[i + 1] - PACE_TABLE[i]) * (f - i);
+}
+
+/** raw scroll fraction (0..1) → story progress (0..1) */
+export function scrollToStory(r: number) {
+  const x = Math.min(1, Math.max(0, r));
+  const n = PACE_TABLE.length - 1;
+  let lo = 0;
+  let hi = n;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (PACE_TABLE[mid] <= x) lo = mid;
+    else hi = mid;
+  }
+  const span = PACE_TABLE[hi] - PACE_TABLE[lo];
+  return (lo + (span > 0 ? (x - PACE_TABLE[lo]) / span : 0)) / n;
 }
 
 /* ---------------- cinematic timeline (story progress) ---------------- */
 
 /*
- * The arrival: the lunar camera swings down to the main Dome's airlock
- * and flies into the vestibule (camera path knots end at 0.89). Inside
- * the vestibule the workspace scene — built on the same Dome geometry and
- * the same entrance axis — cross-fades in and its camera carries on
- * through the Dome to the workstation. Everything from here on is driven
- * by the page's smoothed progress, so camera and hand-off stay in step.
+ * The ending of Chapter 07: the camera has risen over the whole system,
+ * the loop closes, and the view descends along the main Dome's entrance
+ * axis into the airlock (camera path knots end at 0.89). Inside the
+ * vestibule the workspace scene — built on the same Dome geometry and the
+ * same entrance axis — cross-fades in and its camera carries on through
+ * the Dome to the workstation. Everything from here on is driven by the
+ * page's smoothed progress, so camera and hand-off stay in step.
  */
 export const TIMELINE = {
   /** mount + warm the workspace renderer (TRANSITION begins) */
   presenceWarm: 0.74,
   /** unmount the workspace renderer again when scrolling back above this */
   presenceRelease: 0.68,
-  /** the arrival begins: the skip control steps aside */
+  /** the Dome approach begins: the skip control steps aside */
   arrivalStart: 0.79,
-  /** WELCOME caption while the airlock approaches */
+  /** ENTER caption while the airlock approaches */
   captionIn: 0.845,
   captionOut: 0.9,
   /** the workspace starts rendering just before it becomes visible */
@@ -205,9 +235,22 @@ function smoothstep(a: number, b: number, x: number) {
 
 /**
  * Strength of the AI → energy feedback loop in the lunar scene (0..1).
- * Hints at the data centre (the turning point), then fully lights the
- * returning data network during the AI-engineering chapters.
+ * Wakes at the data centre (the turning point: information lights, the
+ * data network brightens), then fully engages as Chapter 07 reveals the
+ * whole system — above 0.3 the feedback waves start to leave the data
+ * centre and travel back through the network to the sources. Once the
+ * loop has closed it settles back while the camera descends to the Dome.
  */
 export function loopIntensity(p: number) {
-  return 0.3 * smoothstep(0.5, 0.58, p) + 0.7 * smoothstep(0.645, 0.7, p);
+  return 0.3 * smoothstep(0.47, 0.54, p) + 0.7 * smoothstep(0.685, 0.74, p) * (1 - smoothstep(0.805, 0.845, p));
+}
+
+/**
+ * Chapter 07's information view (0..1): while the whole system is read as
+ * one network, the sunlit world recedes part-way toward the night palette
+ * so the energy and data lines — and the feedback waves — can be read.
+ * Daylight returns as the camera descends to the Dome.
+ */
+export function insightIntensity(p: number) {
+  return smoothstep(0.665, 0.72, p) * (1 - smoothstep(0.8, 0.845, p));
 }

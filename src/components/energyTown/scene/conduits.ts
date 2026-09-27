@@ -14,20 +14,29 @@ export type ConduitNetwork = {
   applyTheme: (mix: number, conduitColor: THREE.Color) => void;
   /**
    * AI → energy feedback loop strength (0..1). Energy keeps flowing out
-   * (amber); as the loop engages, the returning data network (blue) brightens
-   * and speeds up, carrying design information back to the sources.
+   * (amber) and measurements keep flowing in to the data centre (blue);
+   * as the loop engages the data network brightens, and above ~0.3
+   * feedback waves leave the data centre and travel back out through the
+   * whole network to the sources — the redesign returning to the system.
    */
   setLoop: (k: number) => void;
+  /** 0..1: a feedback wave is leaving the data centre right now */
+  feedbackPulse: () => number;
+  /** reduced motion: no travelling feedback waves */
+  setReducedMotion: (reduced: boolean) => void;
 };
 
 /* ---------------- conduits: two semantic networks ----------------
    POWER (amber dots / warm ribbons): generation → storage → SST → loads
-   DATA  (blue dots / blue ribbons): habitat ring, comms, data centre  */
+   DATA  (blue dots / blue ribbons): every installation ↔ data centre  */
 
-/* Every link in the base carries a TWIN pair of lines:
-   an amber ENERGY line and, running beside it, a blue DATA line
-   (data dots flow in the opposite direction — information returns). */
-const LINKS: [number, number][][] = [
+/* Every link in the base carries a TWIN pair of lines: an amber ENERGY
+   line (authored in the direction energy flows) and, beside it, a blue
+   DATA line. Data dots always travel toward the data centre (the
+   physical system becomes data); feedback waves travel away from it
+   (intelligence returns to redesign the system). Directions come from
+   each point's network distance to the data centre. */
+export const CONDUIT_ROUTES: [number, number][][] = [
   // the fan: PV / reactor / BESS each feed the SST hub directly
   [[72, 34], [60, 22], [50, 6]], // PV -> SST
   [[85, 1], [70, 1], [52, 1]], // reactor -> SST
@@ -76,8 +85,10 @@ export function buildConduits(opts: {
   /** blue emissive conduit material shared with dome rings, pads, … */
   conduitMat: THREE.MeshStandardMaterial;
   dotTex: THREE.Texture;
+  /** footprints (landing pads, pad domes) the conduits run beneath: no flow dots there */
+  covered?: { x: number; z: number; r: number }[];
 }): ConduitNetwork {
-  const { group, track, std, conduitMat, dotTex } = opts;
+  const { group, track, std, conduitMat, dotTex, covered = [] } = opts;
 
   const conduitAmberMat = std("#1a1208", {
     roughness: 0.4,
@@ -85,19 +96,32 @@ export function buildConduits(opts: {
     emissiveIntensity: 0.5,
   });
 
-  type PathDef = { kind: "power" | "data"; pts: [number, number][] };
-  const pathDefs: PathDef[] = LINKS.flatMap((pts) => [
-    { kind: "power" as const, pts: offsetPath(pts, 0.85) },
-    { kind: "data" as const, pts: offsetPath(pts, -0.85) },
+  type PathDef = { kind: "power" | "data"; link: number; pts: [number, number][] };
+  const pathDefs: PathDef[] = CONDUIT_ROUTES.flatMap((pts, link) => [
+    { kind: "power" as const, link, pts: offsetPath(pts, 0.85) },
+    { kind: "data" as const, link, pts: offsetPath(pts, -0.85) },
   ]);
+  const network = networkDistances();
 
-  type Flow = { samples: Float32Array; nSamples: number; count: number; speed: number };
+  type Flow = {
+    samples: Float32Array;
+    /** network distance to the data centre at each sample */
+    dist: Float32Array;
+    nSamples: number;
+    count: number;
+    speed: number;
+    /** +1: dots run with the authored direction, -1: against it */
+    dir: 1 | -1;
+  };
   const flows: Flow[] = [];
   const flowKinds: ("power" | "data")[] = [];
   const conduitPulses: {
     mat: THREE.MeshStandardMaterial;
     phase: number;
     kind: "power" | "data";
+    /** network-distance range the ribbon spans (for the feedback wave) */
+    near: number;
+    far: number;
   }[] = [];
   let totalDots = 0;
   let pathIndex = 0;
@@ -107,7 +131,14 @@ export function buildConduits(opts: {
     const len = curve.getLength();
     const ribbon = track(makeRibbon(curve, 0.85, Math.max(28, Math.floor(len / 1.8)), 0.16));
     const ribbonMat = track((def.kind === "power" ? conduitAmberMat : conduitMat).clone());
-    conduitPulses.push({ mat: ribbonMat, phase: pathIndex * 1.35, kind: def.kind });
+    const linkDist = network[def.link];
+    conduitPulses.push({
+      mat: ribbonMat,
+      phase: pathIndex * 1.35,
+      kind: def.kind,
+      near: Math.min(...linkDist),
+      far: Math.max(...linkDist),
+    });
     pathIndex++;
     const conduitMesh = new THREE.Mesh(ribbon, ribbonMat);
     group.add(conduitMesh);
@@ -117,11 +148,17 @@ export function buildConduits(opts: {
     const samples = new Float32Array(nSamples * 3);
     spaced.forEach((p, i) => {
       samples[i * 3] = p.x;
-      samples[i * 3 + 1] = terrainHeight(p.x, p.z) + 0.6;
+      // under a pad deck the line runs inside the foundation: park its dots out of sight
+      const hidden = covered.some((c) => (p.x - c.x) ** 2 + (p.z - c.z) ** 2 < c.r * c.r);
+      samples[i * 3 + 1] = hidden ? HIDDEN_Y : terrainHeight(p.x, p.z) + 0.6;
       samples[i * 3 + 2] = p.z;
     });
+    const dist = new Float32Array(nSamples);
+    for (let i = 0; i < nSamples; i++) dist[i] = sampleAlong(linkDist, i / (nSamples - 1));
+    // energy runs as authored; data runs toward the data centre
+    const dir: 1 | -1 = def.kind === "power" || dist[nSamples - 1] < dist[0] ? 1 : -1;
     const count = Math.max(5, Math.round(len / 3.2));
-    flows.push({ samples, nSamples, count, speed: R(0.03, 0.05) });
+    flows.push({ samples, dist, nSamples, count, speed: R(0.03, 0.05), dir });
     flowKinds.push(def.kind);
     totalDots += count;
   }
@@ -168,18 +205,46 @@ export function buildConduits(opts: {
   let flowOffsets: number[] | null = null;
   let loop = 0;
   let loopColorsDirty = false;
+  let dotSize = 1.35;
+  let reducedMotion = false;
+  /** time since the current run of feedback waves began */
+  let waveClock = 0;
+  let waveAmp = 0;
+  let waveFront = -1e3;
+
+  /** feedback-wave brightness at network distance d (front at waveFront) */
+  const waveAt = (d: number) => {
+    const ahead = waveFront - d;
+    if (ahead < -WAVE.width * 3) return 0;
+    const front = Math.exp(-((ahead / WAVE.width) ** 2));
+    const tail = ahead > 0 ? 0.3 * Math.exp(-ahead / WAVE.tail) : 0;
+    return waveAmp * (front + tail);
+  };
 
   function update(dt: number, elapsed: number, themeMix: number) {
     if (!flowOffsets) flowOffsets = flows.map(() => rand());
 
+    // one wave at a time leaves the data centre and runs out to the far
+    // ends of the network; the first leaves as soon as the loop engages
+    waveAmp = reducedMotion ? 0 : smooth(0.35, 0.9, loop);
+    if (waveAmp > 0) waveClock += dt;
+    else waveClock = 0;
+    waveFront = waveAmp > 0 ? (waveClock % WAVE.period) * WAVE.speed : -1e3;
+
     const baseBlue = 0.55 + 0.85 * themeMix;
     const baseAmber = 0.5 + 0.8 * themeMix;
-    const dataBoost = 1 + 1.3 * loop;
+    // the steady data lines brighten a little; the waves carry the story
+    const dataBoost = 1 + 0.8 * loop;
     const powerDim = 1 - 0.25 * loop;
     for (const p of conduitPulses) {
       const w = 0.5 + 0.5 * Math.sin(elapsed * 1.7 + p.phase);
-      p.mat.emissiveIntensity =
-        (p.kind === "power" ? baseAmber * powerDim : baseBlue * dataBoost) * (0.75 + 0.45 * w);
+      let k = (p.kind === "power" ? baseAmber * powerDim : baseBlue * dataBoost) * (0.75 + 0.45 * w);
+      if (p.kind === "data" && waveAmp > 0) {
+        // the ribbon lights while the wave front runs along it
+        const inside = Math.min(waveFront - p.near, p.far - waveFront + WAVE.width) / WAVE.width;
+        k += waveAmp * 2.4 * (0.4 + 0.6 * themeMix) * Math.min(1, Math.max(0, inside + 1));
+      }
+      p.mat.emissiveIntensity = k;
     }
 
     const recolor = loop > 0.001 || loopColorsDirty;
@@ -187,11 +252,10 @@ export function buildConduits(opts: {
     for (let fi = 0; fi < flows.length; fi++) {
       const f = flows[fi];
       const isData = flowKinds[fi] === "data";
-      // energy flows outward; data flows back the other way — faster once
-      // the AI loop is engaged
-      const dir = isData ? -1 : 1;
+      // energy flows outward; data flows in to the data centre — faster
+      // once the AI loop is engaged
       const speed = isData ? f.speed * (1 + 2.2 * loop) : f.speed;
-      flowOffsets[fi] = (((flowOffsets[fi] + dt * speed * dir) % 1) + 1) % 1;
+      flowOffsets[fi] = (((flowOffsets[fi] + dt * speed * f.dir) % 1) + 1) % 1;
       for (let i = 0; i < f.count; i++) {
         const t = (i / f.count + flowOffsets[fi]) % 1;
         const fIdx = t * (f.nSamples - 1);
@@ -199,17 +263,18 @@ export function buildConduits(opts: {
         const i1 = Math.min(f.nSamples - 1, i0 + 1);
         const frac = fIdx - i0;
         dotPositions[idx * 3] = f.samples[i0 * 3] + (f.samples[i1 * 3] - f.samples[i0 * 3]) * frac;
-        dotPositions[idx * 3 + 1] =
-          f.samples[i0 * 3 + 1] + (f.samples[i1 * 3 + 1] - f.samples[i0 * 3 + 1]) * frac;
+        const y0 = f.samples[i0 * 3 + 1];
+        const y1 = f.samples[i1 * 3 + 1];
+        dotPositions[idx * 3 + 1] = y0 === HIDDEN_Y || y1 === HIDDEN_Y ? HIDDEN_Y : y0 + (y1 - y0) * frac;
         dotPositions[idx * 3 + 2] =
           f.samples[i0 * 3 + 2] + (f.samples[i1 * 3 + 2] - f.samples[i0 * 3 + 2]) * frac;
 
         if (recolor) {
           let gain: number;
           if (isData) {
-            // bright information "packets" travelling back along the line
-            const packet = Math.pow(0.5 + 0.5 * Math.sin((t + elapsed * 0.35) * Math.PI * 4), 8);
-            gain = 1 + loop * (0.55 + 1.4 * packet);
+            // the data network brightens; the feedback wave passes over it
+            const d = f.dist[i0] + (f.dist[i1] - f.dist[i0]) * frac;
+            gain = 1 + loop * 0.55 + 2.4 * waveAt(d);
           } else {
             gain = powerDim;
           }
@@ -237,14 +302,102 @@ export function buildConduits(opts: {
       p.mat.color.copy(conduitColor);
     }
     conduitAmberMat.emissiveIntensity = 0.5 + 0.8 * mix;
-    dotMat.size = 1.35 + 0.75 * mix;
+    dotSize = 1.35 + 0.75 * mix;
+    dotMat.size = dotSize * (1 + 0.6 * loop);
   }
 
   function setLoop(k: number) {
     const next = Math.min(1, Math.max(0, k));
     if (next <= 0.001 && loop > 0.001) loopColorsDirty = true;
     loop = next;
+    // the flow reads from further away once the camera has risen
+    dotMat.size = dotSize * (1 + 0.6 * loop);
   }
 
-  return { update, applyTheme, setLoop };
+  return {
+    update,
+    applyTheme,
+    setLoop,
+    feedbackPulse: () => (waveAmp > 0 ? waveAmp * Math.exp(-waveFront / 14) : 0),
+    setReducedMotion(reduced: boolean) {
+      reducedMotion = reduced;
+    },
+  };
+}
+
+/* ---------------- network distance to the data centre ---------------- */
+
+/** flow dots under a covered footprint are parked this far below the ground */
+const HIDDEN_Y = -500;
+
+/** feedback wave: metres per second, seconds between waves, profile (m) */
+const WAVE = { speed: 46, period: 6.2, width: 7, tail: 22 };
+const DATA_CENTRE = { x: 16, z: -42, r: 8 };
+/** conduits closer than this (m) are treated as joined */
+const JOIN = 4.5;
+
+function smooth(a: number, b: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/** linear lookup in evenly spaced samples, t in 0..1 */
+function sampleAlong(values: number[], t: number) {
+  const f = Math.min(1, Math.max(0, t)) * (values.length - 1);
+  const i = Math.min(values.length - 2, Math.floor(f));
+  return values[i] + (values[i + 1] - values[i]) * (f - i);
+}
+
+/**
+ * Shortest distance along the conduit network from the data centre, at
+ * evenly spaced samples of every route (a small Dijkstra over ~2 m steps;
+ * routes that pass within JOIN metres of each other are connected).
+ */
+function networkDistances(): number[][] {
+  type Node = { x: number; z: number; link: number };
+  const nodes: Node[] = [];
+  const firstOf: number[] = [];
+  for (let l = 0; l < CONDUIT_ROUTES.length; l++) {
+    const curve = new THREE.CatmullRomCurve3(
+      CONDUIT_ROUTES[l].map(([x, z]) => new THREE.Vector3(x, 0, z)),
+      false,
+      "catmullrom",
+      0.35,
+    );
+    const n = Math.max(4, Math.ceil(curve.getLength() / 2));
+    firstOf.push(nodes.length);
+    for (const p of curve.getSpacedPoints(n)) nodes.push({ x: p.x, z: p.z, link: l });
+  }
+  const N = nodes.length;
+  const dist = new Float64Array(N).fill(Infinity);
+  const done = new Uint8Array(N);
+  for (let i = 0; i < N; i++) {
+    const d = Math.hypot(nodes[i].x - DATA_CENTRE.x, nodes[i].z - DATA_CENTRE.z);
+    if (d < DATA_CENTRE.r) dist[i] = d;
+  }
+  for (;;) {
+    let u = -1;
+    for (let i = 0; i < N; i++) if (!done[i] && dist[i] < Infinity && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0) break;
+    done[u] = 1;
+    const a = nodes[u];
+    for (let v = 0; v < N; v++) {
+      if (done[v]) continue;
+      const b = nodes[v];
+      const d = Math.hypot(a.x - b.x, a.z - b.z);
+      const neighbour = b.link === a.link ? Math.abs(u - v) === 1 : d < JOIN;
+      if (neighbour && dist[u] + d < dist[v]) dist[v] = dist[u] + d;
+    }
+  }
+  // any isolated route falls back to its straight-line distance
+  return CONDUIT_ROUTES.map((_, l) => {
+    const end = l + 1 < firstOf.length ? firstOf[l + 1] : N;
+    const out: number[] = [];
+    for (let i = firstOf[l]; i < end; i++) {
+      out.push(
+        Number.isFinite(dist[i]) ? dist[i] : Math.hypot(nodes[i].x - DATA_CENTRE.x, nodes[i].z - DATA_CENTRE.z),
+      );
+    }
+    return out;
+  });
 }

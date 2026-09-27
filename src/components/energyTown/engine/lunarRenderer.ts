@@ -4,6 +4,7 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { insightIntensity } from "@/content/journey";
 import { createRenderLoop } from "@/lib/render/renderLoop";
 import { getDebugFlags } from "@/lib/debugFlags";
 import { buildTown, DAY, NIGHT } from "../townBuilder";
@@ -41,6 +42,8 @@ export type LunarRenderer = {
 
 /** story progress over which drift + parallax fade out before the airlock */
 const ARRIVAL_SETTLE = [0.8, 0.86] as const;
+/** how far Chapter 07's information view moves the day palette toward night */
+const INSIGHT_DIM = 0.55;
 
 function smoothstep(a: number, b: number, x: number) {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -113,6 +116,7 @@ export function createLunarRenderer(
 
   /* town */
   const town = buildTown(quality);
+  town.setReducedMotion(reducedMotion);
   scene.add(town.group);
 
   /* NASA models (SEV rover, HDU habitat) */
@@ -256,9 +260,11 @@ export function createLunarRenderer(
       themeMix += (themeTarget - themeMix) * Math.min(1, dt * 2.4);
       if (Math.abs(themeMix - themeTarget) < 0.0005) themeMix = themeTarget;
     }
-    if (themeMix !== lastThemeApplied) {
-      applyTheme(themeMix);
-      lastThemeApplied = themeMix;
+    // Chapter 07: the lit world recedes so the network can be read
+    const lookMix = themeMix + (1 - themeMix) * INSIGHT_DIM * insightIntensity(progress);
+    if (lookMix !== lastThemeApplied) {
+      applyTheme(lookMix);
+      lastThemeApplied = lookMix;
     }
 
     /* AI loop */
@@ -334,6 +340,7 @@ export function createLunarRenderer(
     releaseGpuMemory,
     setReducedMotion(reduced) {
       reducedMotion = reduced;
+      town.setReducedMotion(reduced);
     },
     dispose() {
       loop.dispose();

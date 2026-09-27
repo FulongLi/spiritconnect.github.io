@@ -1,5 +1,4 @@
 import {
-  AdditiveBlending,
   BoxGeometry,
   CanvasTexture,
   ExtrudeGeometry,
@@ -45,6 +44,10 @@ export function roundedRectShape(w: number, h: number, r: number) {
 
 const STAND = { width: 0.27, foot: 0.25, plate: 0.009 };
 
+/** glass sheen opacity at rest, and what hover / focus adds */
+const SHEEN_REST = 0.07;
+const SHEEN_HOVER = 0.035;
+
 /** geometry shared by every monitor */
 export function createMonitorKit(compact: boolean) {
   const W = MONITOR.bodyWidth;
@@ -64,7 +67,6 @@ export function createMonitorKit(compact: boolean) {
   body.translate(0, 0, -D + 0.003);
   const glass = new ShapeGeometry(roundedRectShape(W - 0.005, H - 0.005, 0.017), curve);
   const screen = new PlaneGeometry(MONITOR.screenWidth, MONITOR.screenHeight);
-  const halo = new PlaneGeometry(W * 1.28, H * 1.5);
   const plate = new BoxGeometry(STAND.width, 1, STAND.plate);
   const foot = new ExtrudeGeometry(roundedRectShape(STAND.width, STAND.foot, 0.02), {
     depth: STAND.plate - 0.002,
@@ -78,12 +80,11 @@ export function createMonitorKit(compact: boolean) {
   const flat = new PlaneGeometry(1, 1);
   flat.rotateX(-Math.PI / 2);
 
-  const all: BufferGeometry[] = [body, glass, screen, halo, plate, foot, flat];
+  const all: BufferGeometry[] = [body, glass, screen, plate, foot, flat];
   return {
     body,
     glass,
     screen,
-    halo,
     plate,
     foot,
     flat,
@@ -153,23 +154,11 @@ export function createWorkspaceMonitor({
   screen.position.z = 0.0009;
   group.add(screen);
 
-  // glass sheen (shared material)
-  const sheen = new Mesh(kit.screen, materials.sheen);
+  // glass sheen (own copy of the shared material: it responds to hover)
+  const sheenMat = materials.sheen.clone();
+  const sheen = new Mesh(kit.screen, sheenMat);
   sheen.position.z = 0.0014;
   group.add(sheen);
-
-  // soft bias-light halo behind the panel: wakes on hover / focus
-  const haloMat = new MeshBasicMaterial({
-    color: "#e9edf3",
-    alphaMap: materials.softSpot,
-    transparent: true,
-    opacity: 0,
-    blending: AdditiveBlending,
-    depthWrite: false,
-  });
-  const halo = new Mesh(kit.halo, haloMat);
-  halo.position.z = -MONITOR.depth - 0.02;
-  group.add(halo);
 
   // ── Stand ────────────────────────────────────────────────────────────────
   const standParts = new Group();
@@ -236,9 +225,11 @@ export function createWorkspaceMonitor({
       if (powerDelay > 0) powerDelay -= delta;
       else power += (1 - power) * (1 - Math.exp(-3.2 * delta));
       hoverAmount += ((hover ? 1 : 0) - hoverAmount) * (1 - Math.exp(-9 * delta));
-      screenMat.color.setScalar(power * (0.86 + hoverAmount * 0.14));
-      // hover / focus: a touch brighter, a soft bias light on the wall behind
-      haloMat.opacity = power * hoverAmount * 0.16;
+      // hover / focus: the panel lifts a touch — kept under the bloom
+      // threshold, so nothing glows around or behind the display
+      screenMat.color.setScalar(power * (0.86 + hoverAmount * 0.04));
+      // the glass catches a little more light
+      sheenMat.opacity = SHEEN_REST + hoverAmount * SHEEN_HOVER;
     },
     /** world-space corners of the screen (top-left, top-right, bottom-right, bottom-left) */
     screenCorners(out: Vector3[]) {
@@ -252,7 +243,7 @@ export function createWorkspaceMonitor({
     dispose() {
       texture.dispose();
       screenMat.dispose();
-      haloMat.dispose();
+      sheenMat.dispose();
     },
   };
 }

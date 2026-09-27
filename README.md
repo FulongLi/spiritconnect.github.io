@@ -15,7 +15,7 @@ Public site: [https://spiritconnect.co.uk](https://spiritconnect.co.uk)
 | --- | --- | --- |
 | **Spirit Connect** | the vision — futuristic, cinematic, immersive | `/` (lunar journey), `/about` |
 | **Presence** | the interface between people and intelligent systems; the primary product promoted here | the journey's interior stage, `/presence` |
-| **AIPE** | the engineering division that helps close the AI-energy loop; has its own independent, engineering-style website | chapter 08 + interior card → [aipel.co.uk](https://aipel.co.uk) ↗ |
+| **AIPE** | the engineering division that helps close the AI-energy loop; has its own independent, engineering-style website | workspace display → [aipel.co.uk](https://aipel.co.uk) ↗ |
 
 Fantasy is kept on record (`DIVISIONS.fantasy`, `visibility: "archived"`) but
 is not shown in navigation or the interior.
@@ -24,17 +24,22 @@ Navigation: **Vision** (`/`) · **Presence** (`/presence`) · **AIPE ↗** · **
 
 ## The experience
 
-1. **Lunar journey** (`/`) — a scroll-driven flight across a lunar micro-grid:
-   solar → nuclear → storage → solid-state transformer → **data centre (the
-   turning point)** → charging. The closing chapters tell the loop:
-   *AI engineering — design the next system* → *AIPE, engineering
-   intelligence* → *the loop closes*. In the scene the returning **data**
-   network (blue) brightens and speeds back toward the energy sources while
-   **energy** (amber) keeps flowing out, and the data centre begins to glow.
-2. **Into the Dome** — the camera swings down to the main Dome's airlock
-   (*Welcome to Spirit Connect*) and flies into the vestibule, where the
-   workspace scene — the same building, from `shared/domeArchitecture` —
-   cross-fades in and carries on through the Dome.
+1. **Lunar journey** (`/`) — one continuous, scroll-driven shot across a lunar
+   micro-grid, told in seven chapters: *01 Solar — energy begins here* →
+   *02 Nuclear — power when the sun cannot* → *03 Storage — energy needs
+   memory* → *04 Power electronics — power must be shaped* → *05 Data centre —
+   energy becomes intelligence* (the turning point: the camera starts to gain
+   altitude) → *06 Mobility — energy enters the physical world* (landing pads,
+   lander, rover charging rows) → *07 Intelligent engineering — AI designs
+   the next system*. In Chapter 07 the camera rises until the whole base
+   reads as one network: the lit world recedes, **energy** (amber) flows out
+   to the loads, **data** (blue) flows in to the data centre, and feedback
+   waves travel from the data centre back through the network to the
+   sources. The chapter closes on *Energy powers AI. AI designs energy.*
+2. **Into the Dome** — the camera descends along the main Dome's entrance
+   axis to the airlock (*Enter Spirit Connect*) and flies into the vestibule,
+   where the workspace scene — the same building, from
+   `shared/domeArchitecture` — cross-fades in and carries on through the Dome.
 3. **The workspace** — a ring workstation at the centre of the Dome: the
    **Presence** device (the particle entity in its glass chamber) and two
    equal displays, **Presence** (`/presence`) and **AIPE** (aipel.co.uk).
@@ -47,7 +52,7 @@ All copy and numbers live in `src/content/`:
 
 | File | Contains |
 | --- | --- |
-| `journey.ts` | chapters, scroll length, cinematic timeline, loop intensity |
+| `journey.ts` | chapters, scroll pacing, cinematic timeline, loop + information-view intensity |
 | `presence.ts` | Presence page + interior copy, form options, media slots |
 | `pricing.ts` | **founding price £399, planned retail £699, 100 units** (single source) |
 | `site.ts` | company info, vision loop, divisions + links, main nav |
@@ -89,11 +94,11 @@ src/components/site/             header / nav, legacy redirect
 | State | Lunar (WebGL) | Presence (WebGPU) |
 | --- | --- | --- |
 | `LUNAR` | rendering | not mounted |
-| `TRANSITION` (from chapter 09) | rendering until the workspace has faded in over it, inside the airlock | mounted, pipelines warmed with a few frames, then paused; starts rendering just before it is revealed |
+| `TRANSITION` (from the end of chapter 07) | rendering until the workspace has faded in over it, inside the airlock | mounted, pipelines warmed with a few frames, then paused; starts rendering just before it is revealed |
 | `PRESENCE` | loop stopped; post-processing targets + shadow map released (re-created lazily if you scroll back) | rendering |
 
 Both loops also pause while the browser tab is hidden. The interior code is
-prefetched from the data-centre chapter onward (or on **Skip to Presence**).
+prefetched from the data-centre chapter onward (or on **Skip to the Dome**).
 
 ### Fallbacks & accessibility
 
@@ -101,8 +106,9 @@ prefetched from the data-centre chapter onward (or on **Skip to Presence**).
   budget) → a 2D-canvas Presence orb.
 - Lunar scene: if WebGL is unavailable, a static lunar backdrop — the chapters
   still play as text.
-- `prefers-reduced-motion`: no camera drift / parallax, slower stage motion,
-  no autoplaying hero video, CSS animations off.
+- `prefers-reduced-motion`: no camera drift / parallax, no travelling AI
+  feedback waves, slower stage motion, no autoplaying hero video, CSS
+  animations off.
 - Keyboard: arrows / Page Up/Down / Space / Home / End scroll the journey;
   skip link to the interior; accessible mobile menu; screen-reader summary of
   the journey chapters.

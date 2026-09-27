@@ -168,7 +168,8 @@ export function drawButton(
   const textW = measureSpaced(ctx, label, 5 * s);
   const w = textW + 210 * s;
   roundRectPath(ctx, x, y, w, h, h / 2);
-  ctx.fillStyle = opts.hover ? "#ffffff" : "#dfe1e5";
+  // hover: a slightly brighter pill (still below the bloom threshold)
+  ctx.fillStyle = opts.hover ? "#eaecef" : "#dfe1e5";
   ctx.fill();
   ctx.fillStyle = "#0c0d0f";
   ctx.textBaseline = "middle";
@@ -179,12 +180,12 @@ export function drawButton(
   return y + h;
 }
 
-/** hovered / focused: a soft inner light around the screen edge */
+/** hovered / focused: a restrained hairline just inside the screen edge */
 export function drawHoverFrame(ctx: CanvasRenderingContext2D, w: number, h: number, s: number, hover: boolean) {
   if (!hover) return;
   const inset = 8 * s;
   roundRectPath(ctx, inset, inset, w - inset * 2, h - inset * 2, 12 * s);
-  ctx.strokeStyle = "rgba(236, 238, 242, 0.22)";
-  ctx.lineWidth = 3 * s;
+  ctx.strokeStyle = "rgba(236, 238, 242, 0.16)";
+  ctx.lineWidth = 2 * s;
   ctx.stroke();
 }

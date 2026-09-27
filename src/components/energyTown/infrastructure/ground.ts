@@ -66,13 +66,15 @@ export type GroundLayer = {
     d: number,
     seed: number,
     paint: (p: GroundPainter) => void,
+    /** texture resolution relative to the default (large, detailed sites) */
+    resScale?: number,
   ) => void;
   /** round contact shadow + dust halo for a footprint of radius r */
   disc: (x: number, z: number, r: number) => void;
   /** soft rectangular contact shadow */
   rect: (x: number, z: number, w: number, d: number, rot?: number) => void;
-  /** painted landing-pad markings on a pad top at height y */
-  padMarking: (x: number, y: number, z: number, r: number) => void;
+  /** painted landing-pad markings (radius r) on a deck at height y; rot turns the approach chevron */
+  padMarking: (x: number, y: number, z: number, r: number, rot?: number) => void;
   build: () => void;
   applyTheme: (mix: number) => void;
 };
@@ -114,8 +116,8 @@ export function createGroundLayer(
   const pads: THREE.BufferGeometry[] = [];
 
   return {
-    site(cx, cz, rot, w, d, seed, paint) {
-      const painter = new GroundPainter(w, d, res, seed);
+    site(cx, cz, rot, w, d, seed, paint, resScale = 1) {
+      const painter = new GroundPainter(w, d, Math.round(res * resScale), seed);
       paint(painter);
       const tex = track(painter.finish(Math.min(w, d) * 0.12));
       addMesh(conformingGrid(cx, cz, rot, w, d, 1.2, lift), decalMat(tex));
@@ -127,9 +129,10 @@ export function createGroundLayer(
     rect(x, z, w, d, rot = 0) {
       rects.push(conformingGrid(x, z, rot, w / 0.6, d / 0.6, 1, lift));
     },
-    padMarking(x, y, z, r) {
+    padMarking(x, y, z, r, rot = 0) {
       const g = new THREE.CircleGeometry(r, 40);
       g.rotateX(-Math.PI / 2);
+      g.rotateY(rot);
       g.translate(x, y + 0.02, z);
       pads.push(g);
     },
