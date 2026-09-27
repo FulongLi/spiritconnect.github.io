@@ -33,15 +33,15 @@ import { roundedRectShape } from "./workspaceMonitor";
 /* sit in the middle of the chamber.                                    */
 /* ------------------------------------------------------------------ */
 
-const R = 0.056; // chamber radius
+const R = 0.06; // chamber radius
 const SPEAKER_TOP = 0.098;
-const CHAMBER_HEIGHT = 0.15;
+const CHAMBER_HEIGHT = 0.17;
 const CAP_BOTTOM = SPEAKER_TOP + CHAMBER_HEIGHT;
-const TRAY = { width: 0.16, depth: 0.2, lower: 0.009, line: 0.0022, upper: 0.007, bodyZ: -0.034 };
+const TRAY = { width: 0.17, depth: 0.21, lower: 0.009, line: 0.0022, upper: 0.007, bodyZ: -0.034 };
 const TRAY_TOP = TRAY.lower + TRAY.line + TRAY.upper;
 
 /** radius of the particle sphere inside the chamber */
-export const ENTITY_RADIUS = 0.043;
+export const ENTITY_RADIUS = 0.047;
 const MODEL_RADIUS = 0.9;
 const MODEL_CENTRE_Y = 1.05;
 
@@ -52,7 +52,7 @@ function createGlassMaterial(side: Side, strength: number) {
   const rim = pow(float(1).sub(facing), 2.4);
   const streak = smoothstep(0.1, 0.0, abs(normalView.x.add(0.52))).mul(0.3);
   mat.colorNode = vec3(0.93, 0.94, 0.96);
-  mat.opacityNode = rim.mul(0.5).add(streak).add(0.03).mul(strength);
+  mat.opacityNode = rim.mul(0.62).add(streak).add(0.035).mul(strength);
   return mat;
 }
 
@@ -160,7 +160,7 @@ export function createPresenceDevice(materials: WorkspaceMaterials, compact: boo
   // ── Soft Presence glow: a little light on the surface around the device ──
   // (skipped on compact devices: one light fewer in every shader)
   if (!compact) {
-    const glow = new PointLight("#eef1f5", 0.14, 1.1, 2);
+    const glow = new PointLight("#eef1f5", 0.24, 1.4, 2);
     glow.position.y = SPEAKER_TOP + CHAMBER_HEIGHT / 2;
     body.add(glow);
   }

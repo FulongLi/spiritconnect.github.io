@@ -1,6 +1,7 @@
 import { AIPE_SCREEN as C } from "@/content/workspace";
 import {
   INK,
+  MARGIN,
   drawBackdrop,
   drawButton,
   drawEyebrow,
@@ -11,7 +12,7 @@ import {
 } from "./canvasKit";
 
 /* ------------------------------------------------------------------ */
-/* AIPE monitor — the energy / engineering side, after aipel.co.uk.     */
+/* AIPE display — the energy / engineering side, after aipel.co.uk.     */
 /* A portal, not a website: the name, the positioning line, the scale  */
 /* hierarchy device → converter → system as one simple motif, one CTA. */
 /* Structured and technical where Presence is spatial.                 */
@@ -73,7 +74,7 @@ const GLYPHS = [inductor, converter, microgrid];
 
 /** a quiet engineering grid */
 function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, s: number) {
-  const step = 50 * s;
+  const step = 80 * s;
   ctx.lineWidth = 1;
   ctx.strokeStyle = "rgba(226, 229, 234, 0.04)";
   ctx.beginPath();
@@ -90,42 +91,53 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number, s: number
 
 export const paintAipeScreen: ScreenPainter = (ctx, w, h, opts) => {
   const s = w / 1600;
-  drawBackdrop(ctx, w, h, 1250 * s, 430 * s);
+  drawBackdrop(ctx, w, h, 1230 * s, 430 * s);
   drawGrid(ctx, w, h, s);
   drawEyebrow(ctx, s, opts, C.eyebrow);
 
-  drawTitle(ctx, s, opts, C.title, 372 * s);
-  const left = 110 * s;
+  drawTitle(ctx, s, opts, C.title, 330 * s);
+  const left = MARGIN * s;
   ctx.fillStyle = INK.soft;
-  ctx.font = `400 ${40 * s}px ${opts.fonts.sans}`;
-  C.headline.forEach((line, i) => spacedText(ctx, line.toUpperCase(), left, (452 + i * 56) * s, 4 * s));
+  ctx.font = `400 ${52 * s}px ${opts.fonts.sans}`;
+  ctx.textBaseline = "alphabetic";
+  C.headline.forEach((line, i) => spacedText(ctx, line.toUpperCase(), left, (420 + i * 66) * s, 3 * s));
 
-  // device → converter → system
-  const nodeX = 1080 * s;
-  const rows = [262, 430, 598].map((y) => y * s);
+  // device → converter → system: one vertical engineering hierarchy
+  const lineX = 1050 * s;
+  const rows = [238, 430, 622].map((y) => y * s);
   ctx.strokeStyle = INK.faint;
-  ctx.lineWidth = 2.5 * s;
+  ctx.lineWidth = 3 * s;
   ctx.beginPath();
-  ctx.moveTo(nodeX, rows[0]);
-  ctx.lineTo(nodeX, rows[2]);
+  ctx.moveTo(lineX, rows[0]);
+  ctx.lineTo(lineX, rows[2]);
   ctx.stroke();
+  // flow chevrons between the scales
+  ctx.strokeStyle = INK.dim;
+  for (let i = 0; i < 2; i++) {
+    const cy = (rows[i] + rows[i + 1]) / 2;
+    ctx.beginPath();
+    ctx.moveTo(lineX - 12 * s, cy - 6 * s);
+    ctx.lineTo(lineX, cy + 6 * s);
+    ctx.lineTo(lineX + 12 * s, cy - 6 * s);
+    ctx.stroke();
+  }
   rows.forEach((y, i) => {
     ctx.fillStyle = "#0a0b0d";
     ctx.strokeStyle = INK.soft;
+    ctx.lineWidth = 3 * s;
     ctx.beginPath();
-    ctx.arc(nodeX, y, 12 * s, 0, Math.PI * 2);
+    ctx.arc(lineX, y, 15 * s, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.strokeStyle = "rgba(236, 238, 242, 0.85)";
-    ctx.lineWidth = 3 * s;
-    GLYPHS[i](ctx, nodeX + 120 * s, y, 110 * s);
-    ctx.lineWidth = 2.5 * s;
+    ctx.strokeStyle = "rgba(236, 238, 242, 0.9)";
+    ctx.lineWidth = 4 * s;
+    GLYPHS[i](ctx, lineX + 112 * s, y, 118 * s);
     ctx.fillStyle = INK.bright;
-    ctx.font = `400 ${30 * s}px ${opts.fonts.mono}`;
+    ctx.font = `500 ${44 * s}px ${opts.fonts.mono}`;
     ctx.textBaseline = "middle";
-    spacedText(ctx, C.scales[i].toUpperCase(), nodeX + 210 * s, y + 1, 6 * s);
+    spacedText(ctx, C.scales[i].toUpperCase(), lineX + 190 * s, y + 2, 4 * s);
   });
 
-  drawButton(ctx, 668 * s, C.cta.toUpperCase(), "↗", s, opts);
+  drawButton(ctx, 658 * s, C.cta.toUpperCase(), "↗", s, opts);
   drawHoverFrame(ctx, w, h, s, opts.hover);
 };

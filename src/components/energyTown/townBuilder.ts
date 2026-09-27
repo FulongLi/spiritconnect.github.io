@@ -13,7 +13,8 @@ import { buildDataCentre } from "./infrastructure/dataCentre";
 import { buildBESS } from "./infrastructure/bess";
 import { buildNuclearCore } from "./infrastructure/nuclear";
 import { buildSolarField } from "./infrastructure/solarField";
-import { buildChargers, buildDomeCollars, buildPadDetails } from "./infrastructure/secondary";
+import { buildChargers, buildPadDetails } from "./infrastructure/secondary";
+import { buildHabitat, type PadDome } from "./infrastructure/habitat";
 
 export { terrainHeight } from "./scene/terrain";
 export { DAY, NIGHT } from "./scene/palette";
@@ -134,104 +135,12 @@ export function buildTown(quality: "high" | "low"): Town {
   const solarCenter = { x: 76, z: 38 };
   buildSolarField(infra, solarCenter.x, solarCenter.z);
 
-  /* ================== LOADS: habitat — hexagon layout ==============
-     One central main dome, six SECONDARY DOMES at the vertices of a
-     regular hexagon, spokes from the centre to every dome, and
-     perimeter tubes closing the hexagon — exactly like the sketch. */
-  type Dome = { x: number; z: number; r: number };
-  const HEX_R = 26;
-  const HEX_OFF = 0.18;
-  const hexNodes: { x: number; z: number; angle: number }[] = [];
-  for (let i = 0; i < 6; i++) {
-    const angle = (i / 6) * Math.PI * 2 + HEX_OFF;
-    hexNodes.push({ x: Math.cos(angle) * HEX_R, z: Math.sin(angle) * HEX_R, angle });
-  }
-  const domes: Dome[] = [
-    { x: 0, z: 0, r: 14 }, // the central dome — the portal lives inside
-    ...hexNodes.map((n) => ({ x: n.x, z: n.z, r: 6.5 })),
-  ];
-
-  const seamMat = track(
-    new THREE.LineBasicMaterial({ color: "#7e8a9c", transparent: true, opacity: 0.25 })
-  );
-  for (const d of domes) {
-    const gy = terrainHeight(d.x, d.z);
-    const domeGeo = track(
-      new THREE.SphereGeometry(d.r, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2)
-    );
-    const dome = new THREE.Mesh(domeGeo, shellMat);
-    dome.position.set(d.x, gy + 0.1, d.z);
-    dome.castShadow = shadows;
-    group.add(dome);
-    // geodesic panel seams
-    const seamSrc = track(
-      new THREE.SphereGeometry(d.r * 1.004, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2)
-    );
-    const seamGeo = track(new THREE.WireframeGeometry(seamSrc));
-    const seams = new THREE.LineSegments(seamGeo, seamMat);
-    seams.position.set(d.x, gy + 0.1, d.z);
-    group.add(seams);
-    // glowing base ring
-    const ring = new THREE.Mesh(
-      track(new THREE.TorusGeometry(d.r * 1.04, 0.2, 8, 56)),
-      conduitMat
-    );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.set(d.x, gy + 0.35, d.z);
-    group.add(ring);
-    // brand-blue crown ring near the apex
-    const crownH = d.r * 0.78;
-    const crownR = Math.sqrt(Math.max(0.05, d.r * d.r - crownH * crownH));
-    const crown = new THREE.Mesh(
-      track(new THREE.TorusGeometry(crownR * 1.02, 0.14, 8, 48)),
-      conduitMat
-    );
-    crown.rotation.x = Math.PI / 2;
-    crown.position.set(d.x, gy + 0.1 + crownH, d.z);
-    group.add(crown);
-    // warm window band partway up every habitat dome
-    if (d.r >= 6) {
-      const band = new THREE.Mesh(
-        track(new THREE.TorusGeometry(d.r * 0.9, 0.14, 8, 56)),
-        stripMat
-      );
-      band.rotation.x = Math.PI / 2;
-      band.position.set(d.x, gy + d.r * 0.42, d.z);
-      group.add(band);
-    }
-  }
-
-  /* (the six hexagon vertices are secondary domes — built above) */
-
-  /* ----- tubes: consecutive ring nodes (closed loop) + spokes ----- */
-  const tubeGeoUnit = track(new THREE.CylinderGeometry(0.8, 0.8, 1, 10));
-  const addTube = (ax: number, az: number, bx: number, bz: number) => {
-    const ay = terrainHeight(ax, az) + 1.1;
-    const by = terrainHeight(bx, bz) + 1.1;
-    const A = new THREE.Vector3(ax, ay, az);
-    const B = new THREE.Vector3(bx, by, bz);
-    const dir = new THREE.Vector3().subVectors(B, A);
-    const len = dir.length();
-    const tube = new THREE.Mesh(tubeGeoUnit, shellDarkMat);
-    tube.scale.set(1, len, 1);
-    tube.position.copy(A).addScaledVector(dir, 0.5);
-    tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-    tube.castShadow = shadows;
-    group.add(tube);
-  };
-  // perimeter: each capsule connected to the next (closed hexagon)
-  for (let i = 0; i < hexNodes.length; i++) {
-    const a = hexNodes[i];
-    const b = hexNodes[(i + 1) % hexNodes.length];
-    addTube(a.x, a.z, b.x, b.z);
-  }
-  // spokes: the central dome connected to every capsule
-  for (const n of hexNodes) {
-    addTube(0, 0, n.x, n.z);
-  }
-
-  /* (dome interior stage removed — the handoff to the portal happens
-     through a brief dark beat with the WELCOME caption instead) */
+  /* ================== LOADS: habitat =============================
+     The main Dome (home of the workspace) in the centre, six satellite
+     domes on a hexagon, corridors along the spokes and the perimeter —
+     authored in ./infrastructure/habitat, in the same architectural
+     language as the Dome interior. Built after the pads (below) so the
+     small pad domes join it. */
 
   /* ----- nuclear power core ----- */
   const reactor = { x: 90, z: 0 };
@@ -258,6 +167,7 @@ export function buildTown(quality: "high" | "low"): Town {
     { x: -80, z: 82, r: 5.8 }, // second lower terminal pad beside chargers
   ];
   const padTops: number[] = [];
+  const padDomes: PadDome[] = [];
   for (let pi = 0; pi < pads.length; pi++) {
     const pd = pads[pi];
     // sample the rim so the pad always clears the local terrain
@@ -282,54 +192,8 @@ export function buildTown(quality: "high" | "low"): Town {
     group.add(padMesh);
 
     if (pd.kind === "dome") {
-      // small habitat dome resting ON the platform (not sunk into the terrain),
-      // built with the same elements as the main habitat domes
-      const domeRadius = pd.r * 0.92;
-      const domeGeo = track(
-        new THREE.SphereGeometry(domeRadius, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2)
-      );
-      const dome = new THREE.Mesh(domeGeo, shellMat);
-      dome.position.set(pd.x, top + 0.05, pd.z);
-      dome.castShadow = shadows;
-      group.add(dome);
-
-      const seamSrc = track(
-        new THREE.SphereGeometry(domeRadius * 1.004, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2)
-      );
-      const seamGeo = track(new THREE.WireframeGeometry(seamSrc));
-      const seams = new THREE.LineSegments(seamGeo, seamMat);
-      seams.position.set(pd.x, top + 0.05, pd.z);
-      group.add(seams);
-
-      // glowing base ring (brand blue) — shares the emissive material that
-      // brightens at night, exactly like the central + secondary domes
-      const baseRing = new THREE.Mesh(
-        track(new THREE.TorusGeometry(domeRadius * 1.04, 0.2, 8, 48)),
-        conduitMat
-      );
-      baseRing.rotation.x = Math.PI / 2;
-      baseRing.position.set(pd.x, top + 0.23, pd.z);
-      group.add(baseRing);
-
-      // brand-blue crown ring near the apex (matches the main habitat domes)
-      const crownH = domeRadius * 0.78;
-      const crownR = Math.sqrt(Math.max(0.05, domeRadius * domeRadius - crownH * crownH));
-      const crown = new THREE.Mesh(
-        track(new THREE.TorusGeometry(crownR * 1.02, 0.14, 8, 48)),
-        conduitMat
-      );
-      crown.rotation.x = Math.PI / 2;
-      crown.position.set(pd.x, top + 0.05 + crownH, pd.z);
-      group.add(crown);
-
-      // warm window band partway up the dome
-      const band = new THREE.Mesh(
-        track(new THREE.TorusGeometry(domeRadius * 0.9, 0.14, 8, 56)),
-        stripMat
-      );
-      band.rotation.x = Math.PI / 2;
-      band.position.set(pd.x, top + domeRadius * 0.42, pd.z);
-      group.add(band);
+      // a small habitat dome stands ON the platform (see buildHabitat)
+      padDomes.push({ x: pd.x, z: pd.z, radius: pd.r * 0.9, floor: top + 0.02, facing: Math.atan2(-pd.z, -pd.x) });
       continue;
     }
 
@@ -415,10 +279,7 @@ export function buildTown(quality: "high" | "low"): Town {
     infra,
     pads.map((pd, i) => ({ x: pd.x, z: pd.z, r: pd.r, top: padTops[i], dome: pd.kind === "dome" })),
   );
-  buildDomeCollars(
-    infra,
-    domes.map((d) => ({ x: d.x, z: d.z, r: d.r, base: terrainHeight(d.x, d.z) + 0.1 })),
-  );
+  const habitat = buildHabitat(infra, padDomes);
 
   /* ================== LOAD: data centre ============================ */
   const dcCenter = { x: 16, z: -42 };
@@ -501,19 +362,20 @@ export function buildTown(quality: "high" | "low"): Town {
   beaconRed.position.set(comms.x, terrainHeight(comms.x, comms.z) + 13.6, comms.z);
   group.add(beaconRed);
 
+  // navigation light on the main Dome's oculus: neutral, not brand blue
   const beaconBlueMat = track(
     new THREE.SpriteMaterial({
       map: glowTex,
-      color: "#9fd8ff",
+      color: "#eef2f6",
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.5,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     })
   );
   const beaconBlue = new THREE.Sprite(beaconBlueMat);
-  beaconBlue.scale.setScalar(2.6);
-  beaconBlue.position.set(0, terrainHeight(0, 0) + 14.6, 0);
+  beaconBlue.scale.setScalar(1.4);
+  beaconBlue.position.set(0, habitat.crownY + 0.35, 0);
   group.add(beaconBlue);
 
   /* ---------------- theme ---------------- */
@@ -537,6 +399,7 @@ export function buildTown(quality: "high" | "low"): Town {
     coreMat.emissiveIntensity = 0.9 + 0.7 * mix;
     stripMat.emissiveIntensity = 0.3 + 0.9 * mix;
     kit.applyTheme(mix);
+    habitat.applyTheme(mix);
     ground.applyTheme(mix);
     rocks.applyTheme(mix);
     atmosphere.applyTheme(mix);
@@ -555,7 +418,7 @@ export function buildTown(quality: "high" | "low"): Town {
     const blink = Math.max(0, Math.sin(elapsed * 2.3));
     beaconRedMat.opacity = 0.15 + 0.75 * blink * blink * blink;
     const breathe = 0.5 + 0.5 * Math.sin(elapsed * 1.1);
-    beaconBlueMat.opacity = 0.35 + 0.4 * breathe;
+    beaconBlueMat.opacity = 0.25 + 0.3 * breathe;
 
     // AI loop: information lights and the data-centre glow come alive
     kit.update(elapsed, loop);

@@ -14,14 +14,15 @@ import {
   Vector3,
   type BufferGeometry,
 } from "three";
-import { DESK, MONITOR, RISER_TOP } from "./layout";
+import { MONITOR, RING } from "./layout";
 import type { WorkspaceMaterials } from "./materials";
 import type { CanvasFonts, ScreenPainter } from "../screens/canvasKit";
 
 /* ------------------------------------------------------------------ */
 /* A studio-class display: one thin satin-aluminium slab, a black glass */
 /* front with a slim even border, and a folded aluminium stand (foot +  */
-/* inclined upright). The screen is painted into a canvas texture.      */
+/* inclined upright). Workspace scale — larger than a desk monitor, the */
+/* same restraint. The screen is painted into a canvas texture.        */
 /* Geometry is shared by both monitors: identical hardware for Presence */
 /* and AIPE.                                                            */
 /* ------------------------------------------------------------------ */
@@ -42,7 +43,7 @@ export function roundedRectShape(w: number, h: number, r: number) {
   return s;
 }
 
-const STAND = { width: 0.17, foot: 0.17, plate: 0.007 };
+const STAND = { width: 0.27, foot: 0.25, plate: 0.009 };
 
 /** geometry shared by every monitor */
 export function createMonitorKit(compact: boolean) {
@@ -52,20 +53,20 @@ export function createMonitorKit(compact: boolean) {
   const curve = compact ? 4 : 8;
 
   // the slab: front face at z = 0
-  const body = new ExtrudeGeometry(roundedRectShape(W - 0.004, H - 0.004, 0.011), {
-    depth: D - 0.004,
+  const body = new ExtrudeGeometry(roundedRectShape(W - 0.006, H - 0.006, 0.018), {
+    depth: D - 0.006,
     bevelEnabled: true,
-    bevelThickness: 0.002,
-    bevelSize: 0.002,
+    bevelThickness: 0.003,
+    bevelSize: 0.003,
     bevelSegments: 3,
     curveSegments: curve,
   });
-  body.translate(0, 0, -D + 0.002);
-  const glass = new ShapeGeometry(roundedRectShape(W - 0.003, H - 0.003, 0.0105), curve);
+  body.translate(0, 0, -D + 0.003);
+  const glass = new ShapeGeometry(roundedRectShape(W - 0.005, H - 0.005, 0.017), curve);
   const screen = new PlaneGeometry(MONITOR.screenWidth, MONITOR.screenHeight);
   const halo = new PlaneGeometry(W * 1.28, H * 1.5);
   const plate = new BoxGeometry(STAND.width, 1, STAND.plate);
-  const foot = new ExtrudeGeometry(roundedRectShape(STAND.width, STAND.foot, 0.012), {
+  const foot = new ExtrudeGeometry(roundedRectShape(STAND.width, STAND.foot, 0.02), {
     depth: STAND.plate - 0.002,
     bevelEnabled: true,
     bevelThickness: 0.001,
@@ -177,33 +178,33 @@ export function createWorkspaceMonitor({
     standParts.clear();
     if (stand === "arm") {
       const arm = new Mesh(kit.plate, materials.aluminium);
-      arm.scale.set(0.35, 0.05, 8);
+      arm.scale.set(0.35, 0.06, 7);
       arm.position.set(0, 0, -MONITOR.depth - 0.03);
       standParts.add(arm);
       return;
     }
     // folded plate: a foot on the riser, an inclined upright to a hinge
     // behind the display centre
-    const surfaceY = RISER_TOP - group.position.y;
-    const footZ = -0.03;
+    const surfaceY = RING.riserTop - group.position.y;
+    const footZ = -0.05;
     const foot = new Mesh(kit.foot, materials.aluminium);
     foot.position.set(0, surfaceY + 0.001, footZ);
     standParts.add(foot);
     const a = new Vector3(0, surfaceY + STAND.plate, footZ - STAND.foot / 2 + STAND.plate);
-    const b = new Vector3(0, -0.04, -MONITOR.depth - 0.012);
+    const b = new Vector3(0, -0.06, -MONITOR.depth - 0.016);
     const upright = new Mesh(kit.plate, materials.aluminium);
     upright.scale.y = a.distanceTo(b);
     upright.position.copy(a).add(b).multiplyScalar(0.5);
     upright.rotation.x = Math.atan2(b.z - a.z, b.y - a.y);
     standParts.add(upright);
     const shadow = new Mesh(kit.flat, materials.contactShadow);
-    shadow.scale.set(0.3, 1, 0.26);
+    shadow.scale.set(0.46, 1, 0.4);
     shadow.position.set(0, surfaceY + 0.0012, footZ);
     standParts.add(shadow);
-    // light spill from the panel onto the main surface below
+    // light spill from the panel onto the lower level in front
     const spill = new Mesh(kit.flat, materials.screenGlow);
-    spill.scale.set(W * 1.4, 1, 0.42);
-    spill.position.set(0, DESK.height - group.position.y + 0.0018, 0.4);
+    spill.scale.set(W * 1.3, 1, 0.62);
+    spill.position.set(0, RING.height - group.position.y + 0.0018, 0.55);
     standParts.add(spill);
   }
 
@@ -236,7 +237,8 @@ export function createWorkspaceMonitor({
       else power += (1 - power) * (1 - Math.exp(-3.2 * delta));
       hoverAmount += ((hover ? 1 : 0) - hoverAmount) * (1 - Math.exp(-9 * delta));
       screenMat.color.setScalar(power * (0.86 + hoverAmount * 0.14));
-      haloMat.opacity = power * hoverAmount * 0.12;
+      // hover / focus: a touch brighter, a soft bias light on the wall behind
+      haloMat.opacity = power * hoverAmount * 0.16;
     },
     /** world-space corners of the screen (top-left, top-right, bottom-right, bottom-left) */
     screenCorners(out: Vector3[]) {

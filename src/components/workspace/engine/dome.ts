@@ -4,52 +4,57 @@ import {
   CircleGeometry,
   Color,
   DirectionalLight,
-  Fog,
+  FrontSide,
   Group,
   HemisphereLight,
   InstancedMesh,
-  Matrix4,
+  LatheGeometry,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  PlaneGeometry,
   SRGBColorSpace,
-  SphereGeometry,
-  TorusGeometry,
+  Shape,
+  ShapeGeometry,
+  BoxGeometry,
+  Vector2,
+  Path,
   type BufferGeometry,
+  type Material,
   type Scene,
   type Texture,
 } from "three";
+import {
+  MAIN_DOME,
+  MAIN_DOME_INTERIOR,
+  archOutline,
+  elevationAt,
+  elevationForRadius,
+  glassGeometry,
+  revealGeometry,
+  ribGeometry,
+  ribMatrices,
+  shellGeometry,
+  shellHoles,
+  sweepOutline,
+} from "@/components/shared/domeArchitecture";
+import { createLunarView } from "./lunarView";
 import type { WorkspaceMaterials } from "./materials";
 
 /* ------------------------------------------------------------------ */
-/* The Dome interior — the inside of the same main dome the journey      */
-/* flies into. Its structure echoes the exterior: twelve meridian ribs,  */
-/* latitude panel seams, a crown ring near the apex, a window band part- */
-/* way up and a ring of light at the base (neutral here, not cyan).      */
-/*                                                                      */
-/* One rib runs down the central axis behind the monitors, two more      */
-/* frame the workstation at ±30°. Soft off-white shell, graphite ribs,   */
-/* recessed indirect light.                                             */
+/* The Dome interior: the inside of the very building the journey      */
+/* flies into (shared/domeArchitecture) — same six ribs, same openings, */
+/* same airlock on +z, same oculus.                                    */
+/*                                                                     */
+/* Calm rather than technical: one smooth off-white lining, six deep   */
+/* ribs in a slightly warmer grey, a long low panorama behind the      */
+/* workstation, a luminous diffuser in the oculus and a warm cove line */
+/* at the foot of the shell. No seams, no rings, no wireframe.         */
 /* ------------------------------------------------------------------ */
 
-export const DOME = {
-  radius: 10,
-  /** a low dome: the shell curves over within the frame */
-  height: 6.6,
-  ribs: 12,
-  /** window band (world heights) */
-  windowBottom: 1.4,
-  windowTop: 2.45,
-  /** crown ring at this fraction of the height (as on the exterior) */
-  crown: 0.78,
-} as const;
-
-const K = DOME.height / DOME.radius;
-
-/** polar angle on the (unflattened) sphere for a world height */
-const thetaAt = (y: number) => Math.acos(Math.min(1, y / DOME.height));
-/** horizontal radius of the shell at a world height */
-const radiusAt = (y: number) => DOME.radius * Math.sin(thetaAt(y));
+const S = { R: MAIN_DOME_INTERIOR.radius, H: MAIN_DOME_INTERIOR.height };
+/** the lining is this much inside the exterior surface (openings' depth) */
+const WALL = MAIN_DOME.radius - MAIN_DOME_INTERIOR.radius;
 
 function canvas(width: number, height: number) {
   const c = document.createElement("canvas");
@@ -58,106 +63,26 @@ function canvas(width: number, height: number) {
   return { c, ctx: c.getContext("2d")! };
 }
 
-/** shell panels: faint seams between the ribs, latitude joints, brighter towards the crown */
-function createShellTexture() {
-  const { c, ctx } = canvas(1024, 512);
-  // only the upper half of the texture maps onto a hemisphere
-  const g = ctx.createLinearGradient(0, 0, 0, 256);
-  g.addColorStop(0, "#e6e7e8");
-  g.addColorStop(0.5, "#d4d6d8");
-  g.addColorStop(1, "#c7c9cb");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 1024, 512);
-  ctx.strokeStyle = "rgba(70, 72, 76, 0.16)";
-  ctx.lineWidth = 1.5;
-  // seams midway between the twelve ribs
-  for (let i = 0; i < 24; i++) {
-    const x = ((i + 0.5) / 24) * 1024;
-    ctx.beginPath();
-    ctx.moveTo(x, 40);
-    ctx.lineTo(x, 256);
-    ctx.stroke();
-  }
-  // latitude joints (the exterior's six rings)
-  for (let i = 1; i < 6; i++) {
-    const y = (i / 6) * 256;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(1024, y);
-    ctx.stroke();
-  }
-  const tex = new CanvasTexture(c);
-  tex.colorSpace = SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
-
-/** the view outside: black lunar sky over a pale regolith horizon, the Earth low */
-function createExteriorTexture() {
-  const { c, ctx } = canvas(4096, 256);
-  ctx.fillStyle = "#020203";
-  ctx.fillRect(0, 0, 4096, 256);
-  ctx.fillStyle = "rgba(235, 238, 245, 0.5)";
-  for (let i = 0; i < 160; i++) {
-    const x = (Math.sin(i * 91.7) * 0.5 + 0.5) * 4096;
-    const y = (Math.sin(i * 37.3 + 1.1) * 0.5 + 0.5) * 150;
-    ctx.fillRect(x, y, 1.6, 1.6);
-  }
-  const ex = 2048 + 300;
-  const earth = ctx.createRadialGradient(ex, 70, 0, ex, 70, 14);
-  earth.addColorStop(0, "rgba(214, 224, 238, 0.95)");
-  earth.addColorStop(0.8, "rgba(150, 170, 200, 0.7)");
-  earth.addColorStop(1, "rgba(150, 170, 200, 0)");
-  ctx.fillStyle = earth;
-  ctx.beginPath();
-  ctx.arc(ex, 70, 14, 0, Math.PI * 2);
-  ctx.fill();
-  const ground = ctx.createLinearGradient(0, 150, 0, 256);
-  ground.addColorStop(0, "#a3a19c");
-  ground.addColorStop(0.5, "#7a7874");
-  ground.addColorStop(1, "#51504d");
-  ctx.fillStyle = ground;
-  ctx.beginPath();
-  ctx.moveTo(0, 256);
-  for (let x = 0; x <= 4096; x += 16) {
-    const y =
-      186 +
-      Math.sin(x * 0.0015) * 16 +
-      Math.sin(x * 0.0047 + 1.3) * 7 +
-      Math.sin(x * 0.013 + 0.4) * 2.5;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(4096, 256);
-  ctx.closePath();
-  ctx.fill();
-  const tex = new CanvasTexture(c);
-  tex.colorSpace = SRGBColorSpace;
-  return tex;
-}
-
-/** pale stone floor, a quiet inlay ring around the workstation */
+/** pale stone floor: slightly deeper in tone inside the ring, lighter towards the shell */
 function createFloorTexture() {
   const { c, ctx } = canvas(1024, 1024);
   const g = ctx.createRadialGradient(512, 512, 0, 512, 512, 512);
-  g.addColorStop(0, "#a3a29f");
-  g.addColorStop(0.55, "#8d8c89");
-  g.addColorStop(1, "#6f6e6b");
+  g.addColorStop(0, "#8a8986");
+  g.addColorStop(0.19, "#8f8e8b");
+  g.addColorStop(0.3, "#a6a5a1");
+  g.addColorStop(1, "#b9b7b2");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 1024, 1024);
-  ctx.strokeStyle = "rgba(40, 40, 42, 0.35)";
-  ctx.lineWidth = 2;
-  for (const r of [150, 156]) {
+  // very large format stone, joints barely there
+  ctx.strokeStyle = "rgba(60, 58, 55, 0.07)";
+  ctx.lineWidth = 1.5;
+  for (let i = 1; i < 8; i++) {
+    const x = (i / 8) * 1024;
     ctx.beginPath();
-    ctx.arc(512, 512, r, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  // radial joints, aligned with the ribs
-  ctx.strokeStyle = "rgba(40, 40, 42, 0.14)";
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(512 + Math.cos(a) * 156, 512 + Math.sin(a) * 156);
-    ctx.lineTo(512 + Math.cos(a) * 512, 512 + Math.sin(a) * 512);
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 1024);
+    ctx.moveTo(0, x);
+    ctx.lineTo(1024, x);
     ctx.stroke();
   }
   const tex = new CanvasTexture(c);
@@ -181,94 +106,124 @@ export function createDome({
   const geometries: BufferGeometry[] = [];
   const textures: Texture[] = [];
   const add = <T extends BufferGeometry>(g: T) => (geometries.push(g), g);
-  const seg = compact ? 48 : 96;
-  const R = DOME.radius;
+  const radial = compact ? 96 : 176;
 
-  const shellTex = createShellTexture();
-  const exteriorTex = createExteriorTexture();
   const floorTex = createFloorTexture();
-  textures.push(shellTex, exteriorTex, floorTex);
+  textures.push(floorTex);
 
-  const shellMat = new MeshStandardMaterial({ map: shellTex, roughness: 0.94, metalness: 0, side: BackSide });
-  const exteriorMat = new MeshBasicMaterial({ map: exteriorTex, side: BackSide, fog: false });
-  const lightMat = new MeshBasicMaterial({ color: new Color("#f4f1ec").multiplyScalar(1.2) });
-  const baseLightMat = new MeshBasicMaterial({ color: new Color("#f4f1ec").multiplyScalar(0.75) });
-  const floorMat = new MeshStandardMaterial({ map: floorTex, roughness: 0.66, metalness: 0.04 });
-  const ownMaterials = [shellMat, exteriorMat, lightMat, baseLightMat, floorMat];
+  const shellMat = new MeshStandardMaterial({ color: "#e8e5df", roughness: 0.93, metalness: 0, side: BackSide });
+  const surfaceMat = new MeshStandardMaterial({ color: "#e3e0da", roughness: 0.9, metalness: 0, side: FrontSide });
+  const ribMat = new MeshStandardMaterial({ color: "#d3cfc8", roughness: 0.82, metalness: 0.02 });
+  const liningMat = new MeshStandardMaterial({ color: "#6a6863", roughness: 0.8, metalness: 0.08 });
+  const floorMat = new MeshStandardMaterial({ map: floorTex, roughness: 0.52, metalness: 0.05 });
+  const lightMat = new MeshBasicMaterial({ color: new Color("#f7f1e7").multiplyScalar(1.15) });
+  const diffuserMat = new MeshBasicMaterial({ color: new Color("#f3efe8").multiplyScalar(1.05) });
+  const glassMat = materials.sheen.clone();
+  glassMat.opacity = 0.05;
+  const ownMaterials: Material[] = [shellMat, surfaceMat, ribMat, liningMat, floorMat, lightMat, diffuserMat, glassMat];
 
-  // ── Shell: above and below the window band (a flattened hemisphere) ───────
-  const tTop = thetaAt(DOME.windowTop);
-  const tBottom = thetaAt(DOME.windowBottom);
-  const upper = new Mesh(add(new SphereGeometry(R, seg, 24, 0, Math.PI * 2, 0, tTop)), shellMat);
-  const lower = new Mesh(add(new SphereGeometry(R, seg, 8, 0, Math.PI * 2, tBottom, Math.PI / 2 - tBottom)), shellMat);
-  const exterior = new Mesh(
-    add(new SphereGeometry(R + 0.06, seg, 4, 0, Math.PI * 2, tTop, tBottom - tTop)),
-    exteriorMat,
-  );
-  for (const m of [upper, lower, exterior]) {
-    m.scale.y = K;
-    group.add(m);
-  }
+  // ── Shell with its openings ──────────────────────────────────────────────
+  const tTop = elevationForRadius(S, MAIN_DOME.oculus - 0.1);
+  const holes = shellHoles(MAIN_DOME, S);
+  group.add(new Mesh(add(shellGeometry(S, { cols: radial, rows: compact ? 20 : 30, tTop, holes })), shellMat));
 
-  // window head + sill, recessed graphite
-  for (const y of [DOME.windowBottom, DOME.windowTop]) {
-    const rail = new Mesh(add(new TorusGeometry(radiusAt(y) - 0.04, 0.045, 6, seg * 2)), materials.graphiteMatte);
-    rail.rotation.x = Math.PI / 2;
-    rail.position.y = y;
-    group.add(rail);
-  }
-
-  // ── Ribs: twelve meridians from the floor to the crown ring ─────────────
-  // one sits on the central axis behind the monitors (−z)
-  const crownY = DOME.height * DOME.crown;
-  const crownTheta = thetaAt(crownY);
-  const ribArc = Math.PI / 2 - crownTheta;
-  const ribGeo = add(new TorusGeometry(R - 0.08, 0.055, 6, compact ? 20 : 36, ribArc));
-  const ribs = new InstancedMesh(ribGeo, materials.graphite, DOME.ribs);
-  const m4 = new Matrix4();
-  const flatten = new Matrix4().makeScale(1, K, 1);
-  for (let i = 0; i < DOME.ribs; i++) {
-    // torus arc starts at +x; +π/2 puts rib 0 at −z
-    m4.makeRotationY(Math.PI / 2 + (i / DOME.ribs) * Math.PI * 2).multiply(flatten);
-    ribs.setMatrixAt(i, m4);
-  }
+  // ── Six deep ribs (inward fins), from the cove to the oculus ─────────────
+  const tBase = elevationAt(S, 0.3);
+  const ribGeo = add(ribGeometry(S, tBase, tTop - 0.004, MAIN_DOME.ribWidth, 0.03, -0.3, compact ? 18 : 32));
+  const ribs = new InstancedMesh(ribGeo, ribMat, MAIN_DOME.ribs);
+  ribMatrices(MAIN_DOME).forEach((m, i) => ribs.setMatrixAt(i, m));
+  ribs.instanceMatrix.needsUpdate = true;
   group.add(ribs);
 
-  // ── Recessed indirect light: crown ring + base ring ──────────────────────
-  const crown = new Mesh(add(new TorusGeometry(radiusAt(crownY) - 0.12, 0.035, 6, seg * 2)), lightMat);
-  crown.rotation.x = Math.PI / 2;
-  crown.position.y = crownY - 0.05;
+  // ── Openings: deep reveals, a fine dark frame at the glass line ──────────
+  for (const hole of holes.slice(0, MAIN_DOME.openings.length)) {
+    group.add(new Mesh(add(revealGeometry(S, hole, 0, WALL - 0.05)), surfaceMat));
+    group.add(new Mesh(add(revealGeometry(S, hole, WALL - 0.05, WALL)), materials.graphiteMatte));
+    group.add(new Mesh(add(glassGeometry(S, hole, WALL - 0.02, -1)), glassMat));
+  }
+
+  // ── Oculus: a luminous diffuser in a slim compression ring ───────────────
+  const yTop = S.H * Math.sin(tTop);
+  const oc = S.R * Math.cos(tTop);
+  const diffuser = new Mesh(add(new CircleGeometry(oc, radial / 2)), diffuserMat);
+  diffuser.rotation.x = Math.PI / 2;
+  diffuser.position.y = yTop + 0.06;
+  group.add(diffuser);
+  const crown = new Mesh(
+    add(
+      // inner face of the ring, top → bottom so it faces the Dome centre
+      new LatheGeometry([new Vector2(oc, yTop + 0.06), new Vector2(oc + 0.02, yTop - 0.24), new Vector2(oc + 0.4, yTop - 0.3)], radial / 2),
+    ),
+    ribMat,
+  );
   group.add(crown);
-  const crownBand = new Mesh(add(new TorusGeometry(radiusAt(crownY) - 0.05, 0.09, 6, seg * 2)), materials.graphiteMatte);
-  crownBand.rotation.x = Math.PI / 2;
-  crownBand.position.y = crownY;
-  group.add(crownBand);
 
-  const base = new Mesh(add(new TorusGeometry(R - 0.14, 0.014, 6, seg * 2)), baseLightMat);
-  base.rotation.x = Math.PI / 2;
-  base.position.y = 0.05;
-  group.add(base);
+  // ── Foot of the shell: a slim skirting with a warm cove line above ──────
+  const e = MAIN_DOME.entrance!;
+  const gap = Math.asin((e.outerWidth / 2 + 0.05) / S.R);
+  const footR = S.R - 0.06;
+  group.add(
+    new Mesh(
+      add(new LatheGeometry([new Vector2(footR, 0.2), new Vector2(footR, 0)], radial, gap, Math.PI * 2 - gap * 2)),
+      materials.graphiteMatte,
+    ),
+    new Mesh(
+      add(new LatheGeometry([new Vector2(footR + 0.01, 0.228), new Vector2(footR + 0.01, 0.2)], radial, gap, Math.PI * 2 - gap * 2)),
+      lightMat,
+    ),
+  );
 
-  const floor = new Mesh(add(new CircleGeometry(R, seg)), floorMat);
+  // ── Floor ────────────────────────────────────────────────────────────────
+  const floor = new Mesh(add(new CircleGeometry(S.R + 0.1, radial)), floorMat);
   floor.rotation.x = -Math.PI / 2;
   group.add(floor);
 
+  // ── The airlock: portal block, vestibule, its light lines ────────────────
+  const inner = archOutline(e.width, e.height, e.corner, 0);
+  const outer = archOutline(e.outerWidth, e.outerHeight, e.outerCorner, 0);
+  // the vestibule's body stands proud of the lining as a deep portal
+  group.add(new Mesh(add(sweepOutline(outer.points, e.z0, S.R + 0.2, false)), surfaceMat));
+  const face = new Shape(outer.points);
+  face.holes.push(new Path(inner.points));
+  const portal = new Mesh(add(new ShapeGeometry(face, 8)), ribMat);
+  portal.rotation.y = Math.PI; // faces into the Dome (−z)
+  portal.position.z = e.z0;
+  group.add(portal);
+  group.add(new Mesh(add(sweepOutline(inner.points, e.z0, e.z1, true)), liningMat));
+  const L = e.z1 - e.z0;
+  const strip = add(new BoxGeometry(0.05, 0.022, L - 0.7));
+  const floorLine = add(new BoxGeometry(0.03, 0.012, L - 0.4));
+  for (const side of [-1, 1]) {
+    const s = new Mesh(strip, lightMat);
+    s.position.set(side * (e.width / 2 - 0.36), e.height - 0.07, (e.z0 + e.z1) / 2);
+    const f = new Mesh(floorLine, lightMat);
+    f.position.set(side * (e.width / 2 - 0.05), 0.006, (e.z0 + e.z1) / 2);
+    group.add(s, f);
+  }
+  // the pressure door, closed behind the visitor
+  const door = new Mesh(add(new PlaneGeometry(e.width, e.height)), materials.graphiteMatte);
+  door.position.set(0, e.height / 2, e.z1 + 0.02);
+  door.rotation.y = Math.PI;
+  group.add(door);
+
   scene.add(group);
 
-  // ── Lights: soft architectural ambient, a key from the crown ─────────────
-  const hemi = new HemisphereLight("#f5f4f1", "#2a2a2c", 1.55);
-  const key = new DirectionalLight("#fbf7f0", 1.35);
-  key.position.set(-2, 6, 3);
-  const fill = new DirectionalLight("#e6ebf2", 0.4);
-  fill.position.set(3, 2.5, 2);
+  // ── Outside: the lunar surface, the habitat, the Earth ───────────────────
+  const view = createLunarView({ scene, compact });
+
+  // ── Lights: soft architectural ambient, a key from the oculus ────────────
+  const hemi = new HemisphereLight("#f6f3ee", "#3b3936", 1.3);
+  const key = new DirectionalLight("#fbf6ee", 1.2);
+  key.position.set(1.2, 9, 2.4);
+  // from the airlock side, behind the visitor: shapes the display bodies
+  const fill = new DirectionalLight("#e9ecf0", 0.38);
+  fill.position.set(-1, 2.6, 8);
   scene.add(hemi, key, fill);
+  scene.fog = null;
+  scene.background = new Color("#010102");
 
-  const fog = new Fog("#c9c9c8", 12, 34);
-  scene.fog = fog;
-  scene.background = new Color("#c9c9c8");
-
-  const DAY = { hemi: 1.55, key: 1.35, fill: 0.4, shell: 1, exterior: 1, light: 1.2, floor: 1, fog: "#c9c9c8" };
-  const NIGHT = { hemi: 0.4, key: 0.45, fill: 0.18, shell: 0.5, exterior: 0.45, light: 0.85, floor: 0.6, fog: "#2d2e30" };
+  const DAY = { hemi: 1.3, key: 1.2, fill: 0.38, shell: 1, light: 1.15, floor: 1 };
+  const NIGHT = { hemi: 0.5, key: 0.5, fill: 0.2, shell: 0.62, light: 1.05, floor: 0.7 };
 
   return {
     group,
@@ -277,21 +232,21 @@ export function createDome({
       hemi.intensity = s.hemi;
       key.intensity = s.key;
       fill.intensity = s.fill;
-      shellMat.color.setScalar(s.shell);
+      shellMat.color.set("#e8e5df").multiplyScalar(s.shell);
+      surfaceMat.color.set("#e3e0da").multiplyScalar(s.shell);
+      ribMat.color.set("#d3cfc8").multiplyScalar(s.shell);
       floorMat.color.setScalar(s.floor);
-      exteriorMat.color.setScalar(s.exterior);
-      lightMat.color.set("#f4f1ec").multiplyScalar(s.light);
-      baseLightMat.color.set("#f4f1ec").multiplyScalar(s.light * 0.62);
-      fog.color.set(s.fog);
-      (scene.background as Color).set(s.fog);
+      lightMat.color.set("#f7f1e7").multiplyScalar(s.light);
+      view.setNight(night);
     },
     dispose() {
       scene.remove(group, hemi, key, fill);
-      scene.fog = null;
       ribs.dispose();
+      view.dispose();
       for (const g of geometries) g.dispose();
       for (const t of textures) t.dispose();
       for (const m of ownMaterials) m.dispose();
     },
   };
 }
+

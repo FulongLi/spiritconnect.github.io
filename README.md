@@ -31,10 +31,13 @@ Navigation: **Vision** (`/`) · **Presence** (`/presence`) · **AIPE ↗** · **
    intelligence* → *the loop closes*. In the scene the returning **data**
    network (blue) brightens and speeds back toward the energy sources while
    **energy** (amber) keeps flowing out, and the data centre begins to glow.
-2. **Into the dome** — mist, a dark beat, *Welcome to Spirit Connect*.
-3. **The interior** — particles assemble into **Presence** on the central
-   stage: *AI, with a presence.* → **Explore Presence** (`/presence`). AIPE
-   sits beside it as the engineering division.
+2. **Into the Dome** — the camera swings down to the main Dome's airlock
+   (*Welcome to Spirit Connect*) and flies into the vestibule, where the
+   workspace scene — the same building, from `shared/domeArchitecture` —
+   cross-fades in and carries on through the Dome.
+3. **The workspace** — a ring workstation at the centre of the Dome: the
+   **Presence** device (the particle entity in its glass chamber) and two
+   equal displays, **Presence** (`/presence`) and **AIPE** (aipel.co.uk).
 4. **`/presence`** — app animation (hero), what Presence is, demo, work +
    everyday, hardware concept, **Founding 100 (£399)**, Register Your Interest.
 
@@ -86,7 +89,7 @@ src/components/site/             header / nav, legacy redirect
 | State | Lunar (WebGL) | Presence (WebGPU) |
 | --- | --- | --- |
 | `LUNAR` | rendering | not mounted |
-| `TRANSITION` (from chapter 09) | rendering until the blackout fully covers it | mounted, pipelines warmed with a few frames, then paused; starts rendering just before it is revealed |
+| `TRANSITION` (from chapter 09) | rendering until the workspace has faded in over it, inside the airlock | mounted, pipelines warmed with a few frames, then paused; starts rendering just before it is revealed |
 | `PRESENCE` | loop stopped; post-processing targets + shadow map released (re-created lazily if you scroll back) | rendering |
 
 Both loops also pause while the browser tab is hidden. The interior code is

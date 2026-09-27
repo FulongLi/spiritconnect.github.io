@@ -1,8 +1,8 @@
-import { Group, NeutralToneMapping, PerspectiveCamera, Scene, Vector3 } from "three";
+import { CatmullRomCurve3, Group, NeutralToneMapping, PerspectiveCamera, Scene, Vector3 } from "three";
 import { WebGPURenderer } from "three/webgpu";
 import { assetPath } from "@/components/shared/assetPath";
 import { BRAND } from "@/content/site";
-import { WORKSPACE, type WorkspaceScreenId } from "@/content/workspace";
+import type { WorkspaceScreenId } from "@/content/workspace";
 import { sampleGeometry, MODEL_URLS } from "@/components/hologramParticles/engine/geometry";
 import { createInteraction } from "@/components/hologramParticles/engine/interaction";
 import { createPostProcessing } from "@/components/hologramParticles/engine/postprocessing";
@@ -10,19 +10,25 @@ import { createParticleField } from "@/components/hologramParticles/engine/scene
 import { createTransitionController } from "@/components/hologramParticles/engine/transition";
 import { createRenderLoop } from "@/lib/render/renderLoop";
 import { loadImage, readCanvasFonts } from "../screens/canvasKit";
-import { createDesk } from "./desk";
 import { createDome } from "./dome";
 import { entityParams, type EntityQuality } from "./entity";
-import { createLayout, layoutModeFor, type WorkspaceLayout } from "./layout";
+import { arrivalPath, createLayout, layoutModeFor, type WorkspaceLayout } from "./layout";
+import { createRingDesk } from "./ringDesk";
 import { createWorkspaceMaterials } from "./materials";
 import { createMonitorKit } from "./workspaceMonitor";
 import { createWorkstation, type Workstation } from "./workstation";
 
 /* ------------------------------------------------------------------ */
 /* Workspace engine: one WebGPURenderer (WebGPU or its WebGL 2 backend) */
-/* rendering the Dome, the desk and its objects, and the Presence        */
-/* particle entity inside the device. Framework-free; WorkspaceScene     */
-/* owns the lifecycle.                                                   */
+/* rendering the Dome, the ring workstation and its objects, and the     */
+/* Presence particle entity inside the device. Framework-free;           */
+/* WorkspaceScene owns the lifecycle.                                    */
+/*                                                                      */
+/* The camera is the visitor. It arrives along a path from the airlock   */
+/* vestibule (where the lunar flight hands over) to the observation      */
+/* point, driven by the journey's smoothed progress (`arrival`, 0 → 1): */
+/* the lens settles from the flight's 60° and the exposure adapts from   */
+/* the bright airlock to the Dome's softer light.                        */
 /*                                                                      */
 /* Reuses the hologram particle stack: particle field (TSL), entrance    */
 /* transition, pointer interaction / camera parallax, bloom, geometry    */
@@ -44,6 +50,8 @@ export type WorkspaceEngineOptions = {
   reducedMotion: boolean;
   night: boolean;
   active: boolean;
+  /** 0 in the airlock → 1 at the workstation (read every frame) */
+  arrival: () => number;
   onReady?: () => void;
   onUnavailable?: () => void;
 };
@@ -53,16 +61,27 @@ export type WorkspaceEngine = {
   setNight: (night: boolean) => void;
   setHover: (screen: WorkspaceScreenId | null) => void;
   bindHotspots: (bindings: HotspotBinding[]) => void;
-  /** particles assemble, the visitor sits down, the screens wake */
+  /** particles assemble, the screens wake */
   replayEntrance: () => void;
   dispose: () => void;
 };
 
 /** frames rendered while inactive so shaders / pipelines compile up front */
 const WARM_UP_FRAMES = 3;
-const ARRIVAL_SECONDS = 2.8;
 
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+/**
+ * Arrival progress → distance along the path: leaves the airlock at about
+ * the flight's speed and slows as the workstation comes into view.
+ */
+const arrivalEase = (a: number) => 1 - Math.pow(1 - a, 1.35);
+
+function smoothstep(a: number, b: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/** extra exposure in the vestibule, adapting to 1 inside the Dome */
+const AIRLOCK_EXPOSURE = 0.7;
 
 export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEngine {
   const { container, eventTarget, compact, reducedMotion } = opts;
@@ -73,8 +92,6 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
   let lastFrameTime = performance.now();
   let hotspots: HotspotBinding[] = [];
   let hovered: WorkspaceScreenId | null = null;
-  /** 0 → 1 while the camera settles at the desk */
-  let arrival = 1;
 
   const quality: EntityQuality = compact ? "compact" : opts.forceWebGL ? "webgl" : "webgpu";
   const params = entityParams(quality, reducedMotion);
@@ -87,7 +104,8 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     layout: WorkspaceLayout;
     rig: { position: Vector3; target: Vector3 };
     dome: ReturnType<typeof createDome>;
-    desk: ReturnType<typeof createDesk>;
+    desk: ReturnType<typeof createRingDesk>;
+    path: { positions: CatmullRomCurve3; targets: CatmullRomCurve3; fovStart: number };
     materials: ReturnType<typeof createWorkspaceMaterials>;
     monitorKit: ReturnType<typeof createMonitorKit>;
     workstation: Workstation;
@@ -143,7 +161,7 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
 
   function frame() {
     if (!world || !container.clientWidth || !container.clientHeight) return;
-    const { field, transition, interaction, post, rotGroup, rig, layout, workstation } = world;
+    const { field, transition, interaction, post, rotGroup, rig, layout, workstation, camera, path } = world;
     const u = field.uniforms;
 
     const now = performance.now();
@@ -156,10 +174,17 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
     }
     rotGroup.rotation.y += ((2 * Math.PI) / 60) * params.autoRotateSpeed * delta;
 
-    // the visitor settles into the seat
-    if (arrival < 1) arrival = Math.min(1, arrival + delta / ARRIVAL_SECONDS);
-    const away = 1 - easeOutCubic(arrival);
-    rig.position.copy(layout.camera.position).addScaledVector(layout.arrivalOffset, away);
+    // the visitor walks in from the airlock (reduced motion: already there)
+    const a = reducedMotion ? 1 : Math.min(1, Math.max(0, opts.arrival()));
+    const s = arrivalEase(a);
+    path.positions.getPointAt(s, rig.position);
+    path.targets.getPointAt(s, rig.target);
+    const fov = path.fovStart + (layout.camera.fov - path.fovStart) * smoothstep(0, 0.75, s);
+    if (Math.abs(fov - camera.fov) > 1e-3) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
+    renderer!.toneMappingExposure = 1 + AIRLOCK_EXPOSURE * (1 - smoothstep(0.06, 0.4, s));
 
     interaction.update(delta);
     workstation.update(delta);
@@ -198,12 +223,13 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
 
     const dome = createDome({ scene, materials, compact });
     dome.setNight(night);
-    const desk = createDesk({ materials, fonts, loop: WORKSPACE.loop, logo, compact });
+    const desk = createRingDesk({ materials, compact });
     scene.add(desk.group);
 
     const aspect = container.clientWidth / Math.max(1, container.clientHeight) || 16 / 9;
     let layout = createLayout(aspect);
-    const camera = new PerspectiveCamera(layout.camera.fov, aspect, 0.03, 40);
+    // far enough for the sky and the Earth outside the panorama
+    const camera = new PerspectiveCamera(layout.camera.fov, aspect, 0.03, 1200);
     const rig = { position: layout.camera.position.clone(), target: layout.camera.target.clone() };
     camera.position.copy(rig.position);
     camera.lookAt(rig.target);
@@ -225,6 +251,14 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
       return ws;
     };
     let workstation = build(layout);
+    const buildPath = (l: WorkspaceLayout) => {
+      const p = arrivalPath(l);
+      return {
+        positions: new CatmullRomCurve3(p.positions, false, "centripetal"),
+        targets: new CatmullRomCurve3(p.targets, false, "centripetal"),
+        fovStart: p.fovStart,
+      };
+    };
 
     const post = createPostProcessing(r, scene, camera, params, { chromatic: false });
     post.sync(params);
@@ -253,6 +287,7 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
       if (world) {
         world.layout = layout;
         world.workstation = workstation;
+        world.path = buildPath(layout);
       }
       if (hovered) workstation.monitors[hovered].setHover(true);
     };
@@ -264,6 +299,7 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
       rig,
       dome,
       desk,
+      path: buildPath(layout),
       materials,
       monitorKit,
       workstation,
@@ -284,11 +320,12 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
       const a = w / h;
       const next = createLayout(a);
       if (layoutModeFor(a) !== world.layout.mode) world.rebuild(next);
-      else world.layout = next;
-      camera.fov = world.layout.camera.fov;
+      else {
+        world.layout = next;
+        world.path = buildPath(next);
+      }
       camera.aspect = a;
       camera.updateProjectionMatrix();
-      rig.target.copy(world.layout.camera.target);
       r.setSize(w, h);
       if (!loop.running) frame();
     };
@@ -334,7 +371,6 @@ export function createWorkspaceEngine(opts: WorkspaceEngineOptions): WorkspaceEn
       if (!world) return;
       world.transition.replayEntrance();
       if (reducedMotion) return;
-      arrival = 0;
       world.workstation.monitors.presence.powerOn(0.5);
       world.workstation.monitors.aipe.powerOn(0.65);
     },

@@ -1,9 +1,10 @@
 import * as THREE from "three";
+import { mainDomeToWorld } from "../scene/habitatSite";
 
 /* Camera flight path: positions and look-at targets, sampled by progress */
 // Closely-spaced waypoints inside the energy district make the camera
-// linger there; the flight ends by diving INTO the main dome — the
-// Presence interior then reads as the dome's inside.
+// linger there; the flight ends by flying through the main Dome's
+// airlock — the workspace interior is the same building's inside.
 // Narrative order follows the energy flow:
 // inputs (PV + reactor) → storage (BESS) → processing (SST, with the
 // landing pad / charging area beside it) → loads (data centre, habitat)
@@ -18,6 +19,9 @@ import * as THREE from "three";
 // BESS), then a broad S-curve through SST, data centre, pads, and into
 // the main dome. Waypoints stay a little farther back so each subject
 // reads as a complete installation beside the chapter copy.
+// The arrival (19-23) swings down from the overhead view to a low,
+// frontal approach and flies through the main Dome's airlock: the
+// workspace scene takes over inside the vestibule, on the same axis.
 export const CAM_POSITIONS: [number, number, number][] = [
   [0, 150, 235], // 0 opening: dark space, the Moon filling the lower half
   [42, 62, 138], // 1 descending toward the input fan
@@ -38,8 +42,7 @@ export const CAM_POSITIONS: [number, number, number][] = [
   [-22, 34, -18], // 16 rising above the habitat ring — the whole grid, AI loop engaging
   [0, 58, 3], // 17 top-down dome view
   [0, 34, 3], // 18 descending from the overhead view
-  [-5, 8, 6], // 19 crossing the hull, softened by the mist transition
-  [0, 4.8, 2], // 20 inside the dome
+  // 19-23: the arrival, authored in main-Dome space (see APPROACH)
 ];
 
 export const CAM_TARGETS: [number, number, number][] = [
@@ -62,9 +65,74 @@ export const CAM_TARGETS: [number, number, number][] = [
   [0, 6, 0],
   [0, 1.2, 0], // straight down at the crown of the central dome
   [0, 3.5, 0],
-  [0, 4, 0],
-  [0, 4.5, -2],
 ];
+
+/**
+ * The arrival in main-Dome-local metres (x lateral, y above the Dome
+ * floor, z out along the entrance axis): pull out and down on a gentle
+ * arc from the left, square up to the entrance, then one steady push
+ * through the pressure door into the vestibule.
+ */
+const APPROACH: { pos: [number, number, number]; tgt: [number, number, number] }[] = [
+  { pos: [-3, 18, 30], tgt: [0, 3, 2] }, // 19 the Dome below, the airlock side turning towards us
+  { pos: [-5, 7.5, 38], tgt: [0, 3.2, 12] }, // 20 low over the entrance court, the whole Dome ahead
+  { pos: [-2.2, 3.4, 29], tgt: [0, 2.2, 14] }, // 21 the airlock becomes the subject
+  { pos: [0, 1.85, 20.6], tgt: [0, 1.7, 12] }, // 22 at the pressure door
+  { pos: [0, 1.75, 15.9], tgt: [0, 1.6, 8] }, // 23 inside the vestibule: the workspace takes over
+];
+
+for (const a of APPROACH) {
+  CAM_POSITIONS.push(mainDomeToWorld(...a.pos).toArray() as [number, number, number]);
+  CAM_TARGETS.push(mainDomeToWorld(...a.tgt).toArray() as [number, number, number]);
+}
+
+/**
+ * Story progress at each waypoint. 0-18 keep the original even spacing
+ * (0.042 per waypoint); the arrival is paced on its own and decelerates
+ * into the vestibule.
+ */
+export const FLIGHT_KNOTS: number[] = [
+  ...Array.from({ length: 19 }, (_, i) => +(0.042 * i).toFixed(3)),
+  0.79,
+  0.818,
+  0.843,
+  0.866,
+  0.89,
+];
+
+/** the camera flight ends here (inside the airlock) */
+export const FLIGHT_END = FLIGHT_KNOTS[FLIGHT_KNOTS.length - 1];
+
+/**
+ * Story progress → curve parameter (waypoint index), monotone cubic
+ * (Fritsch–Carlson) through the knots: no speed jumps at the knots.
+ */
+function createKnotMap(knots: number[]) {
+  const n = knots.length;
+  const slopes = knots.slice(0, -1).map((k, i) => 1 / (knots[i + 1] - k));
+  const m = knots.map((_, i) => (i === 0 ? slopes[0] : i === n - 1 ? slopes[n - 2] : 0));
+  for (let i = 1; i < n - 1; i++) {
+    const a = slopes[i - 1];
+    const b = slopes[i];
+    m[i] = (2 * a * b) / (a + b); // harmonic mean: monotone
+  }
+  return (p: number) => {
+    if (p <= knots[0]) return 0;
+    if (p >= knots[n - 1]) return n - 1;
+    let i = 0;
+    while (p > knots[i + 1]) i++;
+    const h = knots[i + 1] - knots[i];
+    const t = (p - knots[i]) / h;
+    const t2 = t * t;
+    const t3 = t2 * t;
+    return (
+      (2 * t3 - 3 * t2 + 1) * i +
+      (t3 - 2 * t2 + t) * h * m[i] +
+      (-2 * t3 + 3 * t2) * (i + 1) +
+      (t3 - t2) * h * m[i + 1]
+    );
+  };
+}
 
 export function createCameraPath() {
   const posCurve = new THREE.CatmullRomCurve3(
@@ -77,9 +145,12 @@ export function createCameraPath() {
     false,
     "centripetal"
   );
+  const toWaypoint = createKnotMap(FLIGHT_KNOTS);
+  const last = CAM_POSITIONS.length - 1;
   return {
-    /** t: 0..1 along the flight */
-    sample(t: number, position: THREE.Vector3, target: THREE.Vector3) {
+    /** story progress → camera position + look-at target */
+    sample(progress: number, position: THREE.Vector3, target: THREE.Vector3) {
+      const t = Math.min(1, toWaypoint(progress) / last);
       posCurve.getPoint(t, position);
       tgtCurve.getPoint(t, target);
     },

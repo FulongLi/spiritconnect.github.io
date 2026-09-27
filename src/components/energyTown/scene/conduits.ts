@@ -41,15 +41,15 @@ const LINKS: [number, number][][] = [
   [[-19, 14], [-36, 20], [-58, 40], [-80, 60]], // second habitat edge -> charger branch junction
   [[-80, 60], [-90, 62], [-100, 64], [-108, 66], [-128, 70]], // second junction -> left pad + charger branch
   [[-80, 60], [-80, 72], [-80, 82], [-68, 84], [-44, 88]], // second junction -> lower pad + charger branch
-  // habitat loop following the hexagon perimeter
+  // habitat loop following the hexagon perimeter — open, like the corridor
+  // ring, across the court in front of the main Dome's airlock
   [
+    [-7.8, -21.7],
+    [14.9, -17.5],
     [22.6, 4.1],
     [7.8, 21.7],
     [-14.9, 17.5],
     [-22.6, -4.1],
-    [-7.8, -21.7],
-    [14.9, -17.5],
-    [22.6, 4.1],
   ],
   [[18, 12], [24, 24], [30, 31]], // hexagon -> comms tower
   [[14, -38], [8, -30], [4, -24]], // data centre -> hexagon

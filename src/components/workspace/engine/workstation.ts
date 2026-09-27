@@ -3,18 +3,21 @@ import type { WorkspaceScreenId } from "@/content/workspace";
 import { paintAipeScreen } from "../screens/aipeScreen";
 import type { CanvasFonts } from "../screens/canvasKit";
 import { paintPresenceScreen } from "../screens/presenceScreen";
-import { MONITOR, RISER_TOP, type WorkspaceLayout } from "./layout";
+import { MONITOR, RING, type WorkspaceLayout } from "./layout";
 import type { WorkspaceMaterials } from "./materials";
 import { createKeyboard, createMouse } from "./peripherals";
 import { createPresenceDevice } from "./presenceDevice";
 import { createWorkspaceMonitor, type MonitorKit, type WorkspaceMonitor } from "./workspaceMonitor";
 
 /* ------------------------------------------------------------------ */
-/* Everything on the desk, arranged for one layout: the two monitors    */
-/* and the Presence device on the riser, keyboard and mouse on the main */
-/* surface. Rebuilt (cheaply) when the viewport switches between        */
-/* landscape and portrait.                                              */
+/* Everything on the ring workstation, arranged for one layout: the two */
+/* displays and the Presence device on the raised level, keyboard and   */
+/* mouse on the lower level. Rebuilt (cheaply) when the viewport        */
+/* switches between landscape and portrait.                             */
 /* ------------------------------------------------------------------ */
+
+/** peripherals follow the displays' workspace scale (a little over life size) */
+const PERIPHERAL_SCALE = 1.2;
 
 export type Workstation = ReturnType<typeof createWorkstation>;
 
@@ -56,15 +59,15 @@ export function createWorkstation({
   if (layout.stand === "stacked") {
     const top = layout.presenceMonitor.position;
     const z = top.z - MONITOR.depth - 0.07;
-    const poleLen = top.y + 0.08 - RISER_TOP;
+    const poleLen = top.y + 0.08 - RING.riserTop;
     const pole = new Mesh(monitorKit.plate, materials.aluminium);
     pole.scale.set(0.22, poleLen, 4);
-    pole.position.set(0, RISER_TOP + poleLen / 2, z);
+    pole.position.set(0, RING.riserTop + poleLen / 2, z);
     const foot = new Mesh(monitorKit.foot, materials.aluminium);
-    foot.position.set(0, RISER_TOP + 0.001, z + 0.03);
+    foot.position.set(0, RING.riserTop + 0.001, z + 0.03);
     const shadow = new Mesh(monitorKit.flat, materials.contactShadow);
-    shadow.scale.set(0.3, 1, 0.26);
-    shadow.position.set(0, RISER_TOP + 0.0012, z + 0.03);
+    shadow.scale.set(0.4, 1, 0.34);
+    shadow.position.set(0, RING.riserTop + 0.0012, z + 0.03);
     group.add(pole, foot, shadow);
   }
 
@@ -80,6 +83,8 @@ export function createWorkstation({
   if (layout.keyboard) {
     const keyboard = createKeyboard(materials);
     keyboard.group.position.copy(layout.keyboard.position);
+    keyboard.group.rotation.y = layout.keyboard.yaw;
+    keyboard.group.scale.setScalar(PERIPHERAL_SCALE);
     group.add(keyboard.group);
     disposers.push(keyboard.dispose);
   }
@@ -87,6 +92,7 @@ export function createWorkstation({
     const mouse = createMouse(materials);
     mouse.group.position.copy(layout.mouse.position);
     mouse.group.rotation.y = layout.mouse.yaw;
+    mouse.group.scale.setScalar(PERIPHERAL_SCALE);
     group.add(mouse.group);
     disposers.push(mouse.dispose);
   }

@@ -18,7 +18,7 @@ import { computeRenderProfile, type RenderProfile } from "./renderProfile";
 /* ------------------------------------------------------------------ */
 
 export type LunarInputs = {
-  /** story progress target, 0..1 */
+  /** story progress, 0..1 — already smoothed by the page (it also drives the Dome hand-off) */
   progress: () => number;
   /** theme target, 0 = day, 1 = night */
   theme: () => number;
@@ -39,10 +39,18 @@ export type LunarRenderer = {
   dispose: () => void;
 };
 
+/** story progress over which drift + parallax fade out before the airlock */
+const ARRIVAL_SETTLE = [0.8, 0.86] as const;
+
+function smoothstep(a: number, b: number, x: number) {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
 export function createLunarRenderer(
   mount: HTMLElement,
   inputs: LunarInputs,
-  options: { flightEnd: number; reducedMotion: boolean },
+  options: { reducedMotion: boolean },
 ): LunarRenderer {
   const flags = getDebugFlags();
   const diagnostics = flags.renderDiagnostics;
@@ -189,7 +197,6 @@ export function createLunarRenderer(
   const camTgt = new THREE.Vector3();
 
   /* state */
-  let smoothedProgress = inputs.progress();
   let smoothedLoop = inputs.loop();
   let lastLoopApplied = -1;
   let themeMix = inputs.theme();
@@ -241,9 +248,7 @@ export function createLunarRenderer(
     const dt = Math.min(clock.getDelta(), 0.05);
     const elapsed = clock.elapsedTime;
 
-    /* damped scroll progress */
-    const target = Math.min(inputs.progress(), 1);
-    smoothedProgress += (target - smoothedProgress) * Math.min(1, dt * 1.65);
+    const progress = Math.min(inputs.progress(), 1);
 
     /* theme lerp toward target */
     const themeTarget = inputs.theme();
@@ -263,20 +268,21 @@ export function createLunarRenderer(
       lastLoopApplied = smoothedLoop;
     }
 
-    /* camera along path; clamp to flight portion of the scroll */
-    const t = Math.min(1, smoothedProgress / options.flightEnd);
-    path.sample(t, camPos, camTgt);
+    /* camera along the flight path */
+    path.sample(progress, camPos, camTgt);
+    // drift and parallax settle as the camera lines up with the airlock
+    const free = 1 - smoothstep(ARRIVAL_SETTLE[0], ARRIVAL_SETTLE[1], progress);
     if (!reducedMotion) {
       // very gentle idle drift — kept tiny to avoid motion sickness
-      camPos.x += Math.sin(elapsed * 0.16) * 0.22;
-      camPos.y += Math.sin(elapsed * 0.21) * 0.14;
+      camPos.x += Math.sin(elapsed * 0.16) * 0.22 * free;
+      camPos.y += Math.sin(elapsed * 0.21) * 0.14 * free;
     }
     camera.position.copy(camPos);
     camera.lookAt(camTgt);
 
     // parallax: shift in camera space after orientation is set
-    const px = reducedMotion ? 0 : mx;
-    const py = reducedMotion ? 0 : my;
+    const px = reducedMotion ? 0 : mx * free;
+    const py = reducedMotion ? 0 : my * free;
     smx += (px - smx) * Math.min(1, dt * 2.2);
     smy += (py - smy) * Math.min(1, dt * 2.2);
     camera.translateX(smx * 0.8);
