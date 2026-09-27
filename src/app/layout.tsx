@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BRAND, COMPANY } from "@/content/site";
+import { barlowCondensed, bebasNeue, ibmPlexMono } from "@/components/shared/fonts";
 
 export const metadata: Metadata = {
   metadataBase: new URL(COMPANY.url),
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#030509",
+  themeColor: "#0a0a0b",
   colorScheme: "dark",
 };
 
@@ -35,8 +36,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // the next/font classes define --font-bebas / --font-barlow / --font-ibm-mono;
+  // on <html> so the :root type roles in globals.css resolve to them
+  const fontVariables = `${bebasNeue.variable} ${barlowCondensed.variable} ${ibmPlexMono.variable}`;
   return (
-    <html lang="en-GB">
+    <html lang="en-GB" className={fontVariables}>
       <body>{children}</body>
     </html>
   );

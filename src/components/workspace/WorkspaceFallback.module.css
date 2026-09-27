@@ -37,21 +37,24 @@
 
 .eyebrow,
 .cta {
-  font-family: var(--font-ibm-mono), monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.2em;
   color: rgba(226, 229, 234, 0.6);
 }
 
 .title {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: 300;
-  font-size: clamp(28px, 5vw, 64px);
-  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(32px, 5.6vw, 72px);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
 }
 
 .line {
-  font-size: clamp(11px, 1.3vw, 15px);
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1.5vw, 18px);
+  font-weight: 500;
   color: rgba(226, 229, 234, 0.8);
 }
 
@@ -92,7 +95,7 @@
   display: flex;
   justify-content: center;
   padding-top: 14px;
-  font-family: var(--font-ibm-mono), monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.32em;
   color: rgba(230, 228, 223, 0.5);

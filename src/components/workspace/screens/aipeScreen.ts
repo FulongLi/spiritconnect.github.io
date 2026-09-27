@@ -98,7 +98,7 @@ export const paintAipeScreen: ScreenPainter = (ctx, w, h, opts) => {
   drawTitle(ctx, s, opts, C.title, 330 * s);
   const left = MARGIN * s;
   ctx.fillStyle = INK.soft;
-  ctx.font = `400 ${52 * s}px ${opts.fonts.sans}`;
+  ctx.font = `500 ${56 * s}px ${opts.fonts.body}`;
   ctx.textBaseline = "alphabetic";
   C.headline.forEach((line, i) => spacedText(ctx, line.toUpperCase(), left, (420 + i * 66) * s, 3 * s));
 

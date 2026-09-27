@@ -30,12 +30,13 @@
   --p-radius: 10px;
   --p-radius-lg: 16px;
 
-  /* type — the app's captions are a light, clean sans; Spirit Connect's
-     condensed display face is kept for the wordmark moments only */
+  /* type — the app's captions are a light, clean sans; the brand moments
+     (the wordmark, taglines, labels) use the Spirit Connect display and
+     mono faces, so Presence reads as a Spirit Connect product */
   --p-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Segoe UI",
     Roboto, Arial, sans-serif;
-  --p-font-display: var(--font-bebas), sans-serif;
-  --p-font-mono: var(--font-ibm-mono), monospace;
+  --p-font-display: var(--font-display);
+  --p-font-mono: var(--font-mono);
 
   /* motion — slow and floating, like the particle morphs */
   --p-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -240,10 +241,11 @@
 }
 
 .heroTagline {
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   padding-left: 0.3em;
   color: var(--p-muted);
-  font-size: clamp(12px, 1vw, 14px);
+  font-family: var(--p-font-mono);
+  font-size: clamp(11px, 0.95vw, 13px);
   font-weight: 400;
   letter-spacing: 0.3em;
 }
@@ -353,6 +355,13 @@
   text-align: center;
 }
 
+/* watch it → try it: the next step sits directly under the demo */
+.tryAction {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(36px, 4.5vw, 56px);
+}
+
 /* ── work + everyday ─────────────────────────────────────────────────── */
 
 .useGrid {
@@ -460,6 +469,15 @@
   background: var(--p-accent);
 }
 
+.progress {
+  margin: 16px 0 0;
+  max-width: 520px;
+  color: var(--p-muted);
+  font-size: 15px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
 .capabilitiesTitle {
   margin: 30px 0 4px;
   color: var(--p-faint);
@@ -532,8 +550,9 @@
   margin: 0;
   padding-left: 0.32em;
   color: var(--p-muted);
-  font-size: 13px;
-  font-weight: 500;
+  font-family: var(--p-font-mono);
+  font-size: 12px;
+  font-weight: 400;
   letter-spacing: 0.32em;
 }
 
@@ -593,12 +612,43 @@
   text-wrap: pretty;
 }
 
-.retail {
-  margin: 14px 0 34px;
-  color: var(--p-faint);
+/* planned retail · planned launch — one quiet line of facts */
+.foundingFacts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 32px;
+  margin: 22px 0 38px;
   font-family: var(--p-font-mono);
   font-size: 12px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.foundingFacts div {
+  display: flex;
+  gap: 10px;
+}
+
+.foundingFacts dt {
+  color: var(--p-faint);
+}
+
+.foundingFacts dt::after {
+  content: " ·";
+}
+
+.foundingFacts dd {
+  margin: 0;
+  color: var(--p-text);
+}
+
+.foundingActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .finePrint {
@@ -609,45 +659,59 @@
   line-height: 1.6;
 }
 
-/* ── register ────────────────────────────────────────────────────────── */
+/* ── pre-order | register interest ───────────────────────────────────── */
 
-.register {
+/* two states, one hairline between them — not two cards */
+.convert {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: clamp(32px, 6vw, 96px);
   align-items: start;
   padding-bottom: clamp(96px, 13vw, 170px);
 }
 
-.registerCopy {
+.convertPreorder {
   position: sticky;
   top: 110px;
+  padding-right: clamp(32px, 5vw, 80px);
+  scroll-margin-top: 40px;
 }
 
-.registerPrice {
+.convertInterest {
+  padding-left: clamp(32px, 5vw, 80px);
+  border-left: 1px solid var(--p-line);
+  scroll-margin-top: 40px;
+}
+
+.convertPrice {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin: 36px 0 0;
+  margin: 36px 0 34px;
   padding-left: 18px;
   border-left: 1px solid var(--p-line-strong);
   color: var(--p-faint);
   font-size: 13px;
+  line-height: 1.5;
 }
 
-.registerPrice span:first-child {
+.convertPrice span:first-child {
   font-family: var(--p-font-mono);
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.registerPrice strong {
+.convertPrice strong {
+  margin-bottom: 4px;
   color: var(--p-text);
-  font-size: 44px;
+  font-size: 56px;
   font-weight: 200;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
+}
+
+.registerForm {
+  margin-top: 36px;
 }
 
 /* ── responsive ──────────────────────────────────────────────────────── */
@@ -655,7 +719,7 @@
 @media (max-width: 900px) {
   .split,
   .hardware,
-  .register {
+  .convert {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -664,8 +728,16 @@
     gap: 32px;
   }
 
-  .registerCopy {
+  .convertPreorder {
     position: static;
+    padding-right: 0;
+  }
+
+  .convertInterest {
+    margin-top: clamp(64px, 10vw, 96px);
+    padding: clamp(64px, 10vw, 96px) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--p-line);
   }
 
   .hardwareMedia {
@@ -728,6 +800,23 @@
   .units {
     grid-template-columns: repeat(10, 4px);
     gap: 14px;
+  }
+
+  .foundingFacts {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .foundingActions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .foundingActions > *,
+  .convertPreorder .primaryButton {
+    width: 100%;
   }
 }
 

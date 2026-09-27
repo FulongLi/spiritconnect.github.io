@@ -3,6 +3,7 @@ import SiteHeader from "@/components/site/SiteHeader";
 import Footer from "@/components/overlay/components/Footer/Footer";
 import MediaSlot from "@/components/presence/MediaSlot";
 import InterestForm from "@/components/presence/InterestForm";
+import FutureAction from "@/components/presence/FutureAction";
 import { Reveal, WatchDemoLink } from "@/components/presence/PageEffects";
 import {
   INTEREST_FORM_COPY,
@@ -12,16 +13,16 @@ import {
   PRESENCE_IN_ACTION,
   PRESENCE_INTRO,
   PRESENCE_MEDIA,
+  PRESENCE_PREORDER,
   PRESENCE_USE_CASES,
 } from "@/content/presence";
-import { PRESENCE_PRICING } from "@/content/pricing";
+import { FOUNDING_PRICE_LABEL, PRESENCE_PRICING, PRESENCE_RELEASE } from "@/content/pricing";
 import { DIVISIONS } from "@/content/site";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Presence — AI, with a presence",
-  description:
-    "Presence is a visual + voice interface for AI and intelligent systems. Join the Founding 100: the first 100 Presence units are planned at £399 for early supporters.",
+  description: `Presence is a visual + voice interface for AI, with dedicated Presence hardware now in its pre-order phase. Founding 100: the first ${PRESENCE_PRICING.foundingAllocation} units at ${FOUNDING_PRICE_LABEL}, launch planned for ${PRESENCE_RELEASE.plannedLaunch}.`,
   alternates: { canonical: "/presence" },
 };
 
@@ -99,6 +100,17 @@ export default function PresencePage() {
             <MediaSlot config={PRESENCE_MEDIA.demoVideo} />
             <p className={styles.caption}>{PRESENCE_IN_ACTION.caption}</p>
           </Reveal>
+          {/* watch it → try it: the live online experience, once it is deployed */}
+          <Reveal className={styles.tryAction}>
+            <FutureAction
+              id="try-presence"
+              href={PRESENCE_RELEASE.experienceUrl}
+              className={styles.primaryButton}
+              pendingNote={PRESENCE_IN_ACTION.tryPending}
+            >
+              {PRESENCE_IN_ACTION.tryCta}
+            </FutureAction>
+          </Reveal>
         </section>
 
         {/* ── Work + Everyday ───────────────────────────────────────────────── */}
@@ -130,7 +142,7 @@ export default function PresencePage() {
           </p>
         </section>
 
-        {/* ── Presence hardware (concept) ───────────────────────────────────── */}
+        {/* ── Presence hardware ─────────────────────────────────────────────── */}
         <section className={styles.section} aria-labelledby="hardware-title">
           <div className={styles.hardware}>
             <Reveal className={styles.hardwareMedia}>
@@ -143,7 +155,8 @@ export default function PresencePage() {
               </h2>
               <p className={styles.lead}>{PRESENCE_HARDWARE.body}</p>
               <p className={styles.status}>{PRESENCE_HARDWARE.status}</p>
-              <h3 className={styles.capabilitiesTitle}>Exploring</h3>
+              <p className={styles.progress}>{PRESENCE_HARDWARE.progress}</p>
+              <h3 className={styles.capabilitiesTitle}>{PRESENCE_HARDWARE.capabilitiesTitle}</h3>
               <ul className={styles.capabilities}>
                 {PRESENCE_HARDWARE.capabilities.map((c) => (
                   <li key={c}>{c}</li>
@@ -169,34 +182,71 @@ export default function PresencePage() {
               ))}
             </div>
             <p className={styles.foundingBody}>{PRESENCE_FOUNDING.body}</p>
-            <p className={styles.retail}>{PRESENCE_FOUNDING.retailLine}</p>
-            <a href="#register" className={styles.primaryButton}>
-              {PRESENCE_FOUNDING.cta} <span aria-hidden="true">→</span>
-            </a>
+            <dl className={styles.foundingFacts}>
+              {PRESENCE_FOUNDING.facts.map((f) => (
+                <div key={f.label}>
+                  <dt>{f.label}</dt>
+                  <dd>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {/* buy it, or stay close: two clearly different commitments */}
+            <div className={styles.foundingActions}>
+              <FutureAction
+                id="founding-preorder"
+                href={PRESENCE_RELEASE.preorderUrl}
+                className={styles.primaryButton}
+                pendingNote={PRESENCE_PREORDER.pending}
+              >
+                {PRESENCE_FOUNDING.preorderCta}
+              </FutureAction>
+              <a href="#register" className={styles.ghostButton}>
+                {PRESENCE_FOUNDING.interestCta}
+              </a>
+            </div>
             <p className={styles.finePrint}>{PRESENCE_FOUNDING.finePrint}</p>
           </Reveal>
         </section>
 
-        {/* ── Register your interest ────────────────────────────────────────── */}
-        <section id="register" className={styles.section} aria-labelledby="register-title">
-          <div className={styles.register}>
-            <Reveal className={styles.registerCopy}>
+        {/* ── Pre-order or register interest: the two states, side by side ──── */}
+        <div className={`${styles.section} ${styles.convert}`}>
+          <section id="preorder" className={styles.convertPreorder} aria-labelledby="preorder-title">
+            <Reveal>
+              <p className={styles.kicker}>{PRESENCE_PREORDER.kicker}</p>
+              <h2 id="preorder-title" className={styles.h2}>
+                {PRESENCE_PREORDER.title}
+              </h2>
+              <p className={styles.convertPrice}>
+                <span>{PRESENCE_PREORDER.priceCaption}</span>
+                <strong>{PRESENCE_PREORDER.priceLabel}</strong>
+                <span>{PRESENCE_PREORDER.releaseLine}</span>
+                <span>{PRESENCE_PREORDER.retailLine}</span>
+              </p>
+              <FutureAction
+                id="convert-preorder"
+                href={PRESENCE_RELEASE.preorderUrl}
+                className={styles.primaryButton}
+                pendingNote={PRESENCE_PREORDER.pending}
+                align="start"
+              >
+                {PRESENCE_PREORDER.cta}
+              </FutureAction>
+            </Reveal>
+          </section>
+          {/* #register: the hero and Founding 100 "register" links land here */}
+          <section id="register" className={styles.convertInterest} aria-labelledby="register-title">
+            <Reveal delay={100}>
               <p className={styles.kicker}>{INTEREST_FORM_COPY.kicker}</p>
               <h2 id="register-title" className={styles.h2}>
                 {INTEREST_FORM_COPY.title}
               </h2>
               <p className={styles.lead}>{INTEREST_FORM_COPY.body}</p>
-              <p className={styles.registerPrice}>
-                <span>Founding price</span>
-                <strong>{PRESENCE_FOUNDING.priceLabel}</strong>
-                <span>{PRESENCE_FOUNDING.retailLine}</span>
-              </p>
+              <div className={styles.registerForm}>
+                <InterestForm />
+              </div>
             </Reveal>
-            <Reveal className={styles.registerForm} delay={100}>
-              <InterestForm />
-            </Reveal>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
       <Footer variant="page" />
     </>

@@ -19,8 +19,8 @@ export type Chapter = {
   end: number;
   kicker: string;
   title: string;
+  /** one short line of copy under the title (kicker → title → sub: three levels) */
   sub?: string;
-  body?: string;
   /** a short row of mono labels under the copy */
   tags?: string[];
   align: "left" | "right" | "center";
@@ -47,8 +47,7 @@ export const CHAPTERS: Chapter[] = [
     end: 0.165,
     kicker: "01 / SOLAR",
     title: "ENERGY BEGINS HERE.",
-    sub: "Sunlight becomes electricity.",
-    body: "The first input to an intelligent energy system.",
+    sub: "Sunlight becomes electricity — the first input to an intelligent energy system.",
     align: "left",
   },
   {
@@ -57,8 +56,7 @@ export const CHAPTERS: Chapter[] = [
     end: 0.26,
     kicker: "02 / NUCLEAR",
     title: "POWER WHEN THE SUN CANNOT.",
-    sub: "Solar gives energy. Nuclear gives continuity.",
-    body: "A steady foundation for always-on infrastructure.",
+    sub: "Solar gives energy. Nuclear gives continuity — a steady foundation for always-on infrastructure.",
     align: "right",
   },
   {
@@ -67,8 +65,7 @@ export const CHAPTERS: Chapter[] = [
     end: 0.35,
     kicker: "03 / STORAGE",
     title: "ENERGY NEEDS MEMORY.",
-    sub: "Storage absorbs time.",
-    body: "It holds energy when generation and demand do not align.",
+    sub: "Storage absorbs time — holding energy when generation and demand do not align.",
     align: "left",
   },
   /* ---- ACT II — ENGINEERING ---- */
@@ -91,8 +88,7 @@ export const CHAPTERS: Chapter[] = [
     end: 0.555,
     kicker: "05 / DATA CENTRE",
     title: "ENERGY BECOMES INTELLIGENCE.",
-    sub: "Power becomes computation.",
-    body: "Computation becomes intelligence.",
+    sub: "Power becomes computation. Computation becomes intelligence.",
     align: "left",
   },
   {
@@ -101,8 +97,7 @@ export const CHAPTERS: Chapter[] = [
     end: 0.65,
     kicker: "06 / MOBILITY",
     title: "ENERGY ENTERS THE PHYSICAL WORLD.",
-    sub: "Power reaches vehicles, machines and infrastructure.",
-    body: "Wherever the system needs to act.",
+    sub: "Power reaches vehicles, machines and infrastructure — wherever the system needs to act.",
     align: "left",
   },
   /* ---- ACT IV — SYSTEM / FEEDBACK ---- */
@@ -112,8 +107,7 @@ export const CHAPTERS: Chapter[] = [
     end: 0.745,
     kicker: "07 / INTELLIGENT ENGINEERING",
     title: "AI DESIGNS THE NEXT SYSTEM.",
-    sub: "The physical system becomes data.",
-    body: "AI learns from devices, converters and networks — then returns to redesign the energy system.",
+    sub: "The physical system becomes data. AI learns from it — then returns to redesign the energy system.",
     align: "left",
     coda: {
       start: 0.752,

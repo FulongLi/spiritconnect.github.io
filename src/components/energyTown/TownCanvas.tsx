@@ -94,10 +94,10 @@ export default function TownCanvas({
             margin: 0,
             textAlign: "center",
             padding: "0 24px",
-            fontFamily: "var(--font-ibm-mono), monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: 10,
             letterSpacing: "0.16em",
-            color: "rgba(240, 246, 255, 0.55)",
+            color: "rgba(230, 230, 226, 0.55)",
           }}
         >
           3D VIEW UNAVAILABLE ON THIS DEVICE — THE JOURNEY CONTINUES IN TEXT

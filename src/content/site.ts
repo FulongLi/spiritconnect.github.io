@@ -53,8 +53,10 @@ export type DivisionId = "presence" | "aipe" | "fantasy";
 export type Division = {
   id: DivisionId;
   name: string;
-  /** short descriptor shown as an eyebrow */
+  /** what the division is, in a few words */
   role: string;
+  /** the division's one-line statement (display type) */
+  tagline?: string;
   summary: string;
   href: string;
   external: boolean;
@@ -71,6 +73,7 @@ export const DIVISIONS: Record<DivisionId, Division> = {
     id: "presence",
     name: "Presence",
     role: "Human interface to intelligent systems",
+    tagline: "AI, WITH A PRESENCE.",
     summary:
       "A visual and voice interface for AI — for conversation, work, engineering and everyday life.",
     href: "/presence",
@@ -80,7 +83,8 @@ export const DIVISIONS: Record<DivisionId, Division> = {
   aipe: {
     id: "aipe",
     name: "AIPE",
-    role: "Engineering division",
+    role: "Engineering intelligence for power systems",
+    tagline: "AI DESIGNS ENERGY.",
     summary:
       "AI-driven power electronics engineering: the tools, research and workflows that let AI design energy systems — and close the loop.",
     href: "https://aipel.co.uk",
