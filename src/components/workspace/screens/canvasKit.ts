@@ -2,6 +2,10 @@
 /* Small 2D-canvas toolkit shared by the monitor screen painters.      */
 /* Screens are portals, not websites: large type, one motif, one CTA.  */
 /* Layout units are a 1600 × 900 reference screen, scaled by `s`.       */
+/*                                                                     */
+/* Type is sized for the FINAL projection: in the desktop frame each   */
+/* display is ~400 CSS px wide (≈ 0.25 px per canvas unit), so nothing */
+/* meant to be read is set below ~40 units.                            */
 /* ------------------------------------------------------------------ */
 
 export type CanvasFonts = { sans: string; mono: string };
@@ -111,9 +115,9 @@ export type ScreenPainter = (
 
 export const INK = {
   bright: "#f3f4f6",
-  soft: "rgba(226, 229, 234, 0.8)",
-  dim: "rgba(226, 229, 234, 0.52)",
-  faint: "rgba(226, 229, 234, 0.2)",
+  soft: "rgba(230, 232, 236, 0.86)",
+  dim: "rgba(230, 232, 236, 0.64)",
+  faint: "rgba(230, 232, 236, 0.22)",
 };
 
 /** graphite glass with a soft pool of light where the motif sits */
@@ -127,23 +131,26 @@ export function drawBackdrop(ctx: CanvasRenderingContext2D, w: number, h: number
   ctx.fillRect(0, 0, w, h);
 }
 
+/** left margin of every screen */
+export const MARGIN = 100;
+
 /** Spirit Connect mark + one line of context, top left */
 export function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, opts: ScreenPaintOptions, label: string) {
-  const x = 110 * s;
-  const y = 118 * s;
+  const x = MARGIN * s;
+  const y = 112 * s;
   ctx.textBaseline = "middle";
-  const markW = drawMark(ctx, opts.logo, x, y - 17 * s, 34 * s, INK.bright);
+  const markW = drawMark(ctx, opts.logo, x, y - 24 * s, 48 * s, INK.bright);
   ctx.fillStyle = INK.dim;
-  ctx.font = `400 ${24 * s}px ${opts.fonts.mono}`;
-  spacedText(ctx, label, x + (markW ? markW + 20 * s : 0), y + 1, 5 * s);
+  ctx.font = `500 ${42 * s}px ${opts.fonts.mono}`;
+  spacedText(ctx, label, x + (markW ? markW + 26 * s : 0), y + 1, 4 * s);
 }
 
 /** the big title */
 export function drawTitle(ctx: CanvasRenderingContext2D, s: number, opts: ScreenPaintOptions, title: string, y: number) {
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = INK.bright;
-  ctx.font = `300 ${164 * s}px ${opts.fonts.sans}`;
-  spacedText(ctx, title, 102 * s, y, 11 * s);
+  ctx.font = `300 ${178 * s}px ${opts.fonts.sans}`;
+  spacedText(ctx, title, (MARGIN - 8) * s, y, 9 * s);
 }
 
 /** the call to action, identical on both screens; returns its bottom edge */
@@ -155,28 +162,29 @@ export function drawButton(
   s: number,
   opts: ScreenPaintOptions,
 ) {
-  const x = 110 * s;
-  const h = 100 * s;
-  ctx.font = `500 ${29 * s}px ${opts.fonts.mono}`;
-  const textW = measureSpaced(ctx, label, 6 * s);
-  const w = textW + 170 * s;
+  const x = MARGIN * s;
+  const h = 124 * s;
+  ctx.font = `500 ${46 * s}px ${opts.fonts.mono}`;
+  const textW = measureSpaced(ctx, label, 5 * s);
+  const w = textW + 210 * s;
   roundRectPath(ctx, x, y, w, h, h / 2);
-  ctx.fillStyle = opts.hover ? "#ffffff" : "#e1e3e7";
+  ctx.fillStyle = opts.hover ? "#ffffff" : "#dfe1e5";
   ctx.fill();
   ctx.fillStyle = "#0c0d0f";
   ctx.textBaseline = "middle";
-  spacedText(ctx, label, x + 56 * s, y + h / 2 + 1, 6 * s);
-  ctx.font = `400 ${36 * s}px ${opts.fonts.sans}`;
-  ctx.fillText(arrow, x + w - (opts.hover ? 62 : 72) * s, y + h / 2 + 1);
+  spacedText(ctx, label, x + 64 * s, y + h / 2 + 2, 5 * s);
+  ctx.font = `400 ${50 * s}px ${opts.fonts.sans}`;
+  // the arrow leans forward on hover / focus
+  ctx.fillText(arrow, x + w - (opts.hover ? 78 : 92) * s, y + h / 2 + 2);
   return y + h;
 }
 
 /** hovered / focused: a soft inner light around the screen edge */
 export function drawHoverFrame(ctx: CanvasRenderingContext2D, w: number, h: number, s: number, hover: boolean) {
   if (!hover) return;
-  const inset = 10 * s;
-  roundRectPath(ctx, inset, inset, w - inset * 2, h - inset * 2, 14 * s);
-  ctx.strokeStyle = "rgba(236, 238, 242, 0.34)";
+  const inset = 8 * s;
+  roundRectPath(ctx, inset, inset, w - inset * 2, h - inset * 2, 12 * s);
+  ctx.strokeStyle = "rgba(236, 238, 242, 0.22)";
   ctx.lineWidth = 3 * s;
   ctx.stroke();
 }

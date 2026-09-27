@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AIPE_SCREEN, PRESENCE_SCREEN, WORKSPACE, type WorkspaceScreenId } from "@/content/workspace";
 import { useIsCompact, useReducedMotion } from "@/lib/hooks/useMediaQuery";
 import { useDebugFlags } from "@/lib/hooks/useDebugFlags";
@@ -14,18 +14,20 @@ type Props = {
   night: boolean;
   /** render frames (false = warmed up but paused) */
   active: boolean;
-  /** increments each time the Dome is entered → the arrival replays */
+  /** increments each time the Dome is entered → particles assemble, the screens wake */
   entranceKey: number;
-  /** links become interactive once the fog has cleared */
+  /** links become interactive as the visitor reaches the workstation */
   revealed: boolean;
+  /** 0 in the airlock → 1 at the workstation (omitted: already there) */
+  arrivalRef?: RefObject<number>;
 };
 
 /**
- * The Spirit Connect workspace: the visitor's own workstation inside the
- * Dome. The 3D scene is one WebGPU / WebGL 2 canvas; the monitors are
+ * The Spirit Connect workspace: the ring workstation at the centre of the
+ * Dome. The 3D scene is one WebGPU / WebGL 2 canvas; the displays are
  * made clickable by real links projected over their screens.
  */
-export default function WorkspaceScene({ night, active, entranceKey, revealed }: Props) {
+export default function WorkspaceScene({ night, active, entranceKey, revealed, arrivalRef }: Props) {
   const rootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const presenceRef = useRef<HTMLAnchorElement>(null);
@@ -39,10 +41,10 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed }:
   const [ready, setReady] = useState(false);
 
   // latest values for the engine factory (not dependencies of it)
-  const stateRef = useRef({ night, active });
+  const stateRef = useRef({ night, active, arrivalRef });
   useEffect(() => {
-    stateRef.current = { night, active };
-  }, [night, active]);
+    stateRef.current = { night, active, arrivalRef };
+  }, [night, active, arrivalRef]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +73,7 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed }:
       reducedMotion,
       night: stateRef.current.night,
       active: stateRef.current.active,
+      arrival: () => stateRef.current.arrivalRef?.current ?? 1,
       onReady: () => setReady(true),
       onUnavailable: () => setBackend((b) => (b === "webgpu" && hasWebGL2() ? "webgl" : "fallback")),
     });

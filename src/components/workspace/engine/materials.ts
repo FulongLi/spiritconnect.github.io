@@ -14,7 +14,7 @@ import {
 /* ------------------------------------------------------------------ */
 /* Shared materials + small procedural textures for the workspace.     */
 /* Everything is created once per engine and shared between meshes.   */
-/* Palette: graphite, black, satin silver, warm off-white.             */
+/* Palette: graphite, charcoal, satin aluminium, silver, warm off-white. */
 /* ------------------------------------------------------------------ */
 
 function canvas(width: number, height: number) {
@@ -112,8 +112,12 @@ export function createWorkspaceMaterials({ compact }: { compact: boolean }) {
   const textures: Texture[] = [environment, softSpot, sheen, grille];
 
   const m = {
-    /** desk top: dark graphite, satin */
-    deskTop: new MeshStandardMaterial({ color: "#313236", roughness: 0.34, metalness: 0.45 }),
+    /** ring workstation, lower level: charcoal, fine satin */
+    worktop: new MeshStandardMaterial({ color: "#36373c", roughness: 0.5, metalness: 0.18 }),
+    /** the ring's outer skin + ends: solid charcoal, softly satin */
+    ringSkin: new MeshStandardMaterial({ color: "#4a4b50", roughness: 0.55, metalness: 0.2 }),
+    /** raised level: a shade lighter, a little more polish */
+    riserTop: new MeshStandardMaterial({ color: "#3e3f44", roughness: 0.36, metalness: 0.28 }),
     /** satin graphite for device housings, keyboard keys, monitor backs */
     graphite: new MeshStandardMaterial({ color: "#2b2c30", roughness: 0.36, metalness: 0.6 }),
     graphiteMatte: new MeshStandardMaterial({ color: "#121315", roughness: 0.72, metalness: 0.2 }),
@@ -121,15 +125,17 @@ export function createWorkspaceMaterials({ compact }: { compact: boolean }) {
     silver: new MeshStandardMaterial({ color: "#c3c6cb", roughness: 0.3, metalness: 1 }),
     /** satin anodised aluminium: display bodies + stands, keyboard, mouse base */
     aluminium: new MeshStandardMaterial({ color: "#c9ccd0", roughness: 0.42, metalness: 0.7 }),
-    /** low-profile keycaps: dark, soft satin */
-    keycap: new MeshStandardMaterial({ color: "#1d1e21", roughness: 0.55, metalness: 0.15 }),
-    /** mouse top shell: smooth light satin */
-    mouseShell: new MeshStandardMaterial({ color: "#b9bcc1", roughness: 0.3, metalness: 0.35 }),
+    /** low-profile keycaps: white, soft matte */
+    keycap: new MeshStandardMaterial({ color: "#e4e5e7", roughness: 0.55, metalness: 0 }),
+    /** mouse top shell: one smooth white multi-touch surface */
+    mouseShell: new MeshStandardMaterial({ color: "#eeeeec", roughness: 0.22, metalness: 0.02 }),
     /** black glass bezel */
     bezel: new MeshStandardMaterial({ color: "#060607", roughness: 0.16, metalness: 0.3 }),
     grille: new MeshStandardMaterial({ map: grille, roughness: 0.55, metalness: 0.4 }),
     /** thin warm light line on the device's charging tray */
     trayLight: new MeshBasicMaterial({ color: new Color("#f4e9da").multiplyScalar(1.4) }),
+    /** recessed architectural light (the workstation's floor cove) */
+    coveLight: new MeshBasicMaterial({ color: new Color("#f6eee2").multiplyScalar(1.05) }),
     contactShadow: new MeshBasicMaterial({
       color: "#000000",
       alphaMap: softSpot,
@@ -144,7 +150,7 @@ export function createWorkspaceMaterials({ compact }: { compact: boolean }) {
       color: "#9aa3b0",
       alphaMap: softSpot,
       transparent: true,
-      opacity: 0.028,
+      opacity: 0.016,
       blending: AdditiveBlending,
       depthWrite: false,
     }),

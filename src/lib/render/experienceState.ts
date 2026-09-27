@@ -5,12 +5,14 @@ import { TIMELINE } from "@/content/journey";
  *
  *   LUNAR       lunar WebGL scene renders; Presence renderer not mounted
  *   TRANSITION  Presence mounted + warmed (pipelines compiled) while the
- *               lunar scene keeps rendering until the blackout fully hides it
+ *               lunar scene keeps rendering until the workspace has fully
+ *               faded in over it (inside the Dome's airlock)
  *   PRESENCE    Presence renders; lunar loop stopped and its large GPU
  *               buffers (post-processing targets, shadow map) released
  *
- * Thresholds come from the journey TIMELINE and use hysteresis so scrolling
- * back and forth around a boundary does not thrash mount / unmount.
+ * Thresholds come from the journey TIMELINE (in smoothed story progress)
+ * and use hysteresis so scrolling back and forth around a boundary does not
+ * thrash mount / unmount.
  */
 export type ExperienceState = "LUNAR" | "TRANSITION" | "PRESENCE";
 
@@ -39,8 +41,8 @@ export function nextExperienceState(prev: ExperienceState, p: number): Experienc
 }
 
 export function planRendering(state: ExperienceState, p: number): RenderPlan {
-  // once the blackout layer is fully opaque the lunar canvas is invisible
-  const lunarHidden = p >= TIMELINE.blackoutEnd;
+  // once the workspace has fully faded in, the lunar canvas is invisible
+  const lunarHidden = p >= TIMELINE.portalFadeEnd;
   return {
     state,
     lunarActive: state === "LUNAR" || (state === "TRANSITION" && !lunarHidden),

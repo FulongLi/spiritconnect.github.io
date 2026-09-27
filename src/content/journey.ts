@@ -166,35 +166,36 @@ export function storyToScroll(p: number) {
 
 /* ---------------- cinematic timeline (story progress) ---------------- */
 
+/*
+ * The arrival: the lunar camera swings down to the main Dome's airlock
+ * and flies into the vestibule (camera path knots end at 0.89). Inside
+ * the vestibule the workspace scene — built on the same Dome geometry and
+ * the same entrance axis — cross-fades in and its camera carries on
+ * through the Dome to the workstation. Everything from here on is driven
+ * by the page's smoothed progress, so camera and hand-off stay in step.
+ */
 export const TIMELINE = {
-  /** camera flight occupies 0 .. flightEnd */
-  flightEnd: 0.84,
-  /** mount + warm the Presence renderer (TRANSITION begins) */
+  /** mount + warm the workspace renderer (TRANSITION begins) */
   presenceWarm: 0.74,
-  /** unmount the Presence renderer again when scrolling back above this */
+  /** unmount the workspace renderer again when scrolling back above this */
   presenceRelease: 0.68,
-  /** dark beat while crossing the hull; once complete the lunar scene is hidden */
-  blackoutStart: 0.835,
-  blackoutEnd: 0.875,
-  /** fog rises as soon as the camera reaches the dome shell */
-  mistStart: 0.755,
-  mistFill: 0.815,
-  mistWelcomeClear: 0.865,
-  mistSecondRise: 0.895,
-  mistSecondPeak: 0.945,
-  mistEnd: 0.99,
-  /** WELCOME caption inside the dark beat */
-  captionIn: 0.865,
-  captionOut: 0.922,
-  /** Presence starts animating shortly before it becomes visible */
-  presenceActivate: 0.9,
-  /** the interior emerges behind the second fog wave */
-  portalFadeStart: 0.925,
-  portalFadeEnd: 0.975,
+  /** the arrival begins: the skip control steps aside */
+  arrivalStart: 0.79,
+  /** WELCOME caption while the airlock approaches */
+  captionIn: 0.845,
+  captionOut: 0.9,
+  /** the workspace starts rendering just before it becomes visible */
+  presenceActivate: 0.855,
+  /** hand-off inside the vestibule; once complete the lunar scene is hidden */
+  portalFadeStart: 0.878,
+  portalFadeEnd: 0.89,
   /** PRESENCE state: lunar rendering suspended, GPU memory released */
-  presenceEnter: 0.95,
-  /** interior copy + CTA reveal once the fog has cleared */
-  interiorReveal: 0.965,
+  presenceEnter: 0.9,
+  /** the interior camera: vestibule → the observation point at the workstation */
+  interiorStart: 0.878,
+  interiorEnd: 0.985,
+  /** the monitors become links as the camera settles */
+  interiorReveal: 0.95,
 } as const;
 
 function smoothstep(a: number, b: number, x: number) {

@@ -56,8 +56,14 @@ function clamp01(n: number) {
 
 const INITIAL_PLAN = planRendering("LUNAR", 0);
 
+/** scroll → camera damping (per second); the same feel the flight always had */
+const PROGRESS_DAMPING = 1.65;
+
 export default function JourneyExperience() {
+  /** smoothed story progress: drives the lunar camera, the hand-off and the interior camera */
   const progressRef = useRef(0);
+  /** interior camera: 0 in the airlock → 1 at the workstation */
+  const arrivalRef = useRef(0);
   const themeRef = useRef(0);
   const loopRef = useRef(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -66,11 +72,8 @@ export default function JourneyExperience() {
   const skipRef = useRef<HTMLButtonElement>(null);
   const portalWrapRef = useRef<HTMLDivElement>(null);
   const railDotRef = useRef<HTMLDivElement>(null);
-  const blackoutRef = useRef<HTMLDivElement>(null);
-  const mistRef = useRef<HTMLDivElement>(null);
   const captionRef = useRef<HTMLDivElement>(null);
   const planRef = useRef<RenderPlan>(INITIAL_PLAN);
-  const lastProgressRef = useRef(-1);
 
   const [night, setNight] = useState(false);
   const [plan, setPlan] = useState<RenderPlan>(INITIAL_PLAN);
@@ -103,6 +106,67 @@ export default function JourneyExperience() {
     const scroller = scrollerRef.current;
     if (!scroller) return;
     let raf = 0;
+    let smoothRaf = 0;
+    let lastTick = 0;
+    let target = 0;
+    let smoothed = -1;
+    let revealedNow = false;
+
+    /* everything that follows the camera: the arrival, hand-off and render plan */
+    const applySmoothed = (p: number, prev: number) => {
+      progressRef.current = p;
+      arrivalRef.current = clamp01(
+        (p - TIMELINE.interiorStart) / (TIMELINE.interiorEnd - TIMELINE.interiorStart),
+      );
+
+      /* WELCOME caption as the airlock approaches */
+      if (captionRef.current) {
+        const inO = clamp01((p - TIMELINE.captionIn) / 0.016);
+        const outO = clamp01((TIMELINE.captionOut - p) / 0.016);
+        captionRef.current.style.opacity = (inO * outO).toFixed(3);
+      }
+
+      /* hand-off inside the vestibule: the workspace fades in over the lunar scene */
+      const wrap = portalWrapRef.current;
+      if (wrap) {
+        const t = clamp01(
+          (p - TIMELINE.portalFadeStart) / (TIMELINE.portalFadeEnd - TIMELINE.portalFadeStart),
+        );
+        const o = t * t * (3 - 2 * t);
+        wrap.style.opacity = o.toFixed(3);
+        wrap.style.pointerEvents = o > 0.92 ? "auto" : "none";
+        wrap.style.visibility = o <= 0.001 ? "hidden" : "visible";
+      }
+
+      /* rendering lifecycle: LUNAR → TRANSITION → PRESENCE */
+      const nextState = nextExperienceState(planRef.current.state, p);
+      const nextPlan = planRendering(nextState, p);
+      if (!samePlan(nextPlan, planRef.current)) {
+        planRef.current = nextPlan;
+        setPlan(nextPlan);
+      }
+
+      /* particles assemble and the screens wake each time the Dome is entered */
+      if (p >= TIMELINE.portalFadeStart && prev < TIMELINE.portalFadeStart) {
+        setEntranceKey((k) => k + 1);
+      }
+      const nextRevealed = p >= TIMELINE.interiorReveal;
+      if (nextRevealed !== revealedNow) {
+        revealedNow = nextRevealed;
+        setRevealed(nextRevealed);
+      }
+    };
+
+    /* scroll → smoothed progress, one damped step per frame until it settles */
+    const tick = (now: number) => {
+      const dt = Math.min((now - lastTick) / 1000, 0.05);
+      lastTick = now;
+      const prev = smoothed;
+      smoothed += (target - smoothed) * Math.min(1, dt * PROGRESS_DAMPING);
+      if (Math.abs(target - smoothed) < 1e-5) smoothed = target;
+      applySmoothed(smoothed, prev);
+      smoothRaf = smoothed === target ? 0 : requestAnimationFrame(tick);
+    };
 
     /* all scroll-linked DOM updates, run at most once per frame */
     const update = () => {
@@ -110,9 +174,15 @@ export default function JourneyExperience() {
       const max = scroller.scrollHeight - scroller.clientHeight;
       const r = max > 0 ? scroller.scrollTop / max : 0;
       const p = scrollToStory(r);
-      const prev = lastProgressRef.current;
-      lastProgressRef.current = p;
-      progressRef.current = p;
+      target = p;
+      if (smoothed < 0) {
+        // first read (possibly a restored scroll position): no glide on load
+        smoothed = p;
+        applySmoothed(p, -1);
+      } else if (!smoothRaf) {
+        lastTick = performance.now();
+        smoothRaf = requestAnimationFrame(tick);
+      }
       loopRef.current = loopIntensity(p);
       if (p >= PREFETCH_INTERIOR_AT) prefetchInterior();
 
@@ -131,7 +201,7 @@ export default function JourneyExperience() {
         hintRef.current.style.opacity = Math.max(0, 1 - p / 0.04).toFixed(3);
       }
       if (skipRef.current) {
-        const o = clamp01((TIMELINE.mistStart - p) / 0.04);
+        const o = clamp01((TIMELINE.arrivalStart - p) / 0.04);
         skipRef.current.style.opacity = o.toFixed(3);
         skipRef.current.style.visibility = o <= 0.001 ? "hidden" : "visible";
       }
@@ -140,61 +210,6 @@ export default function JourneyExperience() {
       if (railDotRef.current) {
         railDotRef.current.style.top = `${(p * 100).toFixed(2)}%`;
       }
-
-      /* dark beat while crossing the hull */
-      if (blackoutRef.current) {
-        const o = clamp01((p - TIMELINE.blackoutStart) / (TIMELINE.blackoutEnd - TIMELINE.blackoutStart));
-        blackoutRef.current.style.opacity = o.toFixed(3);
-      }
-
-      /* mist veil between the dome shell and the interior */
-      if (mistRef.current) {
-        const firstRise = clamp01((p - TIMELINE.mistStart) / (TIMELINE.mistFill - TIMELINE.mistStart));
-        const firstClear = clamp01(
-          (TIMELINE.mistWelcomeClear - p) / (TIMELINE.mistWelcomeClear - TIMELINE.mistFill),
-        );
-        const secondRise = clamp01(
-          (p - TIMELINE.mistSecondRise) / (TIMELINE.mistSecondPeak - TIMELINE.mistSecondRise),
-        );
-        const secondClear = clamp01((TIMELINE.mistEnd - p) / (TIMELINE.mistEnd - TIMELINE.mistSecondPeak));
-        const cover = Math.max(firstRise * firstClear, secondRise * secondClear);
-        const density = Math.min(1, 0.14 + cover * 0.9);
-        mistRef.current.style.opacity = cover <= 0.001 ? "0" : density.toFixed(3);
-        mistRef.current.style.transform = `translate3d(0, ${((1 - cover) * 34).toFixed(1)}vh, 0) scale(${(1.08 + cover * 0.1).toFixed(3)})`;
-        mistRef.current.style.visibility = cover <= 0.001 ? "hidden" : "visible";
-      }
-
-      /* WELCOME caption inside the dark beat */
-      if (captionRef.current) {
-        const inO = clamp01((p - TIMELINE.captionIn) / 0.022);
-        const outO = clamp01((TIMELINE.captionOut - p) / 0.022);
-        captionRef.current.style.opacity = (inO * outO).toFixed(3);
-      }
-
-      /* interior crossfade */
-      const wrap = portalWrapRef.current;
-      if (wrap) {
-        const o = clamp01(
-          (p - TIMELINE.portalFadeStart) / (TIMELINE.portalFadeEnd - TIMELINE.portalFadeStart),
-        );
-        wrap.style.opacity = o.toFixed(3);
-        wrap.style.pointerEvents = o > 0.92 ? "auto" : "none";
-        wrap.style.visibility = o <= 0.001 ? "hidden" : "visible";
-      }
-
-      /* rendering lifecycle: LUNAR → TRANSITION → PRESENCE */
-      const nextState = nextExperienceState(planRef.current.state, p);
-      const nextPlan = planRendering(nextState, p);
-      if (!samePlan(nextPlan, planRef.current)) {
-        planRef.current = nextPlan;
-        setPlan(nextPlan);
-      }
-
-      /* particles assemble each time the interior comes into view */
-      if (p >= TIMELINE.portalFadeStart && prev < TIMELINE.portalFadeStart) {
-        setEntranceKey((k) => k + 1);
-      }
-      setRevealed(p >= TIMELINE.interiorReveal);
     };
 
     const schedule = () => {
@@ -257,6 +272,7 @@ export default function JourneyExperience() {
 
     return () => {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(smoothRaf);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
       scroller.removeEventListener("scroll", schedule);
@@ -283,7 +299,6 @@ export default function JourneyExperience() {
         progressRef={progressRef}
         themeRef={themeRef}
         loopRef={loopRef}
-        flightEnd={TIMELINE.flightEnd}
         active={plan.lunarActive}
         suspended={plan.lunarSuspended}
         reducedMotion={reducedMotion}
@@ -379,21 +394,7 @@ export default function JourneyExperience() {
         }
       />
 
-      {/* dark beat after the first fog wave swallows the dome interior */}
-      <div ref={blackoutRef} className={styles.blackout} aria-hidden="true" />
-
-      {/* WELCOME caption sits above the fog so it can emerge from the haze */}
-      <div ref={captionRef} className={styles.caption} aria-hidden="true">
-        <div className={styles.captionText}>WELCOME TO SPIRIT CONNECT</div>
-      </div>
-
-      {/* mist veil for the dome-to-interior transition */}
-      <div ref={mistRef} className={styles.mist} aria-hidden="true">
-        <div className={styles.mistNoise} />
-        <div className={styles.mistBillow} />
-      </div>
-
-      {/* final destination: the Spirit Connect interior, home of Presence */}
+      {/* final destination: inside the Dome, the Spirit Connect workspace */}
       <div ref={portalWrapRef} className={styles.portal}>
         {plan.presenceMounted && (
           <PresenceInterior
@@ -401,8 +402,14 @@ export default function JourneyExperience() {
             active={plan.presenceActive}
             entranceKey={entranceKey}
             revealed={revealed}
+            arrivalRef={arrivalRef}
           />
         )}
+      </div>
+
+      {/* WELCOME caption over the airlock approach */}
+      <div ref={captionRef} className={styles.caption} aria-hidden="true">
+        <div className={styles.captionText}>WELCOME TO SPIRIT CONNECT</div>
       </div>
 
       {/* screen-reader summary of the visual journey */}

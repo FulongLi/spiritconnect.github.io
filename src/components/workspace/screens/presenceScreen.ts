@@ -1,6 +1,7 @@
 import { PRESENCE_SCREEN as C } from "@/content/workspace";
 import {
   INK,
+  MARGIN,
   drawBackdrop,
   drawButton,
   drawEyebrow,
@@ -12,8 +13,9 @@ import {
 } from "./canvasKit";
 
 /* ------------------------------------------------------------------ */
-/* Presence monitor — the AI / interface side. A portal, not a website: */
-/* the name, one line, three words, the particle entity, one CTA.       */
+/* Presence display — the AI / interface side. A portal, not a website: */
+/* the name, one line, three words, the particle entity, one CTA — all  */
+/* set to be read from the visitor's position in the Dome.              */
 /* ------------------------------------------------------------------ */
 
 /** silver particle sphere, as in the Presence app */
@@ -59,38 +61,39 @@ function drawWaveform(ctx: CanvasRenderingContext2D, cx: number, y: number, widt
 
 export const paintPresenceScreen: ScreenPainter = (ctx, w, h, opts) => {
   const s = w / 1600;
-  const entity = { x: 1245 * s, y: 395 * s, r: 185 * s };
+  const entity = { x: 1290 * s, y: 390 * s, r: 212 * s };
   drawBackdrop(ctx, w, h, entity.x, entity.y);
   drawEyebrow(ctx, s, opts, C.eyebrow);
 
-  drawEntity(ctx, entity.x, entity.y, entity.r, 2200);
-  drawWaveform(ctx, entity.x, entity.y + entity.r + 95 * s, 300 * s, s);
+  drawEntity(ctx, entity.x, entity.y, entity.r, 2600);
+  drawWaveform(ctx, entity.x, entity.y + entity.r + 92 * s, 330 * s, s);
 
-  drawTitle(ctx, s, opts, C.title, 372 * s);
-  const left = 110 * s;
+  drawTitle(ctx, s, opts, C.title, 330 * s);
+  const left = MARGIN * s;
   ctx.fillStyle = INK.soft;
-  ctx.font = `400 ${48 * s}px ${opts.fonts.sans}`;
-  spacedText(ctx, C.tagline, left, 452 * s, 5 * s);
+  ctx.font = `400 ${60 * s}px ${opts.fonts.sans}`;
+  spacedText(ctx, C.tagline, left, 424 * s, 4 * s);
   ctx.fillStyle = INK.dim;
-  ctx.font = `300 ${38 * s}px ${opts.fonts.sans}`;
-  ctx.fillText(C.body, left, 522 * s);
+  ctx.font = `400 ${48 * s}px ${opts.fonts.sans}`;
+  ctx.fillText(C.body, left, 496 * s);
 
   // three words: voice · visual · agents
-  ctx.font = `400 ${26 * s}px ${opts.fonts.mono}`;
+  ctx.font = `500 ${42 * s}px ${opts.fonts.mono}`;
   ctx.textBaseline = "middle";
+  const y = 576 * s;
   let x = left;
   C.concepts.forEach((word, i) => {
     if (i > 0) {
       ctx.fillStyle = INK.faint;
       ctx.beginPath();
-      ctx.arc(x + 22 * s, 590 * s, 4 * s, 0, Math.PI * 2);
+      ctx.arc(x + 26 * s, y, 5 * s, 0, Math.PI * 2);
       ctx.fill();
-      x += 44 * s;
+      x += 52 * s;
     }
     ctx.fillStyle = INK.soft;
-    x += spacedText(ctx, word.toUpperCase(), x, 591 * s, 6 * s);
+    x += spacedText(ctx, word.toUpperCase(), x, y + 1, 6 * s);
   });
 
-  drawButton(ctx, 668 * s, C.cta.toUpperCase(), "→", s, opts);
+  drawButton(ctx, 658 * s, C.cta.toUpperCase(), "→", s, opts);
   drawHoverFrame(ctx, w, h, s, opts.hover);
 };

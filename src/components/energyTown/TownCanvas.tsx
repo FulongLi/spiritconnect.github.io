@@ -4,14 +4,12 @@ import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { createLunarRenderer, type LunarRenderer } from "./engine/lunarRenderer";
 
 type Props = {
-  /** story progress target, 0..1 — written by the page, read every frame */
+  /** smoothed story progress, 0..1 — written by the page, read every frame */
   progressRef: MutableRefObject<number>;
   /** theme target, 0 = day, 1 = night */
   themeRef: MutableRefObject<number>;
   /** AI → energy feedback loop target, 0..1 */
   loopRef: MutableRefObject<number>;
-  /** camera flight ends at this progress; beyond it the interior takes over */
-  flightEnd?: number;
   /** render frames (false while the scene is fully covered) */
   active: boolean;
   /** scene is not needed for a while — release large GPU buffers */
@@ -23,7 +21,6 @@ export default function TownCanvas({
   progressRef,
   themeRef,
   loopRef,
-  flightEnd = 0.84,
   active,
   suspended,
   reducedMotion,
@@ -45,7 +42,7 @@ export default function TownCanvas({
           theme: () => themeRef.current,
           loop: () => loopRef.current,
         },
-        { flightEnd, reducedMotion: initialReducedMotion.current },
+        { reducedMotion: initialReducedMotion.current },
       );
     } catch (error) {
       console.error("Unable to start the lunar WebGL scene", error);
@@ -58,7 +55,7 @@ export default function TownCanvas({
       engineRef.current = null;
       engine.dispose();
     };
-  }, [progressRef, themeRef, loopRef, flightEnd]);
+  }, [progressRef, themeRef, loopRef]);
 
   useEffect(() => {
     const engine = engineRef.current;

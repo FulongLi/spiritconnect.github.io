@@ -5,8 +5,7 @@ import { Parts, placement } from "./parts";
 
 /* ------------------------------------------------------------------ */
 /* Secondary infrastructure: vehicle chargers (instanced), landing-pad */
-/* paint and edge lights, and foundation collars for the habitat domes */
-/* so they are anchored to the ground rather than resting on it.       */
+/* paint and edge lights. (Dome foundations live in ./habitat.)        */
 /* ------------------------------------------------------------------ */
 
 export type ChargerSpot = { x: number; z: number; rot: number };
@@ -70,19 +69,4 @@ export function buildPadDetails(ctx: InfraContext, pads: PadSpot[]) {
     }
   }
   ctx.group.add(p.build(ctx.track, ctx.shadows, "pad-details"));
-}
-
-export type DomeSpot = { x: number; z: number; r: number; base: number };
-
-/** sintered foundation collar + steel edge at the foot of every dome */
-export function buildDomeCollars(ctx: InfraContext, domes: DomeSpot[]) {
-  const p = new Parts(ctx.kit, ctx.detail);
-  for (const d of domes) {
-    const low = terrainHeight(d.x, d.z) - 0.6;
-    const h = d.base + 0.2 - low;
-    p.cyl("foundation", d.r * 1.035, d.r * 1.07, h, d.x, low + h / 2, d.z, { seg: 48 });
-    p.cyl("graphite", d.r * 1.04, d.r * 1.04, 0.1, d.x, d.base + 0.2, d.z, { seg: 48, open: true });
-    ctx.ground.disc(d.x, d.z, d.r * 1.07);
-  }
-  ctx.group.add(p.build(ctx.track, ctx.shadows, "dome-collars"));
 }

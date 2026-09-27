@@ -17,8 +17,10 @@ import { roundedRectShape } from "./workspaceMonitor";
 
 /* ------------------------------------------------------------------ */
 /* Keyboard and mouse in the same language as the displays: satin       */
-/* aluminium, slim, quiet. The keys are one instanced mesh (one draw    */
-/* call).                                                               */
+/* aluminium, slim, quiet. A thin wedge with white low-profile keys     */
+/* (one instanced mesh, one draw call); a low mouse whose single white  */
+/* shell rises towards the palm, on a thin aluminium base. No lighting,  */
+/* no gaming cues.                                                     */
 /* ------------------------------------------------------------------ */
 
 const KB = { width: 0.279, depth: 0.115, front: 0.004, back: 0.0109, corner: 0.006 };
@@ -134,10 +136,18 @@ export function createMouse(materials: WorkspaceMaterials) {
   base.position.y = 0.0006;
   group.add(base);
 
-  // one smooth, unified upper shell
-  const shellGeo = new SphereGeometry(1, 36, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+  // one smooth, unified upper shell, highest towards the palm (+z)
+  const shellGeo = new SphereGeometry(1, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+  const p = shellGeo.getAttribute("position");
+  for (let i = 0; i < p.count; i++) {
+    const z = p.getZ(i);
+    // flatter crown, peak shifted back, a softly tapered nose
+    p.setY(i, Math.pow(p.getY(i), 0.8) * (1 + 0.16 * z));
+    p.setX(i, p.getX(i) * (1 - 0.06 * Math.max(0, -z)));
+  }
+  shellGeo.computeVertexNormals();
   const shell = new Mesh(shellGeo, materials.mouseShell);
-  shell.scale.set(0.0278, 0.0185, 0.0555);
+  shell.scale.set(0.0282, 0.0172, 0.0562);
   shell.position.y = 0.0028;
   group.add(shell);
 
