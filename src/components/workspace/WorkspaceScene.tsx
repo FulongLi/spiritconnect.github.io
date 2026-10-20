@@ -126,7 +126,7 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed, a
       aria-hidden={!revealed}
     >
       <h2 className="sr-only">{WORKSPACE.label}</h2>
-      <p className="sr-only">{WORKSPACE.loop}</p>
+      <p className="sr-only">{WORKSPACE.statement}</p>
 
       {backend === "fallback" ? (
         <WorkspaceFallback tabIndex={tabIndex} />
@@ -141,13 +141,11 @@ export default function WorkspaceScene({ night, active, entranceKey, revealed, a
             tabIndex={tabIndex}
             {...hoverProps("presence")}
           />
-          <a
+          <Link
             ref={aipeRef}
             className={styles.hotspot}
             href={AIPE_SCREEN.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${AIPE_SCREEN.linkLabel} (opens external site)`}
+            aria-label={AIPE_SCREEN.linkLabel}
             tabIndex={tabIndex}
             {...hoverProps("aipe")}
           />

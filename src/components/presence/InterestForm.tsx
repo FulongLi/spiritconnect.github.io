@@ -73,8 +73,9 @@ function ChoiceGroup({
 }
 
 /**
- * Presence update list ("I like Presence. Keep me updated."). Buying is the
- * separate pre-order path, so nothing here asks about purchase. Submission
+ * Presence update list ("I like Presence. Keep me updated."). Backing the
+ * Founding 1,000 campaign is the separate checkout path, so nothing here
+ * asks about purchase and a registration never counts as a commitment. Submission
  * goes through `submitInterest` (src/lib/interest) — no fake success.
  */
 export default function InterestForm() {

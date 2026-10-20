@@ -1,0 +1,437 @@
+/* AIPE — the engineering division, introduced in the Spirit Connect
+   language: black / graphite, silver and off-white type, hairlines, mono
+   microcopy. Architectural rather than HUD: no cyan, no glowing cards.
+   The only cool light is the faint cast on the hero and the flow along
+   the device → system line. */
+
+.page {
+  --muted: var(--ink-soft);
+  --line: var(--hairline);
+  --cool: rgba(196, 210, 226, 0.07);
+  --gutter: clamp(16px, 6vw, 96px);
+
+  position: relative;
+  overflow-x: clip;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse 80% 50% at 70% -10%, var(--cool), transparent 70%),
+    radial-gradient(ellipse 90% 55% at 50% -12%, rgba(255, 255, 255, 0.04), transparent 72%),
+    linear-gradient(180deg, #0c0d0e 0%, #0a0a0b 55%, #080809 100%);
+}
+
+/* extremely faint grain, static, desktop only */
+@media (min-width: 721px) {
+  .page::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+.kicker,
+.eyebrow {
+  margin: 0 0 18px;
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.26em;
+}
+
+.h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.6vw, 60px);
+  font-weight: 400;
+  line-height: 0.96;
+  letter-spacing: 0.02em;
+}
+
+/* one phrase per line, never broken inside */
+.line {
+  display: block;
+  white-space: nowrap;
+}
+
+.body {
+  max-width: 32em;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: clamp(18px, 1.5vw, 21px);
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+.index {
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(96px, 13vw, 160px) var(--gutter) 0;
+  scroll-margin-top: 60px;
+}
+
+/* ── buttons ─────────────────────────────────────────────────────────── */
+
+/* a machined silver plate — square-cut, mono, no glow */
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 30px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #ededeb, #c9cbcd);
+  color: #0a0a0b;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  background: linear-gradient(180deg, #ffffff, #dcdedf);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24), 0 10px 40px -12px rgba(220, 226, 234, 0.35);
+}
+
+.primaryButton:focus-visible,
+.textLink:focus-visible {
+  outline: 2px solid rgba(200, 212, 228, 0.9);
+  outline-offset: 4px;
+}
+
+.textLink {
+  display: inline-flex;
+  gap: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(236, 236, 232, 0.26);
+  color: rgba(236, 236, 232, 0.88);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.textLink:hover,
+.textLink:focus-visible {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.host {
+  margin: 14px 0 0;
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* ── hero ────────────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(140px, 22vh, 220px) var(--gutter) clamp(40px, 6vw, 80px);
+}
+
+/* drafting columns: twelve hairlines, fading out below the title */
+.heroGrid {
+  position: absolute;
+  inset: 0 var(--gutter);
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(230, 230, 226, 0.045) 0 1px,
+    transparent 1px calc(100% / 12)
+  );
+  mask-image: linear-gradient(180deg, transparent 4%, #000 30%, #000 55%, transparent 92%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 30%, #000 55%, transparent 92%);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(120px, 22vw, 280px);
+  font-weight: 400;
+  line-height: 0.82;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #f6f6f4 30%, #a9acb0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* the engineering statement: exactly two lines at every width */
+.statement {
+  margin: clamp(22px, 3vw, 36px) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 7vw, 84px);
+  line-height: 0.94;
+  letter-spacing: 0.02em;
+}
+
+.lead {
+  max-width: 34em;
+  margin: clamp(26px, 3.4vw, 40px) 0 0;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 300;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 34px;
+  margin-top: clamp(32px, 4vw, 48px);
+}
+
+/* ── the idea ────────────────────────────────────────────────────────── */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(28px, 6vw, 90px);
+  align-items: start;
+}
+
+/* the loop's five stages, read as one sequence that returns to the start */
+.loop {
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.loop li {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.05em;
+}
+
+.loop li:last-child::after {
+  content: "↻";
+  margin-left: auto;
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* ── devices → systems ───────────────────────────────────────────────── */
+
+.scales {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: clamp(44px, 5vw, 64px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* the line every scale sits on, with one silver segment travelling along it */
+.scales::before,
+.scales::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.scales::before {
+  background: rgba(230, 230, 226, 0.22);
+}
+
+.scales::after {
+  background: linear-gradient(90deg, transparent, rgba(240, 242, 245, 0.9), transparent) no-repeat;
+  background-size: 18% 100%;
+  animation: flow 9s linear infinite;
+}
+
+@keyframes flow {
+  from {
+    background-position: -20% 0;
+  }
+  to {
+    background-position: 120% 0;
+  }
+}
+
+.scale {
+  position: relative;
+  padding: 30px clamp(14px, 2vw, 28px) 0 0;
+}
+
+/* a node on the line */
+.scale::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ecece8;
+}
+
+.scaleLabel {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.scaleDetail {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 300;
+  line-height: 1.45;
+}
+
+.workflow {
+  max-width: 42em;
+  margin: clamp(44px, 5vw, 60px) 0 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  color: rgba(230, 230, 226, 0.8);
+  font-family: var(--font-body);
+  font-size: clamp(18px, 1.5vw, 21px);
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* ── enter the platform ──────────────────────────────────────────────── */
+
+.enter {
+  padding-bottom: clamp(100px, 13vw, 170px);
+}
+
+.enterInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: clamp(64px, 8vw, 96px);
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.enterInner .body {
+  margin: 24px 0 34px;
+}
+
+/* ── responsive ──────────────────────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* the scales stack: the line runs down the left edge */
+  .scales {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 26px;
+  }
+
+  .scales::before,
+  .scales::after {
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    right: auto;
+    width: 1px;
+    height: auto;
+  }
+
+  .scales::after {
+    background: linear-gradient(180deg, transparent, rgba(240, 242, 245, 0.9), transparent) no-repeat;
+    background-size: 100% 18%;
+    animation-name: flowDown;
+  }
+
+  .scale {
+    padding: 0 0 34px;
+  }
+
+  .scale::before {
+    top: 2px;
+    left: -26px;
+  }
+
+  .scaleLabel {
+    margin-top: 8px;
+  }
+}
+
+@keyframes flowDown {
+  from {
+    background-position: 0 -20%;
+  }
+  to {
+    background-position: 0 120%;
+  }
+}
+
+@media (max-width: 640px) {
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions .textLink {
+    align-self: flex-start;
+  }
+
+  .enterInner .primaryButton {
+    align-self: stretch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scales::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .primaryButton,
+  .textLink {
+    transition: none;
+  }
+}

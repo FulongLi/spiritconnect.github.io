@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { COMPANY, MAIN_NAV } from "@/content/site";
+import { COMPANY, MAIN_NAV, statementText } from "@/content/site";
 import BrandMark from "@/components/site/BrandMark";
 
 type Props = {
@@ -28,7 +28,7 @@ const Footer = ({ variant = "fixed" }: Props) => {
             <BrandMark size={15} />
             SPIRIT CONNECT
           </div>
-          <div className="mt-2 normal-case tracking-[0.12em]">{COMPANY.vision}</div>
+          <div className="mt-2 normal-case tracking-[0.12em]">{statementText(COMPANY.tagline)}</div>
         </div>
         <nav aria-label="Footer">
           <ul className="flex flex-wrap gap-x-6 gap-y-3">
@@ -41,7 +41,7 @@ const Footer = ({ variant = "fixed" }: Props) => {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {item.label} ↗
+                    {item.label} ↗<span className="sr-only"> (opens external site)</span>
                   </a>
                 ) : (
                   <Link className="hover:text-white" href={item.href}>

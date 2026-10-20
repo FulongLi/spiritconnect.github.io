@@ -64,13 +64,13 @@
   padding: clamp(140px, 24vh, 240px) var(--gutter) clamp(40px, 6vw, 80px);
 }
 
-/* sized so either sentence (≈ 6.1 em in Bebas Neue) always fits the
-   column — the gutters leave 88vw — from a 320 px phone to the 1100 px
-   desktop measure: exactly two lines at every width */
+/* the master statement, sized so either phrase (≈ 9.9 em in Bebas Neue)
+   always fits the column — the gutters leave 88vw — from a 320 px phone to
+   the 1100 px desktop measure: exactly two lines at every width */
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(40px, 12.6vw, 132px);
+  font-size: clamp(27px, 8.4vw, 88px);
   font-weight: 400;
   line-height: 0.9;
   letter-spacing: 0.01em;
@@ -242,6 +242,42 @@
   border-color: #ffffff;
 }
 
+/* a secondary link beside a .textLink: same voice, no underline */
+.quietLink {
+  display: inline-flex;
+  gap: 8px;
+  padding-bottom: 5px;
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.quietLink:hover,
+.quietLink:focus-visible {
+  color: #ffffff;
+}
+
+.divisionLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 14px 28px;
+}
+
+.loopLead {
+  max-width: 32em;
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.5;
+}
+
 /* ── divisions: two equal branches, split by one hairline ────────────── */
 
 .divisions {
@@ -288,7 +324,7 @@
   font-family: var(--font-display);
   font-size: clamp(24px, 2.4vw, 30px);
   letter-spacing: 0.06em;
-  line-height: 1;
+  line-height: 1.08;
 }
 
 .divisionSummary {

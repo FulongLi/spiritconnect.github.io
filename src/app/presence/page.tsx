@@ -1,28 +1,31 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import SiteHeader from "@/components/site/SiteHeader";
 import Footer from "@/components/overlay/components/Footer/Footer";
 import MediaSlot from "@/components/presence/MediaSlot";
 import InterestForm from "@/components/presence/InterestForm";
 import FutureAction from "@/components/presence/FutureAction";
+import CampaignProgress from "@/components/presence/CampaignProgress";
 import { Reveal, WatchDemoLink } from "@/components/presence/PageEffects";
 import {
   INTEREST_FORM_COPY,
+  PRESENCE_BACKING,
   PRESENCE_FOUNDING,
   PRESENCE_HARDWARE,
   PRESENCE_HERO,
   PRESENCE_IN_ACTION,
   PRESENCE_INTRO,
   PRESENCE_MEDIA,
-  PRESENCE_PREORDER,
   PRESENCE_USE_CASES,
 } from "@/content/presence";
-import { FOUNDING_PRICE_LABEL, PRESENCE_PRICING, PRESENCE_RELEASE } from "@/content/pricing";
+import { CAMPAIGN_FIGURES, backingUrl } from "@/content/campaign";
+import { PRESENCE_RELEASE } from "@/content/pricing";
 import { DIVISIONS } from "@/content/site";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Presence — AI, with a presence",
-  description: `Presence is a visual + voice interface for AI, with dedicated Presence hardware now in its pre-order phase. Founding 100: the first ${PRESENCE_PRICING.foundingAllocation} units at ${FOUNDING_PRICE_LABEL}, launch planned for ${PRESENCE_RELEASE.plannedLaunch}.`,
+  description: `Presence is a visual + voice interface for AI. Founding ${CAMPAIGN_FIGURES.targetLabel}: when ${CAMPAIGN_FIGURES.targetLabel} people commit to Presence Hardware at ${CAMPAIGN_FIGURES.priceLabel}, we move toward production — first release planned for ${CAMPAIGN_FIGURES.plannedLaunch}, conditional on the campaign.`,
   alternates: { canonical: "/presence" },
 };
 
@@ -135,10 +138,9 @@ export default function PresencePage() {
           </div>
           <p className={styles.useNote}>
             {PRESENCE_USE_CASES.note}{" "}
-            <a href={DIVISIONS.aipe.href} target="_blank" rel="noopener noreferrer">
-              Explore AIPE <span aria-hidden="true">↗</span>
-              <span className="sr-only"> (opens external site)</span>
-            </a>
+            <Link href={DIVISIONS.aipe.href}>
+              Discover AIPE <span aria-hidden="true">→</span>
+            </Link>
           </p>
         </section>
 
@@ -167,20 +169,24 @@ export default function PresencePage() {
           </div>
         </section>
 
-        {/* ── Founding 100 ──────────────────────────────────────────────────── */}
+        {/* ── Founding 1,000: the conditional hardware launch campaign ────────── */}
         <section id="founding" className={styles.founding} aria-labelledby="founding-title">
           <div className={styles.foundingHaze} aria-hidden="true" />
           <Reveal className={styles.foundingInner}>
-            <h2 id="founding-title" className={styles.foundingKicker}>
-              {PRESENCE_FOUNDING.kicker}
+            <p className={styles.foundingKicker}>{PRESENCE_FOUNDING.kicker}</p>
+            <h2 id="founding-title" className={styles.foundingTitle}>
+              {PRESENCE_FOUNDING.title}
             </h2>
             <p className={styles.price}>{PRESENCE_FOUNDING.priceLabel}</p>
-            <p className={styles.allocation}>{PRESENCE_FOUNDING.allocationLine}</p>
-            <div className={styles.units} aria-hidden="true">
-              {Array.from({ length: PRESENCE_PRICING.foundingAllocation }, (_, i) => (
-                <span key={i} style={{ "--d": `${(i % 10) * 40 + Math.floor(i / 10) * 40}ms` } as React.CSSProperties} />
+            <p className={styles.foundingStatement}>
+              {/* one phrase per line; the leading space (collapsed at the line start) keeps the text whole */}
+              {PRESENCE_FOUNDING.statement.map((line, i) => (
+                <span key={line}>
+                  {i > 0 && " "}
+                  {line}
+                </span>
               ))}
-            </div>
+            </p>
             <p className={styles.foundingBody}>{PRESENCE_FOUNDING.body}</p>
             <dl className={styles.foundingFacts}>
               {PRESENCE_FOUNDING.facts.map((f) => (
@@ -190,50 +196,65 @@ export default function PresencePage() {
                 </div>
               ))}
             </dl>
-            {/* buy it, or stay close: two clearly different commitments */}
+            <div className={styles.foundingProgress}>
+              <CampaignProgress />
+            </div>
+            {/* back it, or stay close: two clearly different commitments */}
             <div className={styles.foundingActions}>
               <FutureAction
-                id="founding-preorder"
-                href={PRESENCE_RELEASE.preorderUrl}
+                id="founding-back"
+                href={backingUrl()}
                 className={styles.primaryButton}
-                pendingNote={PRESENCE_PREORDER.pending}
+                pendingNote={PRESENCE_BACKING.pending}
               >
-                {PRESENCE_FOUNDING.preorderCta}
+                {PRESENCE_FOUNDING.backCta}
               </FutureAction>
               <a href="#register" className={styles.ghostButton}>
                 {PRESENCE_FOUNDING.interestCta}
               </a>
             </div>
-            <p className={styles.finePrint}>{PRESENCE_FOUNDING.finePrint}</p>
+            <div className={styles.finePrint}>
+              {PRESENCE_FOUNDING.finePrint.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
           </Reveal>
         </section>
 
-        {/* ── Pre-order or register interest: the two states, side by side ──── */}
+        {/* ── Back Presence or register interest: two different actions ────── */}
         <div className={`${styles.section} ${styles.convert}`}>
-          <section id="preorder" className={styles.convertPreorder} aria-labelledby="preorder-title">
+          <section id="back" className={styles.convertBack} aria-labelledby="back-title">
             <Reveal>
-              <p className={styles.kicker}>{PRESENCE_PREORDER.kicker}</p>
-              <h2 id="preorder-title" className={styles.h2}>
-                {PRESENCE_PREORDER.title}
+              <p className={styles.kicker}>{PRESENCE_BACKING.kicker}</p>
+              <h2 id="back-title" className={styles.h2}>
+                {PRESENCE_BACKING.title}
               </h2>
               <p className={styles.convertPrice}>
-                <span>{PRESENCE_PREORDER.priceCaption}</span>
-                <strong>{PRESENCE_PREORDER.priceLabel}</strong>
-                <span>{PRESENCE_PREORDER.releaseLine}</span>
-                <span>{PRESENCE_PREORDER.retailLine}</span>
+                <span>{PRESENCE_BACKING.priceCaption}</span>
+                <strong>{PRESENCE_BACKING.priceLabel}</strong>
+                {PRESENCE_BACKING.lines.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
               </p>
               <FutureAction
-                id="convert-preorder"
-                href={PRESENCE_RELEASE.preorderUrl}
+                id="convert-back"
+                href={backingUrl()}
                 className={styles.primaryButton}
-                pendingNote={PRESENCE_PREORDER.pending}
+                pendingNote={PRESENCE_BACKING.pending}
                 align="start"
               >
-                {PRESENCE_PREORDER.cta}
+                {PRESENCE_BACKING.cta}
               </FutureAction>
+              <h3 className={styles.beforeTitle}>{PRESENCE_BACKING.beforeTitle}</h3>
+              <ul className={styles.beforeList}>
+                {PRESENCE_BACKING.before.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+              <p className={styles.disclaimer}>{PRESENCE_BACKING.noPayment}</p>
             </Reveal>
           </section>
-          {/* #register: the hero and Founding 100 "register" links land here */}
+          {/* #register: the hero and Founding 1,000 "register" links land here */}
           <section id="register" className={styles.convertInterest} aria-labelledby="register-title">
             <Reveal delay={100}>
               <p className={styles.kicker}>{INTEREST_FORM_COPY.kicker}</p>

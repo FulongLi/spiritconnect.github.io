@@ -173,7 +173,8 @@
   display: inline-block;
 }
 
-/* the brand statement is set as exactly two lines, one per sentence */
+/* the composed statements (the master statement in the hero, the AIPE
+   statement in the coda) are set as exactly two lines, one per phrase */
 .chapter[data-hero="true"] .chapterInner,
 .chapter[data-coda="true"] .chapterInner {
   max-width: none;
@@ -322,10 +323,15 @@
     font-size: clamp(32px, 9vw, 44px);
   }
 
-  /* the two-line brand statement can run larger: each line is ≈ 6.2 em */
-  .chapter[data-hero="true"] .chapterTitle,
+  /* the AIPE statement (the coda) can run larger: each line is ≈ 6.2 em */
   .chapter[data-coda="true"] .chapterTitle {
     font-size: clamp(34px, 11.2vw, 56px);
+  }
+
+  /* the master statement's lines are ≈ 9.9 em: sized so each phrase keeps
+     its line from a 320 px phone up */
+  .chapter[data-hero="true"] .chapterTitle {
+    font-size: clamp(26px, 8.4vw, 56px);
   }
 
   .sub {

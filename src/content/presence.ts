@@ -1,9 +1,5 @@
-import {
-  FOUNDING_PRICE_LABEL,
-  PLANNED_RETAIL_PRICE_LABEL,
-  PRESENCE_PRICING,
-  PRESENCE_RELEASE,
-} from "./pricing";
+import { CAMPAIGN_FIGURES as F } from "./campaign";
+import { PRESENCE_RELEASE } from "./pricing";
 
 const LAUNCH = PRESENCE_RELEASE.plannedLaunch;
 
@@ -59,10 +55,10 @@ export const PRESENCE_USE_CASES = {
 
 export const PRESENCE_HARDWARE = {
   kicker: "PRESENCE HARDWARE",
-  status: `Pre-order phase · Planned launch ${LAUNCH}`,
+  status: `Founding ${F.targetLabel} · Planned release ${LAUNCH}`,
   title: "A home for Presence.",
   body: "Presence brings the visual and voice interface into a dedicated physical device — giving AI a place in the room.",
-  progress: `Hardware development is moving toward production, with the first release planned for ${LAUNCH}.`,
+  progress: `The first production release depends on the Founding ${F.targetLabel} campaign: when ${F.targetLabel} people commit to Presence Hardware at ${F.priceLabel}, we move toward production.`,
   capabilitiesTitle: "Designed for",
   // what the device is for — no precise specifications until they are published
   capabilities: [
@@ -76,32 +72,66 @@ export const PRESENCE_HARDWARE = {
   disclaimer: "Final specifications and industrial design may evolve before release.",
 } as const;
 
+/* ---------------- Founding 1,000 — conditional launch campaign ---------------- */
+
 export const PRESENCE_FOUNDING = {
-  kicker: "FOUNDING 100",
-  priceLabel: FOUNDING_PRICE_LABEL,
-  allocationLine: `The first ${PRESENCE_PRICING.foundingAllocation} Presence units.`,
-  body: `The first ${PRESENCE_PRICING.foundingAllocation} Presence units will be offered to Founding customers at ${FOUNDING_PRICE_LABEL}, ahead of the planned ${PLANNED_RETAIL_PRICE_LABEL} retail price.`,
+  kicker: "BRING PRESENCE TO LIFE",
+  title: `FOUNDING ${F.targetLabel}`,
+  priceLabel: F.priceLabel,
+  // the campaign's central message, one phrase per line
+  statement: [`${F.targetLabel} PEOPLE.`, "ONE PHYSICAL HOME FOR PRESENCE."],
+  body: `Help bring Presence into the physical world. When ${F.targetLabel} customers commit at ${F.priceLabel}, we can begin turning Presence Hardware into its first production release.`,
   facts: [
-    { label: "Planned retail", value: PLANNED_RETAIL_PRICE_LABEL },
-    { label: "Planned launch", value: LAUNCH },
+    { label: "Target", value: `${F.targetLabel} qualifying commitments` },
+    { label: "Founding price", value: F.priceLabel },
+    { label: "Planned retail", value: F.plannedRetailLabel },
+    { label: "Planned release", value: `${LAUNCH}*` },
   ],
-  preorderCta: `Pre-order Presence — ${FOUNDING_PRICE_LABEL}`,
+  backCta: `Back Presence — ${F.priceLabel}`,
   interestCta: "Register Interest",
-  finePrint: `Founding pricing applies to the first ${PRESENCE_PRICING.foundingAllocation} units only. Launch timing is planned and may change. Full pre-order terms are shown before any payment is taken.`,
+  finePrint: [
+    `*${LAUNCH} is a planned release window, conditional on the campaign reaching ${F.targetLabel} qualifying commitments and on production readiness. It is not guaranteed.`,
+    `${F.targetLabel} commitments at ${F.priceLabel} is ${F.grossTargetLabel} gross, before payment fees, tax, manufacturing, fulfilment and other costs.`,
+  ],
 } as const;
 
-/* ---------------- Pre-order (external checkout) ---------------- */
+/** the campaign progress block (see src/lib/campaign/progress.ts) */
+export const CAMPAIGN_PROGRESS_COPY = {
+  label: `FOUNDING ${F.targetLabel}`,
+  preLaunchStatus: "Campaign opening soon",
+  preLaunchNote: `Target: ${F.targetLabel} confirmed commitments. Progress will appear here once the campaign opens — counted from confirmed commitments only, never from registrations of interest.`,
+  // live: "<count> / 1,000 confirmed commitments"
+  liveUnit: `/ ${F.targetLabel} confirmed commitments`,
+  liveValueText: (confirmed: string) => `${confirmed} of ${F.targetLabel} confirmed commitments`,
+  asOf: (date: string) => `Updated ${date}`,
+  unavailableStatus: "Progress unavailable",
+  unavailableNote: `Target: ${F.targetLabel} confirmed commitments. The latest count couldn't be loaded — please check back shortly.`,
+} as const;
 
-export const PRESENCE_PREORDER = {
-  kicker: "PRE-ORDER",
-  title: "Own one of the first.",
-  priceCaption: "Founding 100",
-  priceLabel: FOUNDING_PRICE_LABEL,
-  releaseLine: `First production release. Planned ${LAUNCH}.`,
-  retailLine: `Planned retail ${PLANNED_RETAIL_PRICE_LABEL}.`,
-  cta: "Pre-order Presence",
-  // shown while PRESENCE_RELEASE.preorderUrl is unset
-  pending: "Pre-order opening soon",
+/* ---------------- Back Presence (the campaign checkout) ---------------- */
+
+export const PRESENCE_BACKING = {
+  kicker: "BACK PRESENCE",
+  title: "Commit to the first production run.",
+  priceCaption: `Founding ${F.targetLabel}`,
+  priceLabel: F.priceLabel,
+  lines: [
+    "A genuine intention to purchase Presence Hardware through the campaign checkout.",
+    `Confirmed commitments count toward the ${F.targetLabel}.`,
+  ],
+  cta: "Back Presence",
+  // shown while the campaign checkout is not open (src/content/campaign.ts)
+  pending: "Campaign opening soon",
+  beforeTitle: "Before you are asked to pay",
+  // every one of these is set in campaign.ts → terms before the checkout opens
+  before: [
+    "Whether you are charged now, only if the target is reached, or a refundable deposit",
+    "The campaign deadline",
+    "Refund and cancellation terms",
+    "Fulfilment conditions and delivery timing",
+    "Customer support details",
+  ],
+  noPayment: "No payments or reservations are being taken yet.",
 } as const;
 
 /* ---------------- Register Your Interest form ---------------- */
@@ -124,13 +154,13 @@ export const PRIMARY_USES = [
 export const INTEREST_FORM_COPY = {
   kicker: "REGISTER INTEREST",
   title: "Stay close to Presence.",
-  body: "Not ready to pre-order yet? Register for Presence updates, launch news and Founding 100 availability.",
-  consentLabel: "I agree that Spirit Connect may email me about Presence, its launch and the Founding 100. I can unsubscribe at any time.",
+  body: `Free and non-binding. Receive Presence updates and news of the Founding ${F.targetLabel} campaign — without purchasing or reserving a unit.`,
+  consentLabel: `I agree that Spirit Connect may email me about Presence, its launch and the Founding ${F.targetLabel} campaign. I can unsubscribe at any time.`,
   submit: "Register interest",
-  note: "Free, with no commitment. Registering interest does not reserve a Founding unit.",
+  note: `Registering interest is not a purchase, does not reserve a unit and does not count toward the ${F.targetLabel} commitments.`,
   success: {
     title: "You're on the list.",
-    body: "We'll keep you updated on Presence, the online experience and Founding 100 availability.",
+    body: `We'll keep you updated on Presence, the online experience and the Founding ${F.targetLabel} campaign. This is not a commitment to buy.`,
   },
   notConfigured: {
     title: "Registration opens soon.",

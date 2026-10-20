@@ -20,21 +20,14 @@ export default function WorkspaceFallback({ tabIndex }: { tabIndex?: number }) {
             {PRESENCE_SCREEN.cta} <span aria-hidden="true">→</span>
           </span>
         </Link>
-        <a
-          className={styles.monitor}
-          href={AIPE_SCREEN.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          tabIndex={tabIndex}
-        >
+        <Link className={styles.monitor} href={AIPE_SCREEN.href} tabIndex={tabIndex}>
           <span className={styles.eyebrow}>ENERGY / ENGINEERING</span>
           <span className={styles.title}>{AIPE_SCREEN.title}</span>
           <span className={styles.line}>{AIPE_SCREEN.headline.join(" ")}</span>
           <span className={styles.cta}>
-            {AIPE_SCREEN.cta} <span aria-hidden="true">↗</span>
-            <span className="sr-only"> (opens external site)</span>
+            {AIPE_SCREEN.cta} <span aria-hidden="true">→</span>
           </span>
-        </a>
+        </Link>
       </div>
       <div className={styles.device} aria-hidden="true">
         <div className={styles.chamber}>
@@ -43,7 +36,7 @@ export default function WorkspaceFallback({ tabIndex }: { tabIndex?: number }) {
         <div className={styles.speaker} />
       </div>
       <div className={styles.desk} aria-hidden="true">
-        <span>{WORKSPACE.loop}</span>
+        <span>{WORKSPACE.statement}</span>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import styles from "./FutureAction.module.css";
 
 type Props = {
-  /** the destination from src/content/pricing.ts → PRESENCE_RELEASE; null while it isn't live */
+  /** the destination (src/content/pricing.ts, src/content/campaign.ts); null while it isn't live */
   href: string | null;
   /** stable id for the pending note, so the unavailable control can reference it */
   id: string;
@@ -15,7 +15,7 @@ type Props = {
 };
 
 /**
- * A call to action whose destination goes live later (Try Presence, Pre-order).
+ * A call to action whose destination goes live later (Try Presence, Back Presence).
  *
  * With a URL it is an ordinary link. Without one it never pretends: no href,
  * no fake page — the control is announced as an unavailable link, stays

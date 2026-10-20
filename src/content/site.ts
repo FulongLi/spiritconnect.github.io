@@ -4,7 +4,32 @@
  * Spirit Connect is the parent company and master brand. Its divisions are
  * described here once and referenced by the header, the journey, the
  * interior stage and the About page.
+ *
+ * Three statements, three levels — keep them apart:
+ *   Spirit Connect  COMPANY.tagline    the company's connection philosophy
+ *   Presence        DIVISIONS.presence.tagline
+ *                                      the human interface to intelligent systems
+ *   AIPE            AIPE_VISION (= DIVISIONS.aipe.tagline)
+ *                                      intelligent engineering for energy and power systems
+ *
+ * The energy–AI statement belongs to AIPE: use it where the energy–AI loop
+ * itself is being explained (the lunar engineering chapter, /aipe, the
+ * loop on /about), not as the purpose of the whole company.
  */
+
+/**
+ * A display statement composed line by line: each entry is one phrase that
+ * is set on a line of its own and never broken inside.
+ */
+export type Statement = readonly string[];
+
+/** a statement as running text (metadata, screen readers, footers) */
+export function statementText(statement: Statement) {
+  return statement.join(" ");
+}
+
+/** The AIPE engineering vision: the energy–AI feedback loop. */
+export const AIPE_VISION: Statement = ["ENERGY POWERS AI.", "AI DESIGNS ENERGY."];
 
 export const COMPANY = {
   name: "Spirit Connect",
@@ -12,7 +37,8 @@ export const COMPANY = {
   founded: "June 2025",
   domain: "spiritconnect.co.uk",
   url: "https://spiritconnect.co.uk",
-  vision: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
+  /** the master-brand statement, composed as two lines */
+  tagline: ["NO MATTER WHERE YOU ARE,", "YOU ARE ALWAYS CONNECTED."] as Statement,
   /**
    * Public contact address. Leave null until there is a monitored inbox —
    * when set, the Register Interest form offers it as a fallback while the
@@ -37,8 +63,8 @@ export const BRAND = {
 } as const;
 
 /**
- * The self-improving loop at the centre of Spirit Connect.
- * Rendered as the loop diagram on the About page.
+ * The self-improving energy–AI loop at the centre of the AIPE vision.
+ * Rendered as the loop diagram on the About page and summarised on /aipe.
  */
 export const VISION_LOOP = [
   { id: "energy", label: "Energy system", detail: "Generation, storage and conversion power everything that follows." },
@@ -55,14 +81,17 @@ export type Division = {
   name: string;
   /** what the division is, in a few words */
   role: string;
-  /** the division's one-line statement (display type) */
-  tagline?: string;
+  /** the division's statement (display type), one phrase per line */
+  tagline?: Statement;
   summary: string;
+  /** the division's page on this site, or its external site */
   href: string;
   external: boolean;
+  /** the division's own standalone platform, when it has one (always external) */
+  platformUrl?: string;
   /**
    * primary: promoted across the Spirit Connect site
-   * division: shown as an independent division with an external entry point
+   * division: shown as a distinct division, introduced here, with its own platform
    * archived: kept on record, not shown in navigation or the interior
    */
   visibility: "primary" | "division" | "archived";
@@ -73,7 +102,7 @@ export const DIVISIONS: Record<DivisionId, Division> = {
     id: "presence",
     name: "Presence",
     role: "Human interface to intelligent systems",
-    tagline: "AI, WITH A PRESENCE.",
+    tagline: ["AI, WITH A PRESENCE."],
     summary:
       "A visual and voice interface for AI — for conversation, work, engineering and everyday life.",
     href: "/presence",
@@ -83,12 +112,14 @@ export const DIVISIONS: Record<DivisionId, Division> = {
   aipe: {
     id: "aipe",
     name: "AIPE",
-    role: "Engineering intelligence for power systems",
-    tagline: "AI DESIGNS ENERGY.",
+    role: "Intelligent engineering for energy and power systems",
+    tagline: AIPE_VISION,
     summary:
       "AI-driven power electronics engineering: the tools, research and workflows that let AI design energy systems — and close the loop.",
-    href: "https://aipel.co.uk",
-    external: true,
+    // the Spirit Connect introduction first; it leads on to the platform
+    href: "/aipe",
+    external: false,
+    platformUrl: "https://aipel.co.uk",
     visibility: "division",
   },
   // Kept harmlessly isolated: Fantasy is not a commercial division at this
@@ -115,6 +146,6 @@ export type NavItem = {
 export const MAIN_NAV: NavItem[] = [
   { id: "vision", label: "Vision", href: "/" },
   { id: "presence", label: "Presence", href: DIVISIONS.presence.href },
-  { id: "aipe", label: "AIPE", href: DIVISIONS.aipe.href, external: true },
+  { id: "aipe", label: "AIPE", href: DIVISIONS.aipe.href },
   { id: "about", label: "About", href: "/about" },
 ];
