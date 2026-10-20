@@ -1,0 +1,128 @@
+/* Founding 1,000 progress (see CampaignProgress.tsx). Colours come from the
+   Presence tokens on the page (src/app/presence/page.module.css → .page).
+   One thousand points of silver — one per founding place. Before the
+   campaign opens they are all unlit; confirmed commitments light them. */
+
+.progress {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--p-line);
+  font-family: var(--p-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.label {
+  color: var(--p-text);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--p-faint);
+  text-align: right;
+}
+
+/* a single dim particle: not yet lit */
+.progress[data-status="pre-launch"] .status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--p-accent);
+  animation: statusPulse 3.2s var(--p-ease) infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* the field: --cols × --rows points, drawn as one repeating gradient */
+.field {
+  --dot: rgba(206, 211, 218, 0.2);
+  --cell-x: calc(100% / var(--cols));
+  --cell-y: calc(100% / var(--rows));
+
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--cols) / var(--rows);
+  margin: 22px 0 18px;
+  background-image: radial-gradient(circle at center, var(--dot) 0 1.1px, transparent 1.6px);
+  background-size: var(--cell-x) var(--cell-y);
+}
+
+/* unlit, the field breathes very slowly — present, waiting */
+.progress[data-status="pre-launch"] .field {
+  animation: fieldBreathe calc(var(--p-dur-ambient) * 1.2) var(--p-ease) infinite;
+}
+
+@keyframes fieldBreathe {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* confirmed commitments: the same grid, lit, clipped to the count */
+.lit {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at center, var(--p-highlight) 0 1.3px, transparent 1.9px);
+  background-size: var(--cell-x) var(--cell-y);
+  filter: drop-shadow(0 0 3px var(--p-glow));
+}
+
+.count {
+  margin: 0;
+  color: var(--p-muted);
+  font-family: var(--p-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.count strong {
+  margin-right: 4px;
+  color: var(--p-text);
+  font-family: var(--p-font-sans);
+  font-size: 28px;
+  font-weight: 200;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 0;
+  color: var(--p-faint);
+  font-size: 13px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress[data-status="pre-launch"] .status::before,
+  .progress[data-status="pre-launch"] .field {
+    animation: none;
+  }
+}

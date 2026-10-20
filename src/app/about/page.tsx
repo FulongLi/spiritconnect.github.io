@@ -1,21 +1,19 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import SiteHeader from "@/components/site/SiteHeader";
 import Footer from "@/components/overlay/components/Footer/Footer";
 import { Reveal } from "@/components/presence/PageEffects";
-import { COMPANY, DIVISIONS, VISION_LOOP } from "@/content/site";
+import { AIPE_VISION, COMPANY, DIVISIONS, VISION_LOOP, type Statement } from "@/content/site";
 import { NEWS_ITEMS } from "@/content/news";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Spirit Connect closes the loop between AI and energy: energy powers AI, and AI designs energy. Presence is its interface to intelligent systems; AIPE its engineering division.",
+    "No matter where you are, you are always connected. Spirit Connect connects people, intelligence, technology and the physical world — through Presence, the human interface to intelligent systems, and AIPE, intelligent engineering for energy and power systems.",
   alternates: { canonical: "/about" },
 };
-
-/** the vision statement, one sentence per line */
-const VISION_LINES = COMPANY.vision.split(/(?<=\.)\s+/);
 
 // loop diagram geometry (SVG units)
 const R = 150;
@@ -39,11 +37,14 @@ const TICKS = Array.from({ length: 60 }, (_, i) => {
   return { major, x1: C + Math.cos(a) * r0, y1: C + Math.sin(a) * r0, x2: C + Math.cos(a) * r1, y2: C + Math.sin(a) * r1 };
 });
 
-function StatementLines({ className }: { className: string }) {
-  return VISION_LINES.map((line) => (
-    <span key={line} className={className}>
-      {line}
-    </span>
+/** a composed statement: one phrase per line (or per phrase box), never broken inside */
+function StatementLines({ statement, className }: { statement: Statement; className: string }) {
+  // the space between phrases sits outside them: inside an inline-block it would collapse
+  return statement.map((line, i) => (
+    <Fragment key={line}>
+      {i > 0 && " "}
+      <span className={className}>{line}</span>
+    </Fragment>
   ));
 }
 
@@ -56,23 +57,61 @@ export default function AboutPage() {
         <section className={styles.hero} aria-labelledby="about-title">
           <p className={styles.kicker}>ABOUT {COMPANY.name.toUpperCase()}</p>
           <h1 id="about-title" className={styles.title}>
-            <StatementLines className={styles.line} />
+            <StatementLines statement={COMPANY.tagline} className={styles.line} />
           </h1>
           <p className={styles.lead}>
-            {COMPANY.name} is building a self-improving loop between AI and energy. Energy systems
-            power computation; AI learns those systems and designs better ones — and every improved
-            system returns new data to the loop.
+            {COMPANY.name} connects people, intelligence, technology and the physical world. Its work
+            runs in two directions: {DIVISIONS.presence.name}, the human interface to intelligent
+            systems, and {DIVISIONS.aipe.name}, intelligent engineering for the energy and power systems
+            that intelligence runs on.
           </p>
+        </section>
+
+        <section className={styles.section} aria-labelledby="divisions-title">
+          <p className={styles.kicker}>01 / STRUCTURE</p>
+          <h2 id="divisions-title" className={styles.h2}>
+            <span className={styles.phrase}>ONE COMPANY.</span> <span className={styles.phrase}>TWO DIRECTIONS.</span>
+          </h2>
+          <div className={styles.divisions}>
+            {divisions.map((d, i) => (
+              <Reveal key={d.id} className={styles.division} delay={i * 100}>
+                <h3 className={styles.divisionName}>{d.name}</h3>
+                <p className={styles.divisionRole}>{d.role}</p>
+                {d.tagline && (
+                  <p className={styles.divisionTagline}>
+                    <StatementLines statement={d.tagline} className={styles.phrase} />
+                  </p>
+                )}
+                <p className={styles.divisionSummary}>{d.summary}</p>
+                <div className={styles.divisionLinks}>
+                  {d.external ? (
+                    <a className={styles.textLink} href={d.href} target="_blank" rel="noopener noreferrer">
+                      Explore {d.name} <span aria-hidden="true">↗</span>
+                      <span className="sr-only"> (opens external site)</span>
+                    </a>
+                  ) : (
+                    <Link className={styles.textLink} href={d.href}>
+                      Explore {d.name} <span aria-hidden="true">→</span>
+                    </Link>
+                  )}
+                  {d.platformUrl && (
+                    <a className={styles.quietLink} href={d.platformUrl} target="_blank" rel="noopener noreferrer">
+                      {new URL(d.platformUrl).host} <span aria-hidden="true">↗</span>
+                      <span className="sr-only"> (opens external site)</span>
+                    </a>
+                  )}
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </section>
 
         <section id="vision" className={styles.section} aria-labelledby="loop-title">
           <div className={styles.loop}>
             <Reveal className={styles.diagram}>
               <svg viewBox="0 0 400 400" role="img" aria-labelledby="loop-svg-title">
-                <title id="loop-svg-title">
-                  The Spirit Connect loop: {VISION_LOOP.map((s) => s.label).join(", then ")}, and back to
-                  the start.
-                </title>
+                {/* one string: <title> must have a single text child to render and hydrate */}
+                <title id="loop-svg-title">{`The AIPE loop: ${VISION_LOOP.map((s) => s.label).join(", then ")}, and back to the start.`}</title>
                 <g className={styles.scale}>
                   {TICKS.map((t, i) => (
                     <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} data-major={t.major || undefined} />
@@ -99,10 +138,15 @@ export default function AboutPage() {
               </svg>
             </Reveal>
             <div>
-              <p className={styles.kicker}>01 / THE LOOP</p>
+              <p className={styles.kicker}>02 / THE AIPE VISION</p>
               <h2 id="loop-title" className={styles.h2}>
-                <StatementLines className={styles.line} />
+                <StatementLines statement={AIPE_VISION} className={styles.line} />
               </h2>
+              <p className={styles.loopLead}>
+                At the centre of {DIVISIONS.aipe.name} is a self-improving loop between AI and energy.
+                Energy systems power computation; AI learns those systems and designs better ones — and
+                every improved system returns new data to the loop.
+              </p>
               <ol className={styles.steps}>
                 {VISION_LOOP.map((step, i) => (
                   <Reveal as="li" key={step.id} className={styles.step} delay={i * 70}>
@@ -114,37 +158,15 @@ export default function AboutPage() {
                   </Reveal>
                 ))}
               </ol>
-              <Link className={styles.textLink} href="/">
-                Experience the journey <span aria-hidden="true">→</span>
-              </Link>
+              <div className={styles.divisionLinks}>
+                <Link className={styles.textLink} href={DIVISIONS.aipe.href}>
+                  Discover {DIVISIONS.aipe.name} <span aria-hidden="true">→</span>
+                </Link>
+                <Link className={styles.quietLink} href="/">
+                  Experience the journey <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             </div>
-          </div>
-        </section>
-
-        <section className={styles.section} aria-labelledby="divisions-title">
-          <p className={styles.kicker}>02 / STRUCTURE</p>
-          <h2 id="divisions-title" className={styles.h2}>
-            <span className={styles.phrase}>ONE COMPANY.</span> <span className={styles.phrase}>TWO DIRECTIONS.</span>
-          </h2>
-          <div className={styles.divisions}>
-            {divisions.map((d, i) => (
-              <Reveal key={d.id} className={styles.division} delay={i * 100}>
-                <h3 className={styles.divisionName}>{d.name}</h3>
-                <p className={styles.divisionRole}>{d.role}</p>
-                {d.tagline && <p className={styles.divisionTagline}>{d.tagline}</p>}
-                <p className={styles.divisionSummary}>{d.summary}</p>
-                {d.external ? (
-                  <a className={styles.textLink} href={d.href} target="_blank" rel="noopener noreferrer">
-                    Explore {d.name} <span aria-hidden="true">↗</span>
-                    <span className="sr-only"> (opens external site)</span>
-                  </a>
-                ) : (
-                  <Link className={styles.textLink} href={d.href}>
-                    Explore {d.name} <span aria-hidden="true">→</span>
-                  </Link>
-                )}
-              </Reveal>
-            ))}
           </div>
         </section>
 

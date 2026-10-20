@@ -13,7 +13,7 @@ import {
   scrollToStory,
   storyToScroll,
 } from "@/content/journey";
-import { COMPANY } from "@/content/site";
+import { COMPANY, statementText, type Statement } from "@/content/site";
 import {
   nextExperienceState,
   planRendering,
@@ -50,16 +50,24 @@ function fadeWindow(p: number, start: number, end: number) {
   return 1;
 }
 
-/** a title whose sentences each stay on one line (hero + coda: one line per sentence) */
-function Sentences({ text }: { text: string }) {
-  const parts = text.split(". ");
-  if (parts.length < 2) return text;
+/**
+ * A title whose sentences each stay on one line. A composed statement (the
+ * hero, the coda) gives its lines explicitly; a plain title is split into
+ * sentences.
+ */
+function Sentences({ text }: { text: string | Statement }) {
+  const parts = typeof text === "string" ? text.split(". ").map((t, i, all) => (i < all.length - 1 ? `${t}.` : t)) : text;
+  if (parts.length < 2) return parts[0] ?? "";
   return parts.map((part, i) => (
     <Fragment key={i}>
       {i > 0 && " "}
-      <span className={styles.sentence}>{i < parts.length - 1 ? `${part}.` : part}</span>
+      <span className={styles.sentence}>{part}</span>
     </Fragment>
   ));
+}
+
+function asText(title: string | Statement) {
+  return typeof title === "string" ? title : statementText(title);
 }
 
 function clamp01(n: number) {
@@ -306,7 +314,7 @@ export default function JourneyExperience() {
       tabIndex={-1}
     >
       <h1 className="sr-only">
-        {COMPANY.name} — {COMPANY.vision}
+        {COMPANY.name} — {statementText(COMPANY.tagline)}
       </h1>
 
       {/* scroll length */}
@@ -452,8 +460,8 @@ export default function JourneyExperience() {
         <ol>
           {CHAPTERS.map((c) => (
             <li key={c.id}>
-              {c.kicker}: {c.title} {c.sub} {c.tags?.join(", ")}
-              {c.coda && ` ${c.coda.title}`}
+              {c.kicker}: {asText(c.title)} {c.sub} {c.tags?.join(", ")}
+              {c.coda && ` ${asText(c.coda.title)}`}
             </li>
           ))}
         </ol>

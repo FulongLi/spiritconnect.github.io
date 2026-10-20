@@ -13,12 +13,15 @@
 /*   becomes data and intelligence → AI redesigns the energy system.   */
 /* ------------------------------------------------------------------ */
 
+import { AIPE_VISION, COMPANY, type Statement } from "./site";
+
 export type Chapter = {
   id: string;
   start: number;
   end: number;
   kicker: string;
-  title: string;
+  /** a title, or a composed statement (one phrase per line) */
+  title: string | Statement;
   /** one short line of copy under the title (kicker → title → sub: three levels) */
   sub?: string;
   /** a short row of mono labels under the copy */
@@ -28,16 +31,24 @@ export type Chapter = {
    * The chapter's closing statement: it replaces the chapter copy in
    * place (same chapter, no new number) before the camera turns to the Dome.
    */
-  coda?: { start: number; end: number; kicker: string; title: string; sub?: string; align: "left" | "right" | "center" };
+  coda?: {
+    start: number;
+    end: number;
+    kicker: string;
+    title: string | Statement;
+    sub?: string;
+    align: "left" | "right" | "center";
+  };
 };
 
 export const CHAPTERS: Chapter[] = [
   {
+    // the master-brand statement opens the journey
     id: "hero",
     start: 0.0,
     end: 0.06,
     kicker: "SPIRIT CONNECT",
-    title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
+    title: COMPANY.tagline,
     align: "center",
   },
   /* ---- ACT I — ENERGY ---- */
@@ -109,11 +120,13 @@ export const CHAPTERS: Chapter[] = [
     title: "AI DESIGNS THE NEXT SYSTEM.",
     sub: "The physical system becomes data. AI learns from it — then returns to redesign the energy system.",
     align: "left",
+    // the loop closes on the AIPE engineering vision: this is the moment
+    // the energy–AI feedback is shown, so its statement belongs here
     coda: {
       start: 0.752,
       end: 0.805,
-      kicker: "SPIRIT CONNECT",
-      title: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
+      kicker: "SPIRIT CONNECT / AIPE",
+      title: AIPE_VISION,
       align: "center",
     },
   },

@@ -1,3 +1,4 @@
+import { FOUNDING_CAMPAIGN } from "@/content/campaign";
 import { PRESENCE_PRICING } from "@/content/pricing";
 import type {
   InterestFormValues,
@@ -83,9 +84,10 @@ export function buildSubmission(
   return {
     ...values,
     email: values.email.trim(),
-    schemaVersion: 2,
+    schemaVersion: 3,
     product: "presence",
-    programme: "founding-100",
+    programme: FOUNDING_CAMPAIGN.id,
+    registration: "interest-only",
     foundingPrice: PRESENCE_PRICING.foundingPrice,
     currency: PRESENCE_PRICING.currency,
     source,

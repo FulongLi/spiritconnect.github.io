@@ -1,26 +1,27 @@
 /**
- * Presence Founding 100 pre-order pricing and release — the single source of
- * truth.
+ * Presence Hardware pricing and release — the single source of truth.
  *
  * Every price, launch window and outbound product link shown anywhere on the
  * site (Presence page, interior stage, interest submission payload) is read
- * from here. Change a value once and it updates everywhere.
+ * from here. Change a value once and it updates everywhere. The Founding
+ * 1,000 campaign (target, state, checkout and terms) lives in
+ * `./campaign.ts` and reads its price from here.
  *
- * The site itself never takes payment: pre-orders happen at an external
- * checkout, linked from `PRESENCE_RELEASE.preorderUrl`.
+ * The site itself never takes payment.
  */
 export const PRESENCE_PRICING = {
   currency: "GBP",
-  /** Founding 100 pre-order price for the first production units. */
+  /** Founding 1,000 campaign price per Presence Hardware unit. */
   foundingPrice: 399,
   /** Planned future retail price. */
   plannedRetailPrice: 699,
-  /** Number of units in the Founding 100 allocation. */
-  foundingAllocation: 100,
 } as const;
 
 type PresenceRelease = {
-  /** Planned launch window — always presented as planned, never guaranteed. */
+  /**
+   * Planned release window — always presented as planned and conditional on
+   * the Founding 1,000 campaign and production readiness, never guaranteed.
+   */
   plannedLaunch: string;
   /**
    * The live online Presence experience (the "Try Presence" CTA).
@@ -28,18 +29,11 @@ type PresenceRelease = {
    * "Online experience coming soon" state instead of a link.
    */
   experienceUrl: string | null;
-  /**
-   * The external pre-order checkout / reservation page (the "Pre-order
-   * Presence" CTAs). `null` until the provider is live: the CTAs then show a
-   * "Pre-order opening soon" state. Set an absolute https URL to activate them.
-   */
-  preorderUrl: string | null;
 };
 
 export const PRESENCE_RELEASE: PresenceRelease = {
   plannedLaunch: "Summer 2027",
   experienceUrl: null,
-  preorderUrl: null,
 };
 
 export function formatPrice(amount: number, currency: string = PRESENCE_PRICING.currency) {
@@ -48,6 +42,11 @@ export function formatPrice(amount: number, currency: string = PRESENCE_PRICING.
     currency,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+/** whole numbers with UK digit grouping: 1000 → "1,000" */
+export function formatCount(n: number) {
+  return new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 }).format(n);
 }
 
 export const FOUNDING_PRICE_LABEL = formatPrice(PRESENCE_PRICING.foundingPrice);

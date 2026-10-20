@@ -138,6 +138,6 @@ export const paintAipeScreen: ScreenPainter = (ctx, w, h, opts) => {
     spacedText(ctx, C.scales[i].toUpperCase(), lineX + 190 * s, y + 2, 4 * s);
   });
 
-  drawButton(ctx, 658 * s, C.cta.toUpperCase(), "↗", s, opts);
+  drawButton(ctx, 658 * s, C.cta.toUpperCase(), "→", s, opts);
   drawHoverFrame(ctx, w, h, s, opts.hover);
 };

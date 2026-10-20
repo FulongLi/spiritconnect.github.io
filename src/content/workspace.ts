@@ -1,4 +1,4 @@
-import { DIVISIONS } from "./site";
+import { COMPANY, DIVISIONS, statementText } from "./site";
 
 /* ------------------------------------------------------------------ */
 /* The Spirit Connect workspace — final destination of the lunar      */
@@ -12,7 +12,8 @@ export type WorkspaceScreenId = "presence" | "aipe";
 export const WORKSPACE = {
   /** section label for assistive technology */
   label: "The Spirit Connect workspace",
-  loop: "ENERGY POWERS AI. AI DESIGNS ENERGY.",
+  /** the master-brand statement: the journey ends inside the company */
+  statement: statementText(COMPANY.tagline),
 } as const;
 
 export const PRESENCE_SCREEN = {
@@ -28,11 +29,15 @@ export const PRESENCE_SCREEN = {
   linkLabel: "Presence — AI, with a presence. Explore Presence",
 } as const;
 
-/** mirrors the current AIPE site (aipel.co.uk) */
+/**
+ * Mirrors the current AIPE site (aipel.co.uk). The monitor opens /aipe —
+ * the Spirit Connect introduction to the division — which leads on to the
+ * platform itself.
+ */
 export const AIPE_SCREEN = {
   id: "aipe",
   href: DIVISIONS.aipe.href,
-  external: true,
+  external: false,
   eyebrow: "SPIRIT CONNECT · ENERGY / ENGINEERING",
   title: "AIPE",
   headline: ["The AI that designs", "the power systems", "that power AI."],

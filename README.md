@@ -1,11 +1,13 @@
 # Spirit Connect
 
-**ENERGY POWERS AI. AI DESIGNS ENERGY.**
+**NO MATTER WHERE YOU ARE, YOU ARE ALWAYS CONNECTED.**
 
-Spirit Connect is the parent company and master brand. Its idea is a
-self-improving loop: an energy system powers computation and AI; AI
-understands and redesigns that energy system; the improved system returns new
-data; and the loop continues.
+Spirit Connect is the parent company and master brand, connecting people,
+intelligence, technology and the physical world. It works in two directions:
+**Presence** (*AI, with a presence.*) and **AIPE** (*Energy powers AI. AI
+designs energy.* — a self-improving loop: an energy system powers computation
+and AI; AI understands and redesigns that energy system; the improved system
+returns new data; and the loop continues).
 
 Public site: [https://spiritconnect.co.uk](https://spiritconnect.co.uk)
 
@@ -13,14 +15,14 @@ Public site: [https://spiritconnect.co.uk](https://spiritconnect.co.uk)
 
 | | Role on this site | Where |
 | --- | --- | --- |
-| **Spirit Connect** | the vision — futuristic, cinematic, immersive | `/` (lunar journey), `/about` |
+| **Spirit Connect** | the company — *No matter where you are, you are always connected.* | `/` (lunar journey), `/about` |
 | **Presence** | the interface between people and intelligent systems; the primary product promoted here | the journey's interior stage, `/presence` |
-| **AIPE** | the engineering division that helps close the AI-energy loop; has its own independent, engineering-style website | workspace display → [aipel.co.uk](https://aipel.co.uk) ↗ |
+| **AIPE** | intelligent engineering for energy and power systems — *Energy powers AI. AI designs energy.*; introduced on `/aipe`, which leads to its own platform | `/aipe` → [aipel.co.uk](https://aipel.co.uk) ↗ |
 
 Fantasy is kept on record (`DIVISIONS.fantasy`, `visibility: "archived"`) but
 is not shown in navigation or the interior.
 
-Navigation: **Vision** (`/`) · **Presence** (`/presence`) · **AIPE ↗** · **About** (`/about`).
+Navigation: **Vision** (`/`) · **Presence** (`/presence`) · **AIPE** (`/aipe`) · **About** (`/about`).
 
 ## The experience
 
@@ -35,17 +37,22 @@ Navigation: **Vision** (`/`) · **Presence** (`/presence`) · **AIPE ↗** · **
    reads as one network: the lit world recedes, **energy** (amber) flows out
    to the loads, **data** (blue) flows in to the data centre, and feedback
    waves travel from the data centre back through the network to the
-   sources. The chapter closes on *Energy powers AI. AI designs energy.*
+   sources. The chapter closes on the AIPE statement, *Energy powers AI. AI
+   designs energy.* (The journey opens on the master statement.)
 2. **Into the Dome** — the camera descends along the main Dome's entrance
    axis to the airlock (*Enter Spirit Connect*) and flies into the vestibule,
    where the workspace scene — the same building, from
    `shared/domeArchitecture` — cross-fades in and carries on through the Dome.
 3. **The workspace** — a ring workstation at the centre of the Dome: the
    **Presence** device (the particle entity in its glass chamber) and two
-   equal displays, **Presence** (`/presence`) and **AIPE** (aipel.co.uk).
-4. **`/presence`** — app animation (hero), what Presence is, demo, work +
-   everyday, hardware (pre-order phase, planned launch Summer 2027),
-   **Founding 100 (£399)**, then Pre-order / Register Interest.
+   equal displays, **Presence** (`/presence`) and **AIPE** (`/aipe`).
+4. **`/presence`** — app animation (hero), what Presence is, demo + Try
+   Presence, work + everyday, hardware, **Founding 1,000** (the conditional
+   launch campaign: 1,000 qualifying commitments at £399 → production; planned
+   release Summer 2027, conditional), campaign status, then Back Presence /
+   Register Interest.
+5. **`/aipe`** — AIPE at the Spirit Connect level: the engineering vision,
+   the idea, devices → systems, and the way into aipel.co.uk.
 
 ## Editing content
 
@@ -55,20 +62,24 @@ All copy and numbers live in `src/content/`:
 | --- | --- |
 | `journey.ts` | chapters, scroll pacing, cinematic timeline, loop + information-view intensity |
 | `presence.ts` | Presence page + interior copy, form options, media slots |
-| `pricing.ts` | **founding price £399, planned retail £699, 100 units**, planned launch, pre-order + Try Presence URLs (single source) |
-| `site.ts` | company info, vision loop, divisions + links, main nav |
+| `pricing.ts` | **founding price £399, planned retail £699**, planned release, Try Presence URL (single source) |
+| `campaign.ts` | **Founding 1,000**: target, phase, checkout URL, customer terms, derived figures (gross £399,000) |
+| `site.ts` | company statement, AIPE vision, vision loop, divisions + links, main nav |
+| `aipe.ts` | `/aipe` page copy |
 | `news.ts` | news list (About page) |
 
 Presence media: see [docs/presence-media.md](docs/presence-media.md).
-Interest form backend: see [docs/register-interest.md](docs/register-interest.md).
+Interest form backend, Back Presence checkout and campaign progress: see
+[docs/register-interest.md](docs/register-interest.md).
 
 ## Rendering architecture
 
 ```text
-src/app/                         routes: /, /journey, /presence, /about, /branches/* (legacy redirects)
+src/app/                         routes: /, /journey, /presence, /aipe, /about, /branches/* (legacy redirects)
 src/content/                     editable content + configuration
 src/lib/render/                  renderLoop (rAF + tab-visibility pause), experienceState
 src/lib/interest/                Register Interest submission pipeline
+src/lib/campaign/                Founding 1,000 progress source (authoritative count only)
 src/components/energyTown/       lunar journey (WebGL)
   JourneyExperience.tsx            scroll → story progress, chapters, transitions, lifecycle
   TownCanvas.tsx                   React wrapper (active / suspended / fallback)

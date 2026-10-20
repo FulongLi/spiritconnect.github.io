@@ -513,7 +513,7 @@
   line-height: 1.6;
 }
 
-/* ── founding 100 ────────────────────────────────────────────────────── */
+/* ── founding 1,000 ──────────────────────────────────────────────────── */
 
 .founding {
   position: relative;
@@ -532,8 +532,8 @@
   background:
     linear-gradient(90deg, transparent, var(--p-line-strong), transparent) top / 100% 1px no-repeat,
     linear-gradient(90deg, transparent, var(--p-line), transparent) bottom / 100% 1px no-repeat,
-    radial-gradient(ellipse 46% 44% at 50% 36%, var(--p-glow), transparent 72%),
-    radial-gradient(ellipse 80% 70% at 50% 45%, var(--p-glow-soft), transparent 80%);
+    radial-gradient(ellipse 46% 44% at 50% 30%, var(--p-glow), transparent 72%),
+    radial-gradient(ellipse 80% 70% at 50% 40%, var(--p-glow-soft), transparent 80%);
   animation: breathe calc(var(--p-dur-ambient) * 1.3) var(--p-ease) infinite;
 }
 
@@ -541,7 +541,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
   text-align: center;
 }
@@ -556,8 +556,19 @@
   letter-spacing: 0.32em;
 }
 
+.foundingTitle {
+  margin: 22px 0 0;
+  padding-left: 0.14em;
+  color: var(--p-text);
+  font-family: var(--p-font-display);
+  font-size: clamp(30px, 3.4vw, 44px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.14em;
+}
+
 .price {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   font-size: clamp(96px, 15vw, 196px);
   font-weight: 200;
   line-height: 0.95;
@@ -569,38 +580,20 @@
   color: transparent;
 }
 
-.allocation {
-  margin: 14px 0 0;
+/* the campaign's message: two phrases, each kept on its own line */
+.foundingStatement {
+  display: flex;
+  flex-direction: column;
+  margin: 30px 0 22px;
   color: var(--p-text);
-  font-size: clamp(17px, 1.5vw, 19px);
-  font-weight: 400;
+  font-family: var(--p-font-display);
+  font-size: clamp(24px, 3vw, 38px);
+  line-height: 1.04;
+  letter-spacing: 0.04em;
 }
 
-/* one hundred particles — one per founding unit */
-.units {
-  display: grid;
-  grid-template-columns: repeat(20, 4px);
-  gap: 12px;
-  margin: 40px 0 38px;
-}
-
-.units span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--p-highlight);
-  opacity: 0.5;
-  animation: unitGlow 6s var(--p-ease) var(--d, 0ms) infinite;
-}
-
-@keyframes unitGlow {
-  0%,
-  100% {
-    opacity: 0.28;
-  }
-  45% {
-    opacity: 0.95;
-  }
+.foundingStatement span {
+  white-space: nowrap;
 }
 
 .foundingBody {
@@ -612,13 +605,14 @@
   text-wrap: pretty;
 }
 
-/* planned retail · planned launch — one quiet line of facts */
+/* target · price · retail · release — quiet lines of facts */
 .foundingFacts {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px 32px;
-  margin: 22px 0 38px;
+  max-width: 620px;
+  margin: 26px 0 0;
   font-family: var(--p-font-mono);
   font-size: 12px;
   letter-spacing: 0.08em;
@@ -643,6 +637,11 @@
   color: var(--p-text);
 }
 
+.foundingProgress {
+  width: 100%;
+  margin: clamp(44px, 6vw, 64px) 0 clamp(40px, 5vw, 52px);
+}
+
 .foundingActions {
   display: flex;
   flex-wrap: wrap;
@@ -652,14 +651,23 @@
 }
 
 .finePrint {
-  margin: 24px 0 0;
-  max-width: 500px;
+  max-width: 540px;
+  margin: 28px 0 0;
   color: var(--p-faint);
   font-size: 13px;
   line-height: 1.6;
+  text-wrap: pretty;
 }
 
-/* ── pre-order | register interest ───────────────────────────────────── */
+.finePrint p {
+  margin: 0;
+}
+
+.finePrint p + p {
+  margin-top: 8px;
+}
+
+/* ── back presence | register interest ───────────────────────────────── */
 
 /* two states, one hairline between them — not two cards */
 .convert {
@@ -669,7 +677,7 @@
   padding-bottom: clamp(96px, 13vw, 170px);
 }
 
-.convertPreorder {
+.convertBack {
   position: sticky;
   top: 110px;
   padding-right: clamp(32px, 5vw, 80px);
@@ -710,6 +718,32 @@
   letter-spacing: -0.025em;
 }
 
+/* what the checkout must state before any payment — a quiet checklist */
+.beforeTitle {
+  margin: 44px 0 4px;
+  color: var(--p-faint);
+  font-family: var(--p-font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.beforeList {
+  max-width: 420px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.beforeList li {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--p-line);
+  color: var(--p-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .registerForm {
   margin-top: 36px;
 }
@@ -728,7 +762,7 @@
     gap: 32px;
   }
 
-  .convertPreorder {
+  .convertBack {
     position: static;
     padding-right: 0;
   }
@@ -797,9 +831,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .units {
-    grid-template-columns: repeat(10, 4px);
-    gap: 14px;
+  .foundingStatement {
+    font-size: clamp(19px, 6.4vw, 26px);
   }
 
   .foundingFacts {
@@ -815,20 +848,15 @@
   }
 
   .foundingActions > *,
-  .convertPreorder .primaryButton {
+  .convertBack .primaryButton {
     width: 100%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .heroHaze,
-  .foundingHaze,
-  .units span {
+  .foundingHaze {
     animation: none;
-  }
-
-  .units span {
-    opacity: 0.7;
   }
 
   .primaryButton,
