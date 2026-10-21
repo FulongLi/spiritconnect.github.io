@@ -1,22 +1,22 @@
 /* AIPE — the engineering division, introduced in the Spirit Connect
    language: black / graphite, silver and off-white type, hairlines, mono
-   microcopy. Architectural rather than HUD: no cyan, no glowing cards.
-   The only cool light is the faint cast on the hero and the flow along
-   the device → system line. */
+   microcopy. The hero is a still of the journey's own lunar micro-grid
+   (Chapter 07, the whole system); everything after it stays
+   architectural: no cyan, no glowing cards. */
 
 .page {
   --muted: var(--ink-soft);
   --line: var(--hairline);
-  --cool: rgba(196, 210, 226, 0.07);
+  /* the render's sky, so the hero reads before the image arrives */
+  --space: #050608;
+  --bg: #0a0a0b;
   --gutter: clamp(16px, 6vw, 96px);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 
   position: relative;
   overflow-x: clip;
   color: var(--ink);
-  background:
-    radial-gradient(ellipse 80% 50% at 70% -10%, var(--cool), transparent 70%),
-    radial-gradient(ellipse 90% 55% at 50% -12%, rgba(255, 255, 255, 0.04), transparent 72%),
-    linear-gradient(180deg, #0c0d0e 0%, #0a0a0b 55%, #080809 100%);
+  background: var(--bg);
 }
 
 /* extremely faint grain, static, desktop only */
@@ -58,7 +58,7 @@
 
 .body {
   max-width: 32em;
-  margin: 0 0 18px;
+  margin: 0;
   color: var(--muted);
   font-family: var(--font-body);
   font-size: clamp(18px, 1.5vw, 21px);
@@ -67,10 +67,12 @@
 }
 
 .index {
+  margin: 0;
   color: var(--ink-micro);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
 .section {
@@ -108,35 +110,14 @@
 .primaryButton:hover,
 .primaryButton:focus-visible {
   background: linear-gradient(180deg, #ffffff, #dcdedf);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24), 0 10px 40px -12px rgba(220, 226, 234, 0.35);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 10px 40px -12px rgba(220, 226, 234, 0.35);
 }
 
-.primaryButton:focus-visible,
-.textLink:focus-visible {
+.primaryButton:focus-visible {
   outline: 2px solid rgba(200, 212, 228, 0.9);
   outline-offset: 4px;
-}
-
-.textLink {
-  display: inline-flex;
-  gap: 8px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid rgba(236, 236, 232, 0.26);
-  color: rgba(236, 236, 232, 0.88);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.textLink:hover,
-.textLink:focus-visible {
-  border-color: #ffffff;
-  color: #ffffff;
 }
 
 .host {
@@ -148,35 +129,74 @@
   text-transform: uppercase;
 }
 
-/* ── hero ────────────────────────────────────────────────────────────── */
+/* ── 01 vision: the hero over the lunar micro-grid ───────────────────── */
 
 .hero {
   position: relative;
   isolation: isolate;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: clamp(140px, 22vh, 220px) var(--gutter) clamp(40px, 6vw, 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: max(640px, 100svh);
+  padding: 112px var(--gutter) clamp(88px, 12vh, 132px);
+  overflow: hidden;
+  background: var(--space);
 }
 
-/* drafting columns: twelve hairlines, fading out below the title */
-.heroGrid {
+.heroMedia {
   position: absolute;
-  inset: 0 var(--gutter);
+  inset: 0;
   z-index: -1;
+}
+
+.heroImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* the system sits right of centre: crop from the empty left first */
+  object-position: 62% 50%;
+}
+
+/* legibility: dark on the type side only and a little under the header —
+   the installations stay untouched */
+.heroMedia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 6, 8, 0.82) 0%,
+      rgba(5, 6, 8, 0.6) 22%,
+      rgba(5, 6, 8, 0.2) 40%,
+      rgba(5, 6, 8, 0) 52%
+    ),
+    linear-gradient(180deg, rgba(5, 6, 8, 0.5) 0%, rgba(5, 6, 8, 0) 16%);
+}
+
+/* the fade into the page sits on the hero, not the image, so it stays at the
+   foot while the image drifts */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  z-index: -1;
+  height: 26%;
+  background: linear-gradient(180deg, rgba(10, 10, 11, 0), var(--bg));
   pointer-events: none;
-  background: repeating-linear-gradient(
-    90deg,
-    rgba(230, 230, 226, 0.045) 0 1px,
-    transparent 1px calc(100% / 12)
-  );
-  mask-image: linear-gradient(180deg, transparent 4%, #000 30%, #000 55%, transparent 92%);
-  -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 30%, #000 55%, transparent 92%);
+}
+
+.heroInner {
+  position: relative;
+  max-width: min(580px, 36vw);
 }
 
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(120px, 22vw, 280px);
+  font-size: clamp(96px, 11.5vw, 184px);
   font-weight: 400;
   line-height: 0.82;
   letter-spacing: 0.02em;
@@ -188,75 +208,124 @@
 
 /* the engineering statement: exactly two lines at every width */
 .statement {
-  margin: clamp(22px, 3vw, 36px) 0 0;
+  margin: clamp(18px, 2.4vw, 30px) 0 0;
   font-family: var(--font-display);
-  font-size: clamp(36px, 7vw, 84px);
+  font-size: clamp(32px, 4.2vw, 64px);
   line-height: 0.94;
   letter-spacing: 0.02em;
 }
 
+.tagline {
+  margin: clamp(22px, 2.6vw, 32px) 0 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: clamp(19px, 1.7vw, 24px);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
 .lead {
-  max-width: 34em;
-  margin: clamp(26px, 3.4vw, 40px) 0 0;
+  max-width: 30em;
+  margin: 10px 0 0;
   color: var(--muted);
   font-family: var(--font-body);
-  font-size: clamp(18px, 1.6vw, 22px);
+  font-size: clamp(16px, 1.3vw, 19px);
   font-weight: 300;
   line-height: 1.5;
-  letter-spacing: 0.01em;
 }
 
 .actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 18px 34px;
-  margin-top: clamp(32px, 4vw, 48px);
+  margin-top: clamp(28px, 3.4vw, 42px);
 }
 
-/* ── the idea ────────────────────────────────────────────────────────── */
+/* the still's source, as a film caption */
+.caption {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(28px, 4vh, 44px);
+  margin: 0;
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* 4:3-ish landscapes (tablets, small windows): crop the habitat side rather
+   than the empty side, so the battery banks stay clear of the copy */
+@media (orientation: landscape) and (max-aspect-ratio: 3/2) {
+  .heroImage {
+    object-position: 34% 50%;
+  }
+
+  .heroInner {
+    max-width: min(580px, 34vw);
+  }
+}
+
+/* phones and portrait tablets: the portrait still, its system in the lower
+   third — the type sits above it, in the sky */
+@media (orientation: portrait) {
+  .hero {
+    justify-content: flex-start;
+    padding-top: clamp(96px, 14vh, 150px);
+    /* keeps the installations clear of the type: the image covers the hero
+       from the bottom, and they fill its lowest ~36% (≈ 64vw once the hero
+       is wider than 9:16) */
+    padding-bottom: max(340px, 68vw);
+  }
+
+  .heroImage {
+    object-position: 46% 100%;
+  }
+
+  .heroMedia::after {
+    background: linear-gradient(180deg, rgba(5, 6, 8, 0.4) 0%, rgba(5, 6, 8, 0) 14%);
+  }
+
+  .hero::after {
+    height: 12%;
+  }
+
+  .heroInner {
+    max-width: 34rem;
+  }
+
+  .title {
+    font-size: clamp(96px, 26vw, 184px);
+  }
+
+  .statement {
+    font-size: clamp(32px, 9vw, 64px);
+  }
+
+  .caption {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .actions .primaryButton {
+    flex: 1;
+  }
+}
+
+/* ── 02 engineering intelligence ─────────────────────────────────────── */
 
 .split {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: clamp(28px, 6vw, 90px);
-  align-items: start;
+  align-items: end;
 }
-
-/* the loop's five stages, read as one sequence that returns to the start */
-.loop {
-  margin: 30px 0 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--line);
-}
-
-.loop li {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--line);
-  font-family: var(--font-display);
-  font-size: 22px;
-  letter-spacing: 0.05em;
-}
-
-.loop li:last-child::after {
-  content: "↻";
-  margin-left: auto;
-  color: var(--ink-micro);
-  font-family: var(--font-mono);
-  font-size: 13px;
-}
-
-/* ── devices → systems ───────────────────────────────────────────────── */
 
 .scales {
   position: relative;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: clamp(44px, 5vw, 64px) 0 0;
+  margin: clamp(56px, 7vw, 88px) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -293,7 +362,7 @@
 
 .scale {
   position: relative;
-  padding: 30px clamp(14px, 2vw, 28px) 0 0;
+  padding: 28px clamp(14px, 2vw, 28px) 0 0;
 }
 
 /* a node on the line */
@@ -308,53 +377,124 @@
   background: #ecece8;
 }
 
+/* the direction of travel, between nodes */
+.scale:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: -9px;
+  right: clamp(14px, 2vw, 28px);
+  padding: 0 8px;
+  background: var(--bg);
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .scaleLabel {
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-display);
-  font-size: clamp(24px, 2.4vw, 32px);
+  font-size: clamp(26px, 2.6vw, 36px);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0.04em;
 }
 
 .scaleDetail {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: var(--muted);
   font-family: var(--font-body);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 300;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
+/* the workflow: one quiet sequence that returns to its start */
 .workflow {
-  max-width: 42em;
-  margin: clamp(44px, 5vw, 60px) 0 0;
+  margin: clamp(56px, 7vw, 88px) 0 0;
   padding-top: 22px;
   border-top: 1px solid var(--line);
-  color: rgba(230, 230, 226, 0.8);
-  font-family: var(--font-body);
-  font-size: clamp(18px, 1.5vw, 21px);
-  font-weight: 300;
-  line-height: 1.5;
 }
 
-/* ── enter the platform ──────────────────────────────────────────────── */
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 0;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  color: rgba(230, 230, 226, 0.86);
+  font-family: var(--font-body);
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 300;
+  line-height: 1.35;
+}
+
+.flow li {
+  white-space: nowrap;
+}
+
+.flow li:not(:last-child)::after {
+  content: "→";
+  margin: 0 clamp(12px, 1.6vw, 22px);
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+}
+
+.flow li:last-child::after {
+  content: "↻";
+  margin-left: clamp(12px, 1.6vw, 22px);
+  color: var(--ink-micro);
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+}
+
+/* ── 03 enter AIPE ───────────────────────────────────────────────────── */
 
 .enter {
-  padding-bottom: clamp(100px, 13vw, 170px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-top: clamp(96px, 13vw, 160px);
+  padding: clamp(110px, 14vw, 180px) var(--gutter) clamp(150px, 20vw, 260px);
+}
+
+/* a dark sphere whose upper edge rises into the section: the Moon seen from
+   space, as the journey opens — a faint silver rim, no glow */
+.limb {
+  position: absolute;
+  top: 74%;
+  left: 50%;
+  z-index: -1;
+  width: max(1700px, 190vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 50% 0%, #17181a 0%, #0e0f10 18%, var(--bg) 40%);
+  box-shadow:
+    0 -1px 0 rgba(236, 236, 232, 0.2),
+    0 -30px 90px -50px rgba(205, 214, 226, 0.22);
 }
 
 .enterInner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: clamp(64px, 8vw, 96px);
-  border-top: 1px solid var(--line);
+  max-width: 1100px;
+  margin: 0 auto;
   text-align: center;
 }
 
+.enterInner .h2 {
+  font-size: clamp(56px, 8vw, 112px);
+  line-height: 0.9;
+}
+
 .enterInner .body {
-  margin: 24px 0 34px;
+  max-width: 30em;
+  margin: 24px 0 36px;
 }
 
 /* ── responsive ──────────────────────────────────────────────────────── */
@@ -362,6 +502,7 @@
 @media (max-width: 860px) {
   .split {
     grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
   }
 
   /* the scales stack: the line runs down the left edge */
@@ -387,7 +528,7 @@
   }
 
   .scale {
-    padding: 0 0 34px;
+    padding: 0 0 30px;
   }
 
   .scale::before {
@@ -395,8 +536,28 @@
     left: -26px;
   }
 
+  .scale:not(:last-child)::after {
+    content: none;
+  }
+
   .scaleLabel {
-    margin-top: 8px;
+    margin-top: 6px;
+  }
+
+  /* the workflow reads down the page */
+  .flow {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .flow li:not(:last-child)::after {
+    content: "↓";
+    display: block;
+    margin: 6px 0 0;
+  }
+
+  .flow li:last-child::after {
+    margin-left: 12px;
   }
 }
 
@@ -410,17 +571,82 @@
 }
 
 @media (max-width: 640px) {
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .actions .textLink {
-    align-self: flex-start;
-  }
-
   .enterInner .primaryButton {
     align-self: stretch;
+  }
+}
+
+/* ── motion ──────────────────────────────────────────────────────────── */
+/* Everything above is the finished, static page; motion is layered on
+   only when it is welcome, and only in CSS. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the still settles into place as the page opens. Animated on the wrapper,
+     never the <img>: an animated image can be composited as one texture,
+     which a 3840 px still overflows on some GPUs (it then never paints) */
+  .heroMedia {
+    animation: settle 2.6s var(--ease) backwards;
+  }
+
+  @keyframes settle {
+    from {
+      scale: 1.04;
+    }
+  }
+
+  /* the type rises in, line by line */
+  .heroInner > * {
+    animation: rise 1s var(--ease) both;
+  }
+
+  .heroInner > :nth-child(1) {
+    animation-delay: 0.15s;
+  }
+  .heroInner > :nth-child(2) {
+    animation-delay: 0.25s;
+  }
+  .heroInner > :nth-child(3) {
+    animation-delay: 0.38s;
+  }
+  .heroInner > :nth-child(4) {
+    animation-delay: 0.52s;
+  }
+  .heroInner > :nth-child(n + 5) {
+    animation-delay: 0.62s;
+  }
+
+  .caption {
+    animation: fadeIn 1.6s ease 1s both;
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* where supported, the landscape drifts slower than the page scrolls */
+  @supports (animation-timeline: scroll()) {
+    .heroMedia {
+      animation:
+        settle 2.6s var(--ease) backwards,
+        drift linear both;
+      animation-timeline: auto, scroll(root);
+      animation-range: normal, 0 100svh;
+    }
+
+    @keyframes drift {
+      to {
+        translate: 0 12svh;
+      }
+    }
   }
 }
 
@@ -430,8 +656,7 @@
     opacity: 0;
   }
 
-  .primaryButton,
-  .textLink {
+  .primaryButton {
     transition: none;
   }
 }
